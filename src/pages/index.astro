@@ -1,54 +1,46 @@
 ---
 import Base from '../layouts/Base.astro';
-
-// Placeholder home page. Its only job right now is to prove the architecture:
-// the query engine, the dataset and the exercises all have to bundle and run
-// client-side with no server. The real UI lands in the next step.
 import { EXERCISES } from '../../server/exercises/index.js';
 
-const exerciseCount = EXERCISES.length;
+// Placeholder. The real landing page (positioning, live editor above the fold,
+// module list) is section 5 of ROADMAP.md.
+const count = EXERCISES.length;
 ---
 <Base
   title="MongoDB Practice — run and grade MongoDB queries in your browser"
-  description="Practice MongoDB with hand-written, auto-graded exercises. No signup, no install, no database — queries run entirely in your browser."
+  description="Practice MongoDB with hand-written, auto-graded exercises that tell you exactly which field of your result is wrong. No signup, no install, no database."
 >
-  <main class="smoke">
-    <h1>Architecture smoke test</h1>
+  <main class="hero">
+    <h1>Practice MongoDB in your browser</h1>
     <p>
-      {exerciseCount} exercises loaded at build time. The query below runs entirely
-      in this tab — no server, no MongoDB.
+      {count} hand-written exercises, graded against a live reference solution.
+      When you get one wrong it tells you <em>which field</em> was wrong — not just
+      that you were.
     </p>
-
-    <pre id="query"></pre>
-    <pre id="out">running…</pre>
+    <p class="sub">No signup. No install. No database. Queries run in this tab.</p>
+    <a class="cta" href="/practice/">Start practising →</a>
   </main>
 
-  <script>
-    import { makeMingoDb } from '../../engine/mingo-db.js';
-    import { runCode } from '../../engine/run.js';
-    import ecommerce from '../../server/datasets/ecommerce.js';
-
-    const CODE = `db.orders.aggregate([
-  { $match: { status: "completed" } },
-  { $unwind: "$items" },
-  { $group: { _id: "$items.category", revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } } } },
-  { $sort: { revenue: -1 } }
-])`;
-
-    const store = ecommerce.build();
-    const db = makeMingoDb(store);
-
-    document.getElementById('query').textContent = CODE;
-
-    const result = await runCode(db, CODE);
-    document.getElementById('out').textContent = result.ok
-      ? `ok in ${result.ms}ms\n\n` + JSON.stringify(result.value, null, 2)
-      : `error: ${result.error}`;
-  </script>
-
   <style>
-    .smoke { max-width: 70ch; margin: 3rem auto; padding: 0 1.5rem; font: 14px/1.6 ui-monospace, monospace; }
-    h1 { font-size: 1.2rem; }
-    pre { background: #11151c; color: #d6deeb; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+    .hero {
+      max-width: 46rem;
+      margin: 12vh auto;
+      padding: 0 1.5rem;
+      font-family: system-ui, sans-serif;
+      color: #d6deeb;
+    }
+    h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0 0 1rem; }
+    p { font-size: 1.05rem; line-height: 1.6; color: #a8b6c9; }
+    .sub { font-size: 0.95rem; color: #7d8ba0; }
+    .cta {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 0.7rem 1.3rem;
+      background: #10b981;
+      color: #08131a;
+      font-weight: 600;
+      border-radius: 6px;
+      text-decoration: none;
+    }
   </style>
 </Base>

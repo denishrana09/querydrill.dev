@@ -10,13 +10,17 @@
     "preview": "astro preview",
     "seed": "node server/seed.js",
     "selfcheck": "node server/selfcheck.js",
-    "conformance": "node test/conformance.mjs"
+    "conformance": "node test/conformance.mjs",
+    "test": "node test/browser-grade.mjs && node test/dom-smoke.mjs",
+    "test:browser": "node test/browser-grade.mjs",
+    "test:dom": "node test/dom-smoke.mjs"
   },
   "dependencies": {
     "mingo": "^7.2.4"
   },
   "devDependencies": {
     "astro": "^7.2.10",
+    "jsdom": "^29.1.1",
     "mongodb": "^6.12.0"
   }
 }

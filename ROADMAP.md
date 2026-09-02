@@ -31,10 +31,12 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
 - [x] Fix tied `createdAt` values in seed data (made two exercises non-deterministic)
 - [x] Implement upsert in the mingo shim
 - [x] Astro scaffold + repo layout (`engine/` `src/` `server/` `content/` `local-mode/`)
-- [ ] Port the UI to the browser engine; delete the fetch-based API layer from the client
-- [ ] Dataset + exercises importable from the browser bundle
+- [x] Port the UI to the browser engine; fetch-based API layer deleted from the client
+- [x] Dataset + exercises importable from the browser bundle
+- [x] `engine/compare.js` — grading rules shared byte-for-byte by both engines
+- [x] `test/browser-grade.mjs` + `test/dom-smoke.mjs` — `npm test`, no services needed
 - [ ] GitHub Actions: conformance test against a real `mongo:7` service container
-- [x] Bundle-size check — engine + dataset + mingo is **35.3 KB gzipped** (budget ~250KB)
+- [x] Bundle-size check — full app is **45.7 KB gzipped** (budget ~250KB)
 
 ---
 
@@ -48,7 +50,7 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
 - [ ] Keyboard shortcuts, discoverable (`Ctrl+Enter` run, `Ctrl+/` comment)
 - [ ] Loading/empty/error states that don't look broken
 - [ ] Schema sidebar: collection → field names + types, expandable, click-to-insert
-- [ ] "Reset data" button (browser store is mutable; users will break it and panic)
+- [x] "Reset data" button (browser store is mutable; users will break it and panic)
 - [ ] Copy-query and share-a-permalink button (query encoded in URL hash)
 - [ ] Progress indicator: X/38 solved, per-topic breakdown
 - [ ] Favicon, OG image, 404 page
@@ -74,6 +76,19 @@ and then comes back to practice.
 - [ ] Difficulty tags (easy / medium / hard) — honest ones, not everything "easy"
 - [ ] Topic tags per exercise (`find`, `$group`, `$lookup`, `update`, …) for filtering
 - [ ] A defined **learning track**: ordered path through lessons, not just a flat list
+- [ ] **Two views over one content set** (not two content sets):
+      - *Guided* — lesson -> its drill -> next lesson. Default. For beginners.
+      - *Module* — read 4-6 lessons straight through, then drill 5-8 exercises as
+        a queue. How experienced engineers prefer to learn: build the whole
+        mental model first, then practice.
+      Same lessons, same exercises; only the practice checkpoint moves. So it is
+      one extra page template, not double the content.
+      - The module page doubles as the **SEO hub page** (§4 hub-and-spoke), so
+        this costs almost nothing extra.
+      - Do **not** fork on first visit - default to guided and put a visible
+        affordance on each view pointing at the other.
+      - Regroup the 3 oversized batches into ~8-10 modules (batch1 alone is 1,283
+        lines / 15 exercises - far too big for one sitting).
 - [ ] Grow past 38 exercises — but **never pad**. One concept = one exercise.
       MongoPractice claims "530 problems" that are `SKU-1021`…`SKU-1025` style
       generated duplicates; not matching that number is a feature, not a gap.
