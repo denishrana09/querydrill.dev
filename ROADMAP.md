@@ -30,11 +30,11 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
 - [x] `test/conformance.mjs` — dual-engine test, `npm run conformance`
 - [x] Fix tied `createdAt` values in seed data (made two exercises non-deterministic)
 - [x] Implement upsert in the mingo shim
-- [ ] Astro scaffold + repo layout (`engine/` `src/` `server/` `content/`)
+- [x] Astro scaffold + repo layout (`engine/` `src/` `server/` `content/` `local-mode/`)
 - [ ] Port the UI to the browser engine; delete the fetch-based API layer from the client
 - [ ] Dataset + exercises importable from the browser bundle
 - [ ] GitHub Actions: conformance test against a real `mongo:7` service container
-- [ ] Bundle-size check — keep initial JS under ~250KB gzipped
+- [x] Bundle-size check — engine + dataset + mingo is **35.3 KB gzipped** (budget ~250KB)
 
 ---
 
@@ -172,6 +172,9 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
 ## 9. Deferred — after MVP
 
 - [>] `npx` local mode: Express + real mongod, own connection URI, `explain()`, indexes
+      — **must get its own package.json/workspace in `local-mode/`**. Express
+      hoists `cookie@0.7.x`, which shadows the `cookie@2` Astro needs and breaks
+      the site build. A Node server and the static site cannot share a dep tree.
 - [>] Exercises for indexes and query plans (need local mode)
 - [>] The `notes` dataset as a second seed option
 - [>] Accounts / cloud-synced progress

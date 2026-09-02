@@ -5,14 +5,18 @@
   "type": "module",
   "description": "Local MongoDB practice playground: seed note-matching data, run queries, grade exercises.",
   "scripts": {
-    "start": "node server/index.js",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
     "seed": "node server/seed.js",
     "selfcheck": "node server/selfcheck.js",
     "conformance": "node test/conformance.mjs"
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "mingo": "^7.2.4",
+    "mingo": "^7.2.4"
+  },
+  "devDependencies": {
+    "astro": "^7.2.10",
     "mongodb": "^6.12.0"
   }
 }

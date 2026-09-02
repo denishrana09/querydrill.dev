@@ -10,9 +10,10 @@
 // built-in operators. Importing Query from 'mingo/query' loads the class with
 // an empty operator table and every filter fails with 'unknown query operator'.
 import { Aggregator, Query } from 'mingo';
-import updater from 'mingo/updater';
-
-const { updateMany: mingoUpdateMany, updateOne: mingoUpdateOne } = updater;
+// Named, not default: the ESM build has no default export, and Node's CJS
+// interop detects these two names fine. A default import builds under Node but
+// breaks the browser bundle.
+import { updateMany as mingoUpdateMany, updateOne as mingoUpdateOne } from 'mingo/updater';
 
 const clone = (v) => (typeof structuredClone === 'function' ? structuredClone(v) : v);
 
