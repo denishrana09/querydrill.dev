@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MongoDB Practice Playground</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">mongo<span>practice</span></div>
+
+  <label class="field">
+    <span>Database</span>
+    <select id="dbSelect"></select>
+  </label>
+
+  <button id="newDbBtn" class="ghost" title="Create and use a new database">+ new</button>
+
+  <label class="field">
+    <span>Dataset</span>
+    <select id="datasetSelect"></select>
+  </label>
+
+  <button id="seedBtn" class="primary">Seed</button>
+
+  <div class="spacer"></div>
+  <div id="status" class="status"><i></i><span>connecting…</span></div>
+</header>
+
+<main class="layout">
+
+  <aside class="pane sidebar">
+    <h2>Collections</h2>
+    <ul id="collections" class="collections"><li class="muted">pick a database</li></ul>
+    <h2>Sample document</h2>
+    <pre id="sampleDoc" class="sample muted">click a collection</pre>
+  </aside>
+
+  <section class="pane editor-pane">
+    <div class="toolbar">
+      <button id="runBtn" class="primary">Run <kbd>Ctrl</kbd>+<kbd>Enter</kbd></button>
+      <label class="check"><input type="checkbox" id="explainToggle"> explain</label>
+      <div class="spacer"></div>
+      <span id="editorLabel" class="editor-label">free play</span>
+      <button id="resetBtn" class="ghost" title="Restore the starter code">reset</button>
+    </div>
+
+    <textarea id="editor" spellcheck="false" autocomplete="off"
+      placeholder="db.orders.find({ status: &quot;completed&quot; }).limit(5)"></textarea>
+
+    <div class="results">
+      <div id="resultMeta" class="result-meta muted">results appear here</div>
+      <pre id="resultBody" class="result-body"></pre>
+    </div>
+  </section>
+
+  <aside class="pane exercises-pane">
+    <div class="ex-head">
+      <h2>Exercises</h2>
+      <span id="progress" class="progress"></span>
+    </div>
+    <div id="exerciseList" class="ex-list"></div>
+  </aside>
+
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

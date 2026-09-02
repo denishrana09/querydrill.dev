@@ -1,0 +1,16 @@
+{
+  "name": "mongodb-practice",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local MongoDB practice playground: seed note-matching data, run queries, grade exercises.",
+  "scripts": {
+    "start": "node server/index.js",
+    "seed": "node server/seed.js",
+    "selfcheck": "node server/selfcheck.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mongodb": "^6.12.0"
+  }
+}
