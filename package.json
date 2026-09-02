@@ -7,10 +7,12 @@
   "scripts": {
     "start": "node server/index.js",
     "seed": "node server/seed.js",
-    "selfcheck": "node server/selfcheck.js"
+    "selfcheck": "node server/selfcheck.js",
+    "conformance": "node test/conformance.mjs"
   },
   "dependencies": {
     "express": "^4.21.2",
+    "mingo": "^7.2.4",
     "mongodb": "^6.12.0"
   }
 }

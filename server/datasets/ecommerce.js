@@ -124,7 +124,14 @@ function buildOrders(rand) {
       _id: n,
       userId,
       status: ORDER_STATUS[Math.floor(rand() * ORDER_STATUS.length)],
-      createdAt: new Date(EPOCH + intBetween(rand, 0, 540) * DAY), // 2025-01 .. mid-2026
+      // Day is random; time-of-day is a unique function of the order number.
+      // 200 orders over 541 days collide often, and MongoDB does not define an
+      // order for tied sort keys - so any exercise sorting by createdAt would
+      // grade differently run to run. gcd(7, 1440) = 1 and n <= 200 < 1440, so
+      // (n * 7) % 1440 is distinct for every order and spreads across the day.
+      createdAt: new Date(
+        EPOCH + intBetween(rand, 0, 540) * DAY + ((n * 7) % 1440) * 60000
+      ), // 2025-01 .. mid-2026
       items,
     };
 
