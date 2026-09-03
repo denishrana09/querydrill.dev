@@ -49,8 +49,21 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
 - [ ] Results pane: table view toggle alongside raw JSON
 - [ ] Keyboard shortcuts, discoverable (`Ctrl+Enter` run, `Ctrl+/` comment)
 - [ ] Loading/empty/error states that don't look broken
-- [ ] Schema sidebar: collection → field names + types, expandable, click-to-insert
-- [x] "Reset data" button (browser store is mutable; users will break it and panic)
+- [x] Schema sidebar: collection -> field names + types, click-to-insert dotted path.
+      Replaced the raw sample document, which needed two scrollbars and — worse —
+      made optional fields look mandatory. Now shows presence percentages, so
+      `discount 57%` / `rating 50%` are visible facts rather than a hidden trap
+      the $ifNull drills spring later.
+- [x] "Reset data" — only appears once a query has actually written something.
+      A permanent button implied a problem that rarely exists; grading always
+      runs on a throwaway copy, so a dirty playground can never mis-grade.
+- [x] Editor/results drag splitter, keyboard-accessible, position persisted.
+      The old `resize: vertical` handle did nothing: `flex: 0 0 34%` overrode
+      the height it set.
+- [x] Remove the internal `batch1.md:197` note reference from the exercise UI
+- [ ] Replace the raw `b1-01` ids in the UI with topic + difficulty chips
+      (deliberately deferred — ids are progress keys and future URL slugs, so
+      they should change once, with the content model, not twice)
 - [ ] Copy-query and share-a-permalink button (query encoded in URL hash)
 - [ ] Progress indicator: X/38 solved, per-topic breakdown
 - [ ] Favicon, OG image, 404 page
@@ -73,6 +86,19 @@ and then comes back to practice.
       - state the goal, the collection, and the exact expected shape
       - no assumed context from having read the notes end to end
       - say explicitly when order matters vs doesn't
+- [~] **Starter-code audit — starters show structure, never answer.**
+      Measured 2026-09-03: starters give away an average **56%** of their own
+      solution, and **24 of 38** give away over half. Worst offenders:
+      `b3-01 $lookup` 89%, `b2-01 $match then $sort` 88%, `b2-08` 85%,
+      `b1-08` 83%. In `b3-01` the learner types only `userId` and `_id` into a
+      `$lookup` stage someone else built — they have not learned `$lookup`, and
+      in an interview they face an empty editor and cannot produce the stage.
+      `b1-01` is the model to copy at 33%: shape given, content withheld.
+      - Rewrite all 38 to the rule; thinner starters mean the prompt must carry
+        more, so this pairs with the description rewrite above.
+      - Add a per-exercise **"more structure"** button so lowering the default
+        does not strand beginners.
+      - Batch 1 first, reviewed, before batches 2 and 3.
 - [ ] Difficulty tags (easy / medium / hard) — honest ones, not everything "easy"
 - [ ] Topic tags per exercise (`find`, `$group`, `$lookup`, `update`, …) for filtering
 - [ ] A defined **learning track**: ordered path through lessons, not just a flat list
