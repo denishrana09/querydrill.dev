@@ -86,7 +86,7 @@ and then comes back to practice.
       - state the goal, the collection, and the exact expected shape
       - no assumed context from having read the notes end to end
       - say explicitly when order matters vs doesn't
-- [~] **Starter-code audit — starters show structure, never answer.**
+- [x] **Starter-code audit — starters show structure, never answer.**
       Measured 2026-09-03: starters give away an average **56%** of their own
       solution, and **24 of 38** give away over half. Worst offenders:
       `b3-01 $lookup` 89%, `b2-01 $match then $sort` 88%, `b2-08` 85%,
@@ -98,7 +98,18 @@ and then comes back to practice.
         more, so this pairs with the description rewrite above.
       - Add a per-exercise **"more structure"** button so lowering the default
         does not strand beginners.
-      - Batch 1 first, reviewed, before batches 2 and 3.
+      - DONE 2026-09-03: all 38 rewritten. Average give-away **57% -> 26%**;
+        exercises over 50% went from 24 to 1 (b1-15, a measurement artifact of a
+        very short solution, not a real giveaway).
+      - Batch 1: call + empty argument slots.
+      - Batch 2: blank pipeline - choosing the stages and their order is the lesson.
+      - Batch 3: stage skeleton with empty bodies - these problems are long enough
+        that inventing the shape AND the contents is two exercises in one.
+        Scalar stage bodies (`$limit: 5`) stay filled; they are stated in the prompt.
+      - b3-13 keeps its blank pipeline (it was already 7%) with the 9-stage
+        skeleton demoted to its scaffold. Never let the audit make one *easier*.
+      - Old starters were kept as `scaffold` behind the help ladder, so nothing
+        was thrown away - it just stopped being the default.
 - [ ] Difficulty tags (easy / medium / hard) — honest ones, not everything "easy"
 - [ ] Topic tags per exercise (`find`, `$group`, `$lookup`, `update`, …) for filtering
 - [ ] A defined **learning track**: ordered path through lessons, not just a flat list
