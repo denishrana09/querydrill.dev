@@ -287,6 +287,20 @@ function renderExercise(ex) {
   };
   actions.appendChild(hint);
 
+  // Starters deliberately give only the call and empty slots. This restores the
+  // heavier scaffold for anyone stuck, so a thin default never strands a beginner.
+  if (ex.scaffold) {
+    const more = document.createElement('button');
+    more.className = 'ghost';
+    more.textContent = 'More structure';
+    more.title = 'Fill in more of the query shape';
+    more.onclick = () => {
+      setEditor(ex.scaffold);
+      more.disabled = true;
+    };
+    actions.appendChild(more);
+  }
+
   const reveal = document.createElement('button');
   reveal.className = 'ghost';
   reveal.textContent = 'Show solution';
