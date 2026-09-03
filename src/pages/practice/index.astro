@@ -7,17 +7,10 @@ import Base from '../../layouts/Base.astro';
 >
   <header class="topbar">
     <div class="brand">mongo<span>practice</span></div>
-
-    <button id="resetDataBtn" class="ghost" title="Restore the dataset to its original state">
-      Reset data
-    </button>
-
     <div class="spacer"></div>
-
     <div class="soon" title="Available in the local npx mode, coming soon">
       Coming soon: connect your own MongoDB · <code>explain()</code> · indexes
     </div>
-
     <div id="status" class="status ok"><i></i><span>runs in your browser</span></div>
   </header>
 
@@ -25,13 +18,26 @@ import Base from '../../layouts/Base.astro';
     <aside class="pane sidebar">
       <h2>Collections</h2>
       <ul id="collections" class="collections"></ul>
-      <h2>Sample document</h2>
-      <pre id="sampleDoc" class="sample muted">click a collection</pre>
+
+      <div class="pane-head">
+        <h2 id="schemaTitle">Fields</h2>
+        <button id="rawToggle" class="linkish" type="button">raw doc</button>
+      </div>
+      <div id="schema" class="schema"><p class="muted">pick a collection</p></div>
+      <pre id="sampleDoc" class="sample" hidden></pre>
     </aside>
 
     <section class="pane editor-pane">
       <div class="toolbar">
         <button id="runBtn" class="primary">Run <kbd>Ctrl</kbd>+<kbd>Enter</kbd></button>
+
+        <!-- Only appears once a query has actually written to the data, so it
+             explains itself instead of sitting there as a permanent puzzle. -->
+        <span id="dirtyBar" class="dirty" hidden>
+          data modified
+          <button id="resetDataBtn" type="button">restore</button>
+        </span>
+
         <div class="spacer"></div>
         <span id="editorLabel" class="editor-label">free play</span>
         <button id="resetBtn" class="ghost" title="Restore the starter code">reset</button>
@@ -39,6 +45,9 @@ import Base from '../../layouts/Base.astro';
 
       <textarea id="editor" spellcheck="false" autocomplete="off"
         placeholder="db.orders.find({ status: &quot;completed&quot; }).limit(5)"></textarea>
+
+      <div id="splitter" class="splitter" role="separator" aria-orientation="horizontal"
+        tabindex="0" title="Drag to resize"></div>
 
       <div class="results">
         <div id="resultMeta" class="result-meta muted">results appear here</div>
@@ -60,15 +69,4 @@ import Base from '../../layouts/Base.astro';
   <script>
     import '../../scripts/app.js';
   </script>
-
-  <style>
-    .soon {
-      font-size: 11px;
-      opacity: 0.55;
-      margin-right: 14px;
-      white-space: nowrap;
-    }
-    .soon code { font-size: 11px; }
-    @media (max-width: 1100px) { .soon { display: none; } }
-  </style>
 </Base>

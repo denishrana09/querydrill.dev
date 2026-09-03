@@ -138,10 +138,11 @@ function upsert(list, filter, mod, mingoOpts) {
   return { acknowledged: true, matchedCount: 0, modifiedCount: 0, upsertedId: doc._id, upsertedCount: 1 };
 }
 
-function makeCollection(store, name) {
+function makeCollection(store, name, onMutate) {
   const docs = () => (store[name] ??= []);
   const mingoOpts = { collectionResolver: (n) => store[n] ?? [] };
-  const ack = (r) => Promise.resolve(r);
+  // Every write goes through ack(), so this is the one place that has to notify.
+  const ack = (r) => { onMutate?.(); return Promise.resolve(r); };
 
   const api = {
     find(filter = {}, options = undefined) {
@@ -241,10 +242,10 @@ function makeCollection(store, name) {
 }
 
 /** Build the `db` object handed to user code. `store` is { collectionName: docs[] }. */
-export function makeMingoDb(store, dbName = 'practice') {
+export function makeMingoDb(store, dbName = 'practice', { onMutate } = {}) {
   const cache = new Map();
   const collectionFor = (name) => {
-    if (!cache.has(name)) cache.set(name, makeCollection(store, name));
+    if (!cache.has(name)) cache.set(name, makeCollection(store, name, onMutate));
     return cache.get(name);
   };
 

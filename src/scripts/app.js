@@ -6,11 +6,13 @@ import { makeMingoDb } from '../../engine/mingo-db.js';
 import { runCode } from '../../engine/run.js';
 import { gradeExercise } from '../../engine/grade.js';
 import ecommerce from '../../server/datasets/ecommerce.js';
+import { inferSchema } from './schema.js';
 import { EXERCISES } from '../../server/exercises/index.js';
 
 const $ = (id) => document.getElementById(id);
 const LS_PROGRESS = 'mp.progress';
 const LS_DRAFTS = 'mp.drafts';
+const LS_SPLIT = 'mp.split';
 
 const load = (key, fallback) => {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
@@ -20,14 +22,27 @@ const save = (key, value) => {
 };
 
 const state = {
-  store: ecommerce.build(),
+  store: null,
   db: null,
   current: null,
   openId: null,
+  collection: null,
+  showRaw: false,
+  dirty: false,
   progress: load(LS_PROGRESS, {}),
   drafts: load(LS_DRAFTS, {}),
 };
-state.db = makeMingoDb(state.store);
+
+function loadDataset() {
+  state.store = ecommerce.build();
+  state.dirty = false;
+  // The engine reports the moment a query writes anything, which is the only
+  // time offering to restore the data means something to the learner.
+  state.db = makeMingoDb(state.store, 'practice', {
+    onMutate: () => { state.dirty = true; },
+  });
+}
+loadDataset();
 
 /* ---------- chrome ---------- */
 
@@ -104,11 +119,69 @@ function renderCollections() {
 
 function selectCollection(name, li) {
   document.querySelectorAll('.collections li').forEach((n) => n.classList.remove('active'));
-  li.classList.add('active');
+  li?.classList.add('active');
+  state.collection = name;
   setEditor(`db.${name}.find().limit(5)`);
-  const doc = state.store[name]?.[0];
-  $('sampleDoc').className = 'sample';
-  $('sampleDoc').innerHTML = doc ? highlight(doc) : '<span class="muted">empty collection</span>';
+  renderSidebarDetail();
+}
+
+function renderSidebarDetail() {
+  const name = state.collection;
+  const schema = $('schema');
+  const raw = $('sampleDoc');
+
+  $('schemaTitle').textContent = name ? `Fields \u00b7 ${name}` : 'Fields';
+  $('rawToggle').textContent = state.showRaw ? 'field list' : 'raw doc';
+  $('rawToggle').hidden = !name;
+
+  if (!name) {
+    schema.innerHTML = '<p class="muted">pick a collection</p>';
+    schema.hidden = false;
+    raw.hidden = true;
+    return;
+  }
+
+  const docs = state.store[name] || [];
+
+  if (state.showRaw) {
+    schema.hidden = true;
+    raw.hidden = false;
+    raw.innerHTML = docs[0] ? highlight(docs[0]) : '<span class="muted">empty collection</span>';
+    return;
+  }
+
+  raw.hidden = true;
+  schema.hidden = false;
+  schema.innerHTML = '';
+
+  if (!docs.length) {
+    schema.innerHTML = '<p class="muted">empty collection</p>';
+    return;
+  }
+
+  for (const f of inferSchema(docs)) {
+    const row = document.createElement('div');
+    row.className = `row d${f.depth}` + (f.type === 'array' ? ' arr' : '');
+    const pct = Math.round(f.presence * 100);
+    const optional = f.presence < 1
+      ? ` <span class="opt" title="present in ${pct}% of documents">${pct}%</span>`
+      : '';
+    row.innerHTML =
+      `<span class="nm">${esc(f.name)}</span>` +
+      `<span class="ty">${esc(f.type)}${optional}</span>`;
+    row.title = `${f.path}${f.sample ? '  e.g. ' + f.sample : ''}`;
+    // Inserting the dotted path is how dot notation stops being abstract.
+    row.onclick = () => insertAtCursor(f.path);
+    schema.appendChild(row);
+  }
+}
+
+function insertAtCursor(text) {
+  const el = $('editor');
+  const { selectionStart: a, selectionEnd: b } = el;
+  el.value = el.value.slice(0, a) + text + el.value.slice(b);
+  el.selectionStart = el.selectionEnd = a + text.length;
+  el.focus();
 }
 
 /* ---------- editor ---------- */
@@ -129,7 +202,9 @@ async function run() {
 
   $('resultMeta').textContent = 'running…';
   renderResult(await runCode(state.db, code));
-  renderCollections(); // a write query changes the counts
+  renderCollections();     // a write query changes the counts
+  renderSidebarDetail();   // ...and can change the shape
+  $('dirtyBar').hidden = !state.dirty;
 }
 
 /* ---------- exercises ---------- */
@@ -220,13 +295,6 @@ function renderExercise(ex) {
 
   body.appendChild(actions);
 
-  if (ex.noteRef) {
-    const note = document.createElement('div');
-    note.className = 'ex-note';
-    note.textContent = `notes: ${ex.noteRef.file}:${ex.noteRef.line} — ${ex.noteRef.label}`;
-    body.appendChild(note);
-  }
-
   card.appendChild(body);
   return card;
 }
@@ -303,13 +371,70 @@ $('runBtn').onclick = run;
 $('resetBtn').onclick = () => setEditor(state.current ? state.current.starter : '');
 
 $('resetDataBtn').onclick = () => {
-  state.store = ecommerce.build();
-  state.db = makeMingoDb(state.store);
+  loadDataset();
   renderCollections();
-  $('sampleDoc').className = 'sample muted';
-  $('sampleDoc').textContent = 'click a collection';
+  if (state.collection) {
+    const li = [...$('collections').children]
+      .find((n) => n.firstChild.textContent === state.collection);
+    li?.classList.add('active');
+  }
+  renderSidebarDetail();
+  $('dirtyBar').hidden = true;
   toast('Dataset restored.');
 };
+
+$('rawToggle').onclick = () => {
+  state.showRaw = !state.showRaw;
+  renderSidebarDetail();
+};
+
+/* Drag splitter. The editor height is a CSS variable rather than an inline
+   height, so the flex basis and the drag share one source of truth - setting
+   height directly is what made the old resize handle appear to do nothing. */
+(function splitter() {
+  const bar = $('splitter');
+  const pane = document.querySelector('.editor-pane');
+  const saved = load(LS_SPLIT, null);
+  if (saved) pane.style.setProperty('--editor-h', saved);
+
+  const clamp = (pct) => Math.min(80, Math.max(12, pct));
+  const apply = (pct) => {
+    const value = pct.toFixed(1) + '%';
+    pane.style.setProperty('--editor-h', value);
+    save(LS_SPLIT, value);
+  };
+
+  bar.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    bar.setPointerCapture(e.pointerId);
+    document.body.classList.add('dragging');
+
+    const onMove = (ev) => {
+      const paneBox = pane.getBoundingClientRect();
+      const top = $('editor').getBoundingClientRect().top;
+      apply(clamp(((ev.clientY - top) / paneBox.height) * 100));
+    };
+    const onUp = () => {
+      document.body.classList.remove('dragging');
+      bar.removeEventListener('pointermove', onMove);
+      bar.removeEventListener('pointerup', onUp);
+    };
+    bar.addEventListener('pointermove', onMove);
+    bar.addEventListener('pointerup', onUp);
+  });
+
+  // Keyboard-reachable: a drag-only handle excludes anyone not using a mouse.
+  bar.addEventListener('keydown', (e) => {
+    const step = e.key === 'ArrowUp' ? -4 : e.key === 'ArrowDown' ? 4 : 0;
+    if (!step) return;
+    e.preventDefault();
+    // Prefer the inline value the splitter itself wrote; only fall back to the
+    // computed style for the very first keypress, before any drag has happened.
+    const inline = pane.style.getPropertyValue('--editor-h');
+    const now = parseFloat(inline || getComputedStyle(pane).getPropertyValue('--editor-h')) || 34;
+    apply(clamp(now + step));
+  });
+})();
 
 $('editor').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -327,4 +452,5 @@ $('editor').addEventListener('keydown', (e) => {
 });
 
 renderCollections();
+renderSidebarDetail();
 renderExercises();

@@ -32,6 +32,7 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 globalThis.confirm = () => true;
+globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
 
 // Surface anything the module throws while wiring itself up.
 let loadError = null;
@@ -56,7 +57,31 @@ check('progress shows a total', /\/38 passed/.test($('progress').textContent),
 // Clicking a collection should load a starter query and a sample document.
 $('collections').children[0].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
 check('clicking a collection fills the editor', $('editor').value.startsWith('db.'), $('editor').value);
-check('clicking a collection shows a sample doc', $('sampleDoc').innerHTML.includes('_id'));
+
+// Sidebar shows an inferred field list, not one raw document.
+const rows = [...$('schema').querySelectorAll('.row')];
+const named = (n) => rows.find((r) => r.querySelector('.nm').textContent === n);
+check('schema lists top-level fields', Boolean(named('status') && named('items')),
+  rows.map((r) => r.querySelector('.nm').textContent).join(','));
+check('schema descends into array elements',
+  rows.some((r) => r.classList.contains('d1') && r.querySelector('.nm').textContent === 'price'));
+check('schema flags optional fields with a percentage',
+  Boolean(named('discount')?.querySelector('.opt')),
+  named('discount')?.querySelector('.ty')?.textContent);
+
+// Clicking a field inserts its dotted path — the point of the whole panel.
+$('editor').value = '';
+$('editor').selectionStart = $('editor').selectionEnd = 0;
+named('price').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+check('clicking a field inserts its dotted path', $('editor').value === 'items.price',
+  $('editor').value);
+
+// Raw document is still reachable behind the toggle.
+$('rawToggle').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+check('raw doc toggle reveals a document',
+  !$('sampleDoc').hidden && $('sampleDoc').innerHTML.includes('_id'));
+$('rawToggle').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+check('raw doc toggle returns to the field list', !$('schema').hidden && $('sampleDoc').hidden);
 
 // Run a query.
 $('editor').value = 'db.users.find({ status: "active" }).limit(2)';
@@ -85,15 +110,34 @@ check('checking a correct answer gives passing feedback',
 check('progress is written to localStorage',
   JSON.parse(localStorage.getItem('mp.progress') || '{}')[EXERCISES[0].id] === 'pass');
 
-// Reset data must restore counts after a destructive query.
+// The restore affordance stays hidden until a query has actually written
+// something - a permanently visible one implies a problem that rarely exists.
+check('restore is hidden while data is untouched', $('dirtyBar').hidden);
+
+$('editor').value = 'db.users.find({ status: "active" })';
+$('runBtn').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+for (let i = 0; i < 20; i++) await tick();
+check('a read query does not offer to restore', $('dirtyBar').hidden);
+
 $('editor').value = 'db.users.deleteMany({})';
 $('runBtn').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
 for (let i = 0; i < 20; i++) await tick();
 const afterDelete = $('collections').textContent.match(/users(\d+)/)?.[1];
+check('a write query offers to restore', !$('dirtyBar').hidden);
+
 $('resetDataBtn').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
 const afterReset = $('collections').textContent.match(/users(\d+)/)?.[1];
-check('reset data restores the dataset', afterDelete === '0' && afterReset === '30',
+check('restore brings the dataset back', afterDelete === '0' && afterReset === '30',
   `after delete ${afterDelete}, after reset ${afterReset}`);
+check('restore hides itself again', $('dirtyBar').hidden);
+
+// The splitter must be usable without a mouse.
+const pane = document.querySelector('.editor-pane');
+const before = pane.style.getPropertyValue('--editor-h');
+$('splitter').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+check('splitter responds to the keyboard',
+  pane.style.getPropertyValue('--editor-h') !== before,
+  `${before || '(unset)'} -> ${pane.style.getPropertyValue('--editor-h')}`);
 
 if (failures.length) {
   console.log(`\n  ${RED}${failures.length} failure(s):${OFF}`);
