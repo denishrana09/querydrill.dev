@@ -132,7 +132,7 @@ check('restore brings the dataset back', afterDelete === '0' && afterReset === '
 check('restore hides itself again', $('dirtyBar').hidden);
 
 // --- help ladder: one button that escalates, rather than three ---
-const withScaffold = EXERCISES.find((e) => e.batch === 1 && e.scaffold);
+const withScaffold = EXERCISES.find((e) => e.track === 'fundamentals' && e.scaffold);
 const idx = EXERCISES.indexOf(withScaffold);
 const cards = [...$('exerciseList').querySelectorAll('.ex .ex-title')];
 cards[idx].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));

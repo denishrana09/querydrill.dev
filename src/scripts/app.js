@@ -8,6 +8,8 @@ import { gradeExercise } from '../../engine/grade.js';
 import ecommerce from '../../server/datasets/ecommerce.js';
 import { inferSchema } from './schema.js';
 import { EXERCISES } from '../../server/exercises/index.js';
+import { MODULES, TRACKS } from '../../content/curriculum.js';
+import { migrateKeys } from '../../content/legacy-ids.js';
 
 const $ = (id) => document.getElementById(id);
 const LS_PROGRESS = 'mp.progress';
@@ -29,9 +31,13 @@ const state = {
   collection: null,
   showRaw: false,
   dirty: false,
-  progress: load(LS_PROGRESS, {}),
-  drafts: load(LS_DRAFTS, {}),
+  progress: migrateKeys(load(LS_PROGRESS, {})),
+  drafts: migrateKeys(load(LS_DRAFTS, {})),
 };
+// Write the migrated shape straight back, so the b1-01 keys are gone for good
+// rather than being re-translated on every visit.
+save(LS_PROGRESS, state.progress);
+save(LS_DRAFTS, state.drafts);
 
 function loadDataset() {
   state.store = ecommerce.build();
@@ -296,17 +302,35 @@ function renderExercises() {
   const host = $('exerciseList');
   host.innerHTML = '';
 
-  for (const batch of [1, 2, 3]) {
-    const group = EXERCISES.filter((e) => e.batch === batch);
-    if (!group.length) continue;
+  // Modules, grouped under their track. The three 15-exercise "batches" were a
+  // sitting nobody finishes; a module is four to six drills on one idea.
+  for (const track of TRACKS) {
+    const modules = MODULES.filter((m) => m.track === track.slug);
+    if (!modules.length) continue;
 
-    const wrap = document.createElement('div');
-    wrap.className = 'ex-batch';
-    const heading = document.createElement('h3');
-    heading.textContent = `Batch ${batch}`;
-    wrap.appendChild(heading);
-    for (const ex of group) wrap.appendChild(renderExercise(ex));
-    host.appendChild(wrap);
+    const trackHead = document.createElement('h3');
+    trackHead.className = 'track-head';
+    trackHead.textContent = track.title;
+    host.appendChild(trackHead);
+
+    for (const module of modules) {
+      const group = EXERCISES.filter((e) => e.module === module.slug);
+      if (!group.length) continue;
+
+      const wrap = document.createElement('section');
+      wrap.className = 'ex-module';
+
+      const done = group.filter((e) => state.progress[e.id] === 'pass').length;
+      const heading = document.createElement('h4');
+      heading.innerHTML =
+        `<span>${esc(module.title)}</span>` +
+        `<span class="count${done === group.length ? ' all' : ''}">${done}/${group.length}</span>`;
+      heading.title = module.goal;
+      wrap.appendChild(heading);
+
+      for (const ex of group) wrap.appendChild(renderExercise(ex));
+      host.appendChild(wrap);
+    }
   }
   renderProgress();
 }
@@ -320,9 +344,11 @@ function renderExercise(ex) {
 
   const title = document.createElement('div');
   title.className = 'ex-title';
+  // The old `b1-01` label named a filing position, not the exercise. Difficulty
+  // is what someone actually scans a list for.
   title.innerHTML =
-    `<span class="id">${esc(ex.id)}</span>` +
-    `<span>${esc(ex.title)}</span>` +
+    `<span class="diff ${ex.difficulty}" title="${ex.difficulty}"></span>` +
+    `<span class="ex-name">${esc(ex.title)}</span>` +
     (ex.type === 'write' ? '<span class="tag">write</span>' : '') +
     `<span class="mark ${status || ''}">${status === 'pass' ? '✓' : status === 'fail' ? '✗' : ''}</span>`;
   title.onclick = () => {
@@ -335,6 +361,13 @@ function renderExercise(ex) {
 
   const body = document.createElement('div');
   body.className = 'ex-body';
+
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  chips.innerHTML =
+    `<span class="chip ${ex.difficulty}">${ex.difficulty}</span>` +
+    ex.topics.map((t) => `<span class="chip">${esc(t)}</span>`).join('');
+  body.appendChild(chips);
 
   const prompt = document.createElement('div');
   prompt.className = 'ex-prompt';
@@ -383,7 +416,8 @@ function renderExercise(ex) {
 function selectExercise(ex) {
   state.current = ex;
   setEditor(state.drafts[ex.id] ?? ex.starter);
-  $('editorLabel').textContent = `${ex.id} · ${ex.title}`;
+  const module = MODULES.find((m) => m.slug === ex.module);
+  $('editorLabel').textContent = `${module ? module.title + ' · ' : ''}${ex.title}`;
 }
 
 async function checkAnswer(ex, body, button) {

@@ -1,21 +1,41 @@
 import batch1 from './batch1.js';
 import batch2 from './batch2.js';
 import batch3 from './batch3.js';
+import { MODULES, MODULE_OF_EXERCISE, EXERCISE_ORDER, ALL_LESSONS } from '../../content/curriculum.js';
 
-const RAW = [
-  ...batch1.map((e) => ({ ...e, batch: 1 })),
-  ...batch2.map((e) => ({ ...e, batch: 2 })),
-  ...batch3.map((e) => ({ ...e, batch: 3 })),
-];
+// The batch*.js filenames are only how the exercises are stored. Where an
+// exercise sits in the course, and in what order, comes from the curriculum.
+const RAW = [...batch1, ...batch2, ...batch3];
+
+const DIFFICULTIES = new Set(['easy', 'medium', 'hard']);
+const LESSON_SLUGS = new Set(ALL_LESSONS.map((l) => l.slug));
 
 // Fail at import time rather than halfway through a practice session.
 const seen = new Set();
 for (const e of RAW) {
-  for (const field of ['id', 'title', 'prompt', 'solution', 'starter']) {
+  for (const field of ['id', 'title', 'prompt', 'solution', 'starter', 'lesson', 'difficulty']) {
     if (!e[field]) throw new Error(`Exercise ${e.id || '(no id)'} is missing "${field}".`);
   }
   if (seen.has(e.id)) throw new Error(`Duplicate exercise id "${e.id}".`);
   seen.add(e.id);
+
+  // The id is a URL. Keep it one, so a slug can never silently break a link.
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(e.id)) {
+    throw new Error(`Exercise id "${e.id}" is not a URL slug.`);
+  }
+  if (!DIFFICULTIES.has(e.difficulty)) {
+    throw new Error(`Exercise ${e.id} has difficulty "${e.difficulty}".`);
+  }
+  if (!Array.isArray(e.topics) || !e.topics.length) {
+    throw new Error(`Exercise ${e.id} needs at least one topic tag.`);
+  }
+  if (!LESSON_SLUGS.has(e.lesson)) {
+    throw new Error(`Exercise ${e.id} points at unknown lesson "${e.lesson}".`);
+  }
+  if (!MODULE_OF_EXERCISE[e.id]) {
+    throw new Error(`Exercise ${e.id} is not listed in any module in content/curriculum.js.`);
+  }
+
   if (e.type === 'write' && !e.verify) {
     throw new Error(`Write exercise ${e.id} needs a "verify" query.`);
   }
@@ -32,10 +52,35 @@ for (const e of RAW) {
   }
 }
 
-export const EXERCISES = RAW.map((e) => ({ dataset: 'ecommerce', type: 'read', ...e }));
+// The curriculum promising a drill that does not exist is the failure that
+// would ship a dead link, so check that direction too.
+for (const id of EXERCISE_ORDER) {
+  if (!seen.has(id)) {
+    throw new Error(`Module "${MODULE_OF_EXERCISE[id]}" lists unknown exercise "${id}".`);
+  }
+}
+
+const byId = new Map(RAW.map((e) => [e.id, e]));
+const MODULE_BY_SLUG = new Map(MODULES.map((m) => [m.slug, m]));
+
+export const EXERCISES = EXERCISE_ORDER.map((id) => {
+  const module = MODULE_BY_SLUG.get(MODULE_OF_EXERCISE[id]);
+  return {
+    dataset: 'ecommerce',
+    type: 'read',
+    ...byId.get(id),
+    module: module.slug,
+    track: module.track,
+  };
+});
 
 export function getExercise(id) {
   return EXERCISES.find((e) => e.id === id);
+}
+
+/** Drills for one module, in the order the module lists them. */
+export function exercisesInModule(slug) {
+  return EXERCISES.filter((e) => e.module === slug);
 }
 
 /** What the browser is allowed to see - never the solution or verify query. */

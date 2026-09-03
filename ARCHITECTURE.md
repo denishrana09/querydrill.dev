@@ -35,15 +35,46 @@ seed data, and the results must match under the grader's own rules.
 If you add an exercise using something mingo cannot do, conformance goes red
 before a learner ever sees it. That is the point.
 
+## The content model
+
+`content/curriculum.js` is the single source of truth for **ordering and URLs**:
+
+```
+tracks  ->  modules  ->  lessons      (content/lessons/<slug>.md, /learn/<slug>)
+                     ->  exercises    (server/exercises/*.js,     /practice/<slug>)
+```
+
+The `batch1.js` / `batch2.js` / `batch3.js` filenames are storage only. Nothing
+reads them for order any more — `server/exercises/index.js` sorts by the
+curriculum and stamps each exercise with its `module` and `track`.
+
+**An exercise id is three things at once**: its URL slug, its localStorage
+progress key, and its name in the curriculum. That is why the rename from
+`b1-01` happened in one pass together with the module structure, and why
+`content/legacy-ids.js` exists — delete it and everyone who practised before the
+rename silently loses their progress. Adding an exercise means adding it to a
+module's `exercises` list too; the index throws at import if you forget, in
+either direction.
+
+Lessons carry a `source` line range into the original `batch*.md` notes. It is
+how the extraction stays reproducible and reviewable, and it is what resolved
+each exercise's lesson automatically. Once a lesson has real prose it is history.
+
 ## Tests
 
 | command | needs | what it proves |
 |---|---|---|
-| `npm test` | nothing | browser grading + DOM wiring |
+| `npm test` | nothing | curriculum integrity + browser grading + DOM wiring |
 | `npm run conformance` | a local `mongod` | mingo agrees with real MongoDB |
 | `npm run selfcheck` | a local `mongod` | every solution passes on the driver |
 
 `npm test` is the one that runs everywhere; the other two need a database.
+
+`test/curriculum.mjs` is the cheap one worth knowing about: it catches the
+mistakes that produce a dead link or lost progress rather than a stack trace —
+a duplicate slug, a drill in no module, two lessons written from the same lines,
+or a drill whose lesson lives in a *later* module (a prerequisite violation the
+learner would hit as "how was I supposed to know that?").
 
 ## Traps already hit — don't re-introduce these
 

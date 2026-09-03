@@ -61,9 +61,12 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
       The old `resize: vertical` handle did nothing: `flex: 0 0 34%` overrode
       the height it set.
 - [x] Remove the internal `batch1.md:197` note reference from the exercise UI
-- [ ] Replace the raw `b1-01` ids in the UI with topic + difficulty chips
-      (deliberately deferred — ids are progress keys and future URL slugs, so
-      they should change once, with the content model, not twice)
+- [x] Replace the raw `b1-01` ids in the UI with topic + difficulty chips.
+      Done with the content model, in one pass, as planned: the id is now the
+      URL slug *and* the progress key, so it could only be changed once.
+      A coloured dot carries difficulty in the list (scannable down 38 rows
+      without competing with the title); the word plus topic chips appear in the
+      opened card. `content/legacy-ids.js` migrates existing localStorage.
 - [ ] Copy-query and share-a-permalink button (query encoded in URL hash)
 - [ ] Progress indicator: X/38 solved, per-topic breakdown
 - [ ] Favicon, OG image, 404 page
@@ -78,8 +81,21 @@ The notes are ~5,200 lines across `batch1.md` / `batch2.md` / `batch3.md`. The
 problem is not depth, it's delivery — nobody reads a wall of markdown on GitHub
 and then comes back to practice.
 
-- [ ] Split the batch files into **~30–40 lesson units**, one per concept
-- [ ] Each lesson maps 1:1 to its exercise(s); use the existing `noteRef` line anchors
+- [x] **The content model** — `content/curriculum.js`, the single source of truth
+      for ordering and for every URL. 3 tracks -> 12 modules -> 54 lessons ->
+      38 drills. Modules are 2-6 drills on one idea, so a module is a sitting.
+      `test/curriculum.mjs` (in `npm test`) enforces it: unique URL-safe slugs,
+      every drill in exactly one module, no lesson written from lines another
+      lesson already claims, and **no drill pointing at a lesson from a later
+      module** — that check moved `average-per-month` out of *Grouping*, since
+      it needs `$month`, which the date lesson had not taught yet.
+- [x] Each lesson maps to its exercise(s) — resolved automatically from the old
+      `noteRef` line anchors against the lesson source ranges, then `noteRef`
+      deleted. 35 of 38 resolved on their own; the 3 that did not pointed at the
+      pattern/self-test appendices, which became reference pages, not lessons.
+- [ ] Split the batch files into the 54 lesson files, driven by `source` ranges
+- [ ] Rewrite the extracted prose for a public audience — the notes were written
+      to one person ("what I want you to memorize"), with `Batch 1` cross-refs
 - [ ] Render lessons **in-app** beside the editor, not as separate files
 - [ ] Every lesson gets a runnable example, pre-filled into the editor in one click
 - [ ] **Rewrite problem descriptions** for a worldwide audience:
@@ -110,9 +126,17 @@ and then comes back to practice.
         skeleton demoted to its scaffold. Never let the audit make one *easier*.
       - Old starters were kept as `scaffold` behind the help ladder, so nothing
         was thrown away - it just stopped being the default.
-- [ ] Difficulty tags (easy / medium / hard) — honest ones, not everything "easy"
-- [ ] Topic tags per exercise (`find`, `$group`, `$lookup`, `update`, …) for filtering
-- [ ] A defined **learning track**: ordered path through lessons, not just a flat list
+- [x] Difficulty tags — honest ones: **12 easy, 16 medium, 10 hard**. Validated
+      only as "not all one value"; the calibration is a judgement call and worth
+      revisiting once real people have attempted them.
+- [x] Topic tags per exercise (`find`, `$group`, `$lookup`, `update`, …).
+      Not yet wired to a filter UI — that is the next §2 item.
+- [x] A defined **learning track**: tracks -> modules -> ordered drills, and the
+      practice list now renders in that order instead of by batch file.
+- [ ] **Thin modules, to fill honestly.** The structure exposed where coverage is
+      one drill deep: *Documents and find()* (1), *Sorting and pagination* (1),
+      *The aggregation pipeline* (2). Sorting especially deserves three. This is
+      the good kind of growth — a real gap, not padding to hit a number.
 - [ ] **Two views over one content set** (not two content sets):
       - *Guided* — lesson -> its drill -> next lesson. Default. For beginners.
       - *Module* — read 4-6 lessons straight through, then drill 5-8 exercises as
@@ -124,13 +148,21 @@ and then comes back to practice.
         this costs almost nothing extra.
       - Do **not** fork on first visit - default to guided and put a visible
         affordance on each view pointing at the other.
-      - Regroup the 3 oversized batches into ~8-10 modules (batch1 alone is 1,283
-        lines / 15 exercises - far too big for one sitting).
+      - [x] Regroup the 3 oversized batches into modules. Landed as 12, in 3
+        tracks. The map is `content/curriculum.js` - read it there rather than
+        copying it here, so there is only one place to be wrong.
 - [ ] Grow past 38 exercises — but **never pad**. One concept = one exercise.
       MongoPractice claims "530 problems" that are `SKU-1021`…`SKU-1025` style
       generated duplicates; not matching that number is a feature, not a gap.
 - [ ] "Common mistakes" note per exercise, shown after a failed attempt
-- [ ] Cheatsheet page (operator → one-line meaning → link to its lesson)
+- [ ] Cheatsheet page (operator → one-line meaning → link to its lesson).
+      Four **reference pages** are already mapped in `content/curriculum.js`,
+      built from the appendices the lessons did not absorb: the operator
+      cheatsheet, "how to think about a pipeline", common mistakes, and the
+      `$match` vs `$filter` / `$project` vs `$map` / `$group` vs `$reduce`
+      comparisons. That last one is strong long-tail SEO on its own.
+- [ ] `batch2.md`'s "Quick Self-Test" section is four ready-made exercises —
+      the cheapest honest way to grow past 38.
 
 ---
 
