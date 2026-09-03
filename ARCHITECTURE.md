@@ -56,9 +56,15 @@ rename silently loses their progress. Adding an exercise means adding it to a
 module's `exercises` list too; the index throws at import if you forget, in
 either direction.
 
-Lessons carry a `source` line range into the original `batch*.md` notes. It is
-how the extraction stays reproducible and reviewable, and it is what resolved
-each exercise's lesson automatically. Once a lesson has real prose it is history.
+A lesson's title lives in two places — `curriculum.js` for navigation, and the
+file's own frontmatter. That is deliberate: nothing should have to parse 54
+markdown files to render a sidebar. `test/curriculum.mjs` fails if they drift.
+
+Each lesson's frontmatter keeps a `source` line range into the original
+`batch*.md` notes. That is provenance, not a live pointer — it is what made the
+extraction reviewable, and what resolved each exercise's lesson automatically.
+The notes themselves are on their way out; four sections still have no lesson to
+live in, and until those are placed, deleting the notes would lose them.
 
 ## Tests
 

@@ -1,10 +1,17 @@
 # MongoDB Practice Playground
 
-A local page for drilling MongoDB against real data, built around the notes in
-[batch1.md](batch1.md), [batch2.md](batch2.md) and [batch3.md](batch3.md).
+A page for drilling MongoDB against real data. 54 lessons across 12 modules,
+and 38 auto-graded exercises that tell you *why* an answer is wrong — not just
+that it is.
 
-Pick a database, seed it, write queries, and work through 38 auto-graded
-exercises that tell you *why* an answer is wrong.
+Lessons live in [content/lessons/](content/lessons/), with four reference pages
+in [content/reference/](content/reference/). The order they are taught in is
+[content/curriculum.js](content/curriculum.js).
+
+`batch1.md`, `batch2.md` and `batch3.md` are the original notes the lessons were
+written from. Four sections of them have not been migrated yet, which is the
+only reason they are still here — see [ROADMAP.md](ROADMAP.md). Edit the
+lessons, not the notes.
 
 ## Run it
 

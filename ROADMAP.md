@@ -93,9 +93,25 @@ and then comes back to practice.
       `noteRef` line anchors against the lesson source ranges, then `noteRef`
       deleted. 35 of 38 resolved on their own; the 3 that did not pointed at the
       pattern/self-test appendices, which became reference pages, not lessons.
-- [ ] Split the batch files into the 54 lesson files, driven by `source` ranges
-- [ ] Rewrite the extracted prose for a public audience — the notes were written
-      to one person ("what I want you to memorize"), with `Batch 1` cross-refs
+- [x] **Split the notes into 54 lesson files** — `content/lessons/<slug>.md`,
+      plus 4 pages in `content/reference/`. Each carries frontmatter: title,
+      module, track, SEO description, the operators it teaches, and the line
+      range of the original notes it came from.
+- [x] **Rewrite the prose for strangers.** Every lesson now opens with a
+      paragraph that stands alone — the notes opened mid-thought (`Suppose:`,
+      `Given:`, `This is basically:`) because they were written to be read in
+      one pass. 17 one-line fragments the new openings replaced were deleted,
+      and 5 promises of chapters that do not exist ("we'll revisit this during
+      indexing") were replaced with the actual answer. The voice stays.
+- [ ] **Delete `batch1.md` / `batch2.md` / `batch3.md`** — blocked, not done.
+      Four sections have no home yet, and deleting would lose them:
+      - `batch2.md:31-115` — **the dataset description**. This is the biggest
+        gap: §6 wants the dataset explained up front and there is no page for it.
+      - `batch2.md:1837-1952` — "Quick Self-Test", 4 ready-made exercises.
+      - `batch1.md:1183-1284` — "Mini Interview Questions", ~5 more.
+      - `batch2.md:1320-1464` — a second full worked example.
+      The rest is `# Batch N` preamble and can go. Everything else is migrated;
+      re-check with the gap script before deleting.
 - [ ] Render lessons **in-app** beside the editor, not as separate files
 - [ ] Every lesson gets a runnable example, pre-filled into the editor in one click
 - [ ] **Rewrite problem descriptions** for a worldwide audience:
@@ -161,8 +177,8 @@ and then comes back to practice.
       cheatsheet, "how to think about a pipeline", common mistakes, and the
       `$match` vs `$filter` / `$project` vs `$map` / `$group` vs `$reduce`
       comparisons. That last one is strong long-tail SEO on its own.
-- [ ] `batch2.md`'s "Quick Self-Test" section is four ready-made exercises —
-      the cheapest honest way to grow past 38.
+- [ ] The unmigrated self-test sections are ~9 ready-made exercises — the
+      cheapest honest way to grow past 38. See the deletion item above.
 
 ---
 

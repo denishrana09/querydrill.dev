@@ -2,6 +2,7 @@
 // link or lost progress rather than a visible crash. Importing the exercise
 // index already runs its own cross-checks; this covers the rest.
 
+import { readFileSync } from 'node:fs';
 import { MODULES, TRACKS, ALL_LESSONS, REFERENCES, EXERCISE_ORDER } from '../content/curriculum.js';
 import { LEGACY_IDS, migrateKeys } from '../content/legacy-ids.js';
 import { EXERCISES } from '../server/exercises/index.js';
@@ -54,23 +55,67 @@ check('every module has lessons and drills',
 
 check('every module states a goal', MODULES.every((m) => m.goal && m.summary));
 
-/* ---------- source ranges ---------- */
+/* ---------- lesson files ---------- */
 
-// Two lessons written from the same lines means one of them duplicates the
-// other's content, which is the kind of thing only a check notices.
-const ranges = {};
-for (const l of ALL_LESSONS) {
-  (ranges[l.source.file] ??= []).push({ ...l.source, slug: l.slug });
-}
-const overlaps = [];
-for (const [file, rs] of Object.entries(ranges)) {
-  rs.sort((a, b) => a.from - b.from);
-  for (let i = 1; i < rs.length; i++) {
-    if (rs[i].from <= rs[i - 1].to) overlaps.push(`${file}: ${rs[i - 1].slug} / ${rs[i].slug}`);
+// The curriculum promising a page that has no prose behind it is a 404, so
+// check that every slug it names actually has a file, with real frontmatter.
+const pages = [
+  ...ALL_LESSONS.map((l) => ({ ...l, dir: 'lessons' })),
+  ...REFERENCES.map((r) => ({ ...r, dir: 'reference' })),
+];
+
+const read = (p) => {
+  try {
+    return readFileSync(new URL(`../content/${p.dir}/${p.slug}.md`, import.meta.url), 'utf8');
+  } catch {
+    return null;
   }
-}
-check('no two lessons are written from the same lines', overlaps.length === 0, overlaps.join('; '));
-check('every source range runs forwards', ALL_LESSONS.every((l) => l.source.from < l.source.to));
+};
+
+const files = new Map(pages.map((p) => [p.slug, read(p)]));
+check('every lesson and reference page has a file',
+  [...files.values()].every(Boolean),
+  pages.filter((p) => !files.get(p.slug)).map((p) => p.slug).join(', '));
+
+const frontmatter = (text) => {
+  const end = text.indexOf('\n---\n', 4);
+  return end < 0 ? null : text.slice(4, end);
+};
+const field = (text, name) => frontmatter(text)?.match(new RegExp(`^${name}: '(.*)'$`, 'm'))?.[1];
+
+// A title in two places can drift. This is the check that makes that safe.
+const mismatched = pages.filter((p) => {
+  const text = files.get(p.slug);
+  return text && field(text, 'title')?.replace(/''/g, "'") !== p.title;
+});
+check('page titles match the curriculum', mismatched.length === 0,
+  mismatched.map((p) => `${p.slug}: '${field(files.get(p.slug), 'title')}' vs '${p.title}'`).join('; '));
+
+// The description is the search result snippet. An empty one is a page Google
+// writes the summary for instead of you.
+const descs = pages.map((p) => ({ slug: p.slug, d: field(files.get(p.slug) ?? '', 'description') }));
+check('every page has a description', descs.every((x) => x.d && x.d.length > 40),
+  descs.filter((x) => !x.d || x.d.length <= 40).map((x) => x.slug).join(', '));
+check('descriptions fit a search result', descs.every((x) => !x.d || x.d.length <= 165),
+  descs.filter((x) => x.d && x.d.length > 165).map((x) => `${x.slug} (${x.d.length})`).join(', '));
+
+// The notes were one long document. Anything still pointing at "Batch 2" is a
+// reference to a thing this site does not have.
+const stale = pages.filter((p) => {
+  const text = files.get(p.slug);
+  return text && /\bbatch\s*\d/i.test(text.slice(text.indexOf('\n---\n', 4)));
+});
+check('no page still refers to a batch', stale.length === 0, stale.map((p) => p.slug).join(', '));
+
+check('every lesson opens with prose, not a heading or code', ALL_LESSONS.every((l) => {
+  const text = files.get(l.slug);
+  const body = text.slice(text.indexOf('\n---\n', 4) + 5).trimStart();
+  return !/^(#|```|\||>)/.test(body);
+}), ALL_LESSONS.filter((l) => {
+  const text = files.get(l.slug);
+  const body = text.slice(text.indexOf('\n---\n', 4) + 5).trimStart();
+  return /^(#|```|\||>)/.test(body);
+}).map((l) => l.slug).join(', '));
 
 /* ---------- exercises ---------- */
 
