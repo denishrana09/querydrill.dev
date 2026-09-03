@@ -66,15 +66,51 @@ extraction reviewable, and what resolved each exercise's lesson automatically.
 The notes themselves are on their way out; four sections still have no lesson to
 live in, and until those are placed, deleting the notes would lose them.
 
+## Routes
+
+Every URL comes from the curriculum, so there is no route that content does not
+justify and no content without a route.
+
+| URL | from | ships JS |
+|---|---|---|
+| `/` | hand-written | no |
+| `/learn/` | `TRACKS` + `MODULES` | no |
+| `/learn/<lesson>/` | `content/lessons/*.md` | no |
+| `/modules/<module>/` | `MODULES` | no |
+| `/reference/<page>/` | `content/reference/*.md` | no |
+| `/dataset/` | the seed itself, via `inferSchema` | no |
+| `/practice/` | the app | yes, all of it |
+| `/sitemap.xml`, `/robots.txt` | `allPaths()` | n/a |
+
+Reading pages ship **zero JavaScript** — that is Astro's whole reason for being
+here, and it is what keeps Core Web Vitals free. Keep it that way.
+
+`/dataset/` is generated from `ecommerce.build()` rather than written by hand.
+The original notes described the data in prose, and prose goes stale the moment
+the generator changes.
+
+**The deep-link seam.** Lesson and module pages link to `/practice/#<exercise-id>`,
+and `app.js` opens that drill on load and on `hashchange`. This is the one join
+between the static pages and the app, and it fails *silently* — the page still
+renders, the link still resolves, the drill just does not open. `test/links.mjs`
+checks every such hash names a real exercise; `test/dom-smoke.mjs` checks the app
+end honours it.
+
+Body class decides layout: `app` is the fixed three-pane shell that must not
+scroll, `doc` is a normal document that must. One inheriting the other's rules
+breaks both.
+
 ## Tests
 
 | command | needs | what it proves |
 |---|---|---|
 | `npm test` | nothing | curriculum integrity + browser grading + DOM wiring |
+| `npm run test:links` | a `dist/` build | no dead links, unique titles, real descriptions |
+| `npm run verify` | nothing | build, then both of the above |
 | `npm run conformance` | a local `mongod` | mingo agrees with real MongoDB |
 | `npm run selfcheck` | a local `mongod` | every solution passes on the driver |
 
-`npm test` is the one that runs everywhere; the other two need a database.
+`npm test` is the one that runs everywhere; the last two need a database.
 
 `test/curriculum.mjs` is the cheap one worth knowing about: it catches the
 mistakes that produce a dead link or lost progress rather than a stack trace —
@@ -119,6 +155,13 @@ with "error importing dynamic module" — once, until a reload fixed it. Anythin
 reached *solely* through a dynamic `import()` must be listed in
 `optimizeDeps.include` in `astro.config.mjs`. Dev-server only; the production
 build already code-splits it correctly, which is why the build looked fine.
+
+**`location` and `history` are browser globals, not Node ones.** The deep-link
+handling threw on import under jsdom until the test harness defined them. Any
+bare global the app touches has to be added to `test/dom-smoke.mjs`, or the test
+fails for a reason that has nothing to do with the code being wrong. Related:
+jsdom has no `scrollIntoView`, so that call is optional (`?.()`) — it is
+cosmetic and must never be why a link fails to open.
 
 **The shipped site depends only on `mingo`.** `mongodb` and `jsdom` are dev-only.
 If the runtime dependency list grows, something has leaked from `server/` into

@@ -1,0 +1,79 @@
+---
+import Doc from '../../layouts/Doc.astro';
+import { TRACKS, MODULES, REFERENCES, ALL_LESSONS } from '../../../content/curriculum.js';
+import { EXERCISES } from '../../../server/exercises/index.js';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'MongoDB course modules',
+  itemListElement: MODULES.map((m, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: m.title,
+    url: new URL(`/modules/${m.slug}/`, Astro.site).href,
+  })),
+};
+---
+<Doc
+  nav="learn"
+  wide
+  title="Learn MongoDB — 54 lessons across 12 modules"
+  description="A structured MongoDB course: querying, updates, arrays, the aggregation pipeline, $group, $unwind, $lookup and expression operators. Every lesson has a drill."
+  jsonLd={jsonLd}
+>
+  <h1 style="margin:0 0 10px;font-size:clamp(1.6rem,4vw,2.1rem)">Learn MongoDB</h1>
+  <p class="lede">
+    {ALL_LESSONS.length} lessons in {MODULES.length} modules, each ending in drills you
+    run in the browser. Read a module end to end, or open any lesson directly — they
+    stand on their own.
+  </p>
+
+  {TRACKS.map((track) => (
+    <section class="track-block">
+      <div class="section-head">
+        <h2>{track.title}</h2>
+        <span class="meta">
+          {MODULES.filter((m) => m.track === track.slug).length} modules
+        </span>
+      </div>
+      <p>{track.summary}</p>
+
+      <div class="grid">
+        {MODULES.filter((m) => m.track === track.slug).map((m) => (
+          <a class="card" href={`/modules/${m.slug}/`}>
+            <div class="card-row">
+              <h3>{m.title}</h3>
+              <span class="meta">
+                {m.lessons.length}L · {EXERCISES.filter((e) => e.module === m.slug).length}D
+              </span>
+            </div>
+            <p>{m.summary}</p>
+          </a>
+        ))}
+      </div>
+    </section>
+  ))}
+
+  <div class="section-head">
+    <h2>Reference</h2>
+    <span class="meta">no new concepts, just the lookup</span>
+  </div>
+  <div class="grid">
+    {REFERENCES.map((r) => (
+      <a class="card" href={`/reference/${r.slug}/`}>
+        <div class="card-row"><h3>{r.title}</h3></div>
+      </a>
+    ))}
+  </div>
+</Doc>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 8px;
+  }
+  .grid .card { margin-bottom: 0; }
+  .card-row .meta { font-family: var(--mono); font-size: 10.5px; white-space: nowrap; }
+</style>

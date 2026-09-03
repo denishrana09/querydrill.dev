@@ -8,6 +8,24 @@ export default defineConfig({
   build: { format: 'directory' },
   devToolbar: { enabled: false },
 
+  markdown: {
+    shikiConfig: {
+      theme: 'github-dark',
+      transformers: [
+        {
+          // Shiki writes its theme's background as an inline style, which beats
+          // any stylesheet and leaves every code block a slightly different
+          // grey from the panels around it. Dropping it lets doc.css decide.
+          pre(node) {
+            node.properties.style = String(node.properties.style ?? '')
+              .replace(/background-color:[^;]*;?/, '')
+              .trim();
+          },
+        },
+      ],
+    },
+  },
+
   vite: {
     optimizeDeps: {
       // Prettier is only ever reached through a dynamic import, so Vite does not

@@ -1,0 +1,137 @@
+---
+import Doc from '../layouts/Doc.astro';
+import ecommerce from '../../server/datasets/ecommerce.js';
+import { inferSchema } from '../scripts/schema.js';
+
+/**
+ * Built from the seed itself rather than written by hand, so it cannot drift
+ * from what the practice page actually loads. The original notes described this
+ * data in prose; prose goes stale the first time the generator changes.
+ */
+const store = ecommerce.build();
+
+const collections = Object.entries(store).map(([name, docs]) => ({
+  name,
+  count: docs.length,
+  fields: inferSchema(docs),
+  sample: docs[0],
+}));
+
+// Optional fields are the ones worth calling out: they are why $ifNull exists,
+// and a single sample document hides them completely.
+const optional = collections.flatMap((c) =>
+  c.fields.filter((f) => f.presence < 100).map((f) => ({ collection: c.name, ...f }))
+);
+
+const json = (v) =>
+  JSON.stringify(v, (_, x) => (x instanceof Date ? x.toISOString() : x), 2);
+---
+<Doc
+  nav="dataset"
+  wide
+  title="The practice dataset — users, orders and products"
+  description="The seeded MongoDB dataset every exercise runs against: 30 users, 200 orders with nested line items, and 11 products. Field types, presence and samples."
+>
+  <h1 style="margin:0 0 10px;font-size:clamp(1.5rem,4vw,2rem)">The dataset</h1>
+  <p class="lede">
+    Every lesson example and every exercise runs against this data. It is generated
+    from a fixed seed, so it is identical in your browser and in mine — and
+    "restore" puts it back exactly, not approximately.
+  </p>
+
+  <blockquote class="note">
+    Nothing here is uploaded and nothing is shared. The whole dataset is built in
+    your tab when the page loads, and your queries never leave it.
+  </blockquote>
+
+  {collections.map((c) => (
+    <section>
+      <div class="section-head">
+        <h2><code>{c.name}</code></h2>
+        <span class="meta">{c.count} documents · {c.fields.filter((f) => !f.inArray).length} top-level fields</span>
+      </div>
+
+      <table class="fields">
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Present</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          {c.fields.map((f) => (
+            <tr class={f.presence < 100 ? 'optional' : ''}>
+              <td>
+                <code style={`margin-left:${f.depth * 0.9}rem`}>{f.name}</code>
+              </td>
+              <td class="muted">{f.type}</td>
+              <td class={f.presence < 100 ? 'warn' : 'muted'}>
+                {f.presence === 100 ? 'always' : `${f.presence}%`}
+              </td>
+              <td class="muted"><code>{f.sample}</code></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <details>
+        <summary>One <code>{c.name}</code> document</summary>
+        <pre>{json(c.sample)}</pre>
+      </details>
+    </section>
+  ))}
+
+  {optional.length > 0 && (
+    <>
+      <div class="section-head">
+        <h2>Fields that are not always there</h2>
+      </div>
+      <p>
+        These are deliberate. Arithmetic on a field that is missing does not do what
+        you expect, which is what <code>$ifNull</code> is for — and you cannot see any
+        of this from one sample document.
+      </p>
+      <ul>
+        {optional.map((f) => (
+          <li>
+            <code>{f.collection}.{f.path}</code> — present on {f.presence}% of documents
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  <div class="cta-row">
+    <a class="btn primary" href="/practice/">Query it now →</a>
+    <a class="btn" href="/learn/">Start the course</a>
+  </div>
+</Doc>
+
+<style>
+  .note {
+    margin: 0 0 8px;
+    padding: 10px 14px;
+    border-left: 3px solid var(--accent-dim);
+    background: var(--panel);
+    border-radius: 0 6px 6px 0;
+    font-size: 13.5px;
+  }
+  h2 code { font-size: 1em; background: none; padding: 0; color: var(--accent); }
+  .fields { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px; }
+  .fields th, .fields td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; }
+  .fields th { background: var(--panel); font-weight: 600; font-size: 11.5px; color: var(--muted); }
+  .fields code { font-family: var(--mono); font-size: 12px; background: none; padding: 0; }
+  .fields .muted { color: var(--muted); }
+  .fields .warn { color: var(--warn); }
+  .fields tr.optional td:first-child { border-left: 2px solid var(--warn); }
+  details { margin-bottom: 8px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 12.5px; }
+  details pre {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+  ul { font-size: 13.5px; }
+  ul code { font-family: var(--mono); font-size: 12px; background: var(--panel-2); padding: 1px 5px; border-radius: 3px; }
+</style>

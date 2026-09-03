@@ -1,0 +1,42 @@
+---
+import { getCollection, render } from 'astro:content';
+import Doc from '../../layouts/Doc.astro';
+import { REFERENCES } from '../../../content/curriculum.js';
+
+export async function getStaticPaths() {
+  const pages = await getCollection('reference');
+  return pages.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const others = REFERENCES.filter((r) => r.slug !== entry.id);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: entry.data.title,
+  description: entry.data.description,
+  inLanguage: 'en',
+};
+---
+<Doc
+  nav="reference"
+  title={`${entry.data.title} — MongoDB`}
+  description={entry.data.description}
+  jsonLd={jsonLd}
+>
+  <p class="crumbs"><a href="/learn/">Learn</a> › <span>Reference</span></p>
+
+  <article class="prose">
+    <h1>{entry.data.title}</h1>
+    <Content />
+  </article>
+
+  <div class="section-head"><h2>Other reference pages</h2></div>
+  {others.map((r) => (
+    <a class="card" href={`/reference/${r.slug}/`}>
+      <div class="card-row"><h3>{r.title}</h3></div>
+    </a>
+  ))}
+</Doc>

@@ -11,6 +11,8 @@ const {
   description,
   noindex = false,
   jsonLd = null,
+  // "app" is the fixed three-pane practice shell; "doc" is a scrolling page.
+  bodyClass = 'doc',
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
@@ -40,7 +42,7 @@ const ogImage = new URL('/og-default.png', Astro.site).href;
 
   <slot name="head" />
 </head>
-<body>
+<body class={bodyClass}>
   <slot />
 </body>
 </html>

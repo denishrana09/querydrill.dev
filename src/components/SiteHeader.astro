@@ -1,0 +1,19 @@
+---
+/** Header for document pages. The practice app has its own, tighter, toolbar. */
+const { current = null } = Astro.props;
+
+const links = [
+  { href: '/learn/', label: 'Learn', key: 'learn' },
+  { href: '/practice/', label: 'Practice', key: 'practice' },
+  { href: '/dataset/', label: 'Dataset', key: 'dataset' },
+  { href: '/reference/operator-cheatsheet/', label: 'Cheatsheet', key: 'reference' },
+];
+---
+<header class="site-head">
+  <a class="brand" href="/">mongo<span>practice</span></a>
+  <nav>
+    {links.map((l) => (
+      <a href={l.href} class={current === l.key ? 'on' : ''}>{l.label}</a>
+    ))}
+  </nav>
+</header>

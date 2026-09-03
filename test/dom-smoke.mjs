@@ -33,6 +33,11 @@ globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 globalThis.confirm = () => true;
 globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
+// Bare `location` and `history` are globals in a browser and not in Node, so
+// without these the deep-link handling throws on import - which is precisely
+// the class of bug this file exists to catch.
+globalThis.location = dom.window.location;
+globalThis.history = dom.window.history;
 
 // Surface anything the module throws while wiring itself up.
 let loadError = null;
@@ -203,6 +208,36 @@ $('splitter').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Arro
 check('splitter responds to the keyboard',
   pane.style.getPropertyValue('--editor-h') !== before,
   `${before || '(unset)'} -> ${pane.style.getPropertyValue('--editor-h')}`);
+
+// --- deep links: the seam between the static lesson pages and the app ---
+// Every lesson and module page links to /practice/#<id>. If this stops working
+// the pages still render and the links still resolve, so nothing else notices.
+const target = EXERCISES[12];
+dom.window.location.hash = `#${target.id}`;
+dom.window.dispatchEvent(new dom.window.HashChangeEvent('hashchange'));
+await tick();
+
+const opened = $('exerciseList').querySelector('.ex.open .ex-name');
+check('a hash deep link opens that exercise', opened?.textContent === target.title,
+  `${opened?.textContent} !== ${target.title}`);
+check('a deep link loads the exercise into the editor',
+  $('editor').value === target.starter);
+check('an open exercise offers its lesson',
+  $('exerciseList').querySelector('.ex.open .lesson-link')?.getAttribute('href') ===
+    `/learn/${target.lesson}/`,
+  $('exerciseList').querySelector('.ex.open .lesson-link')?.getAttribute('href'));
+
+const other = EXERCISES[3];
+const allCards = [...$('exerciseList').querySelectorAll('.ex .ex-title')];
+allCards[EXERCISES.indexOf(other)].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+check('opening an exercise writes it to the hash',
+  dom.window.location.hash === `#${other.id}`, dom.window.location.hash);
+
+dom.window.location.hash = '#not-a-real-exercise';
+dom.window.dispatchEvent(new dom.window.HashChangeEvent('hashchange'));
+await tick();
+check('an unknown hash leaves the open exercise alone',
+  $('exerciseList').querySelector('.ex.open .ex-name')?.textContent === other.title);
 
 if (failures.length) {
   console.log(`\n  ${RED}${failures.length} failure(s):${OFF}`);

@@ -8,10 +8,11 @@ import { gradeExercise } from '../../engine/grade.js';
 import ecommerce from '../../server/datasets/ecommerce.js';
 import { inferSchema } from './schema.js';
 import { EXERCISES } from '../../server/exercises/index.js';
-import { MODULES, TRACKS } from '../../content/curriculum.js';
+import { MODULES, TRACKS, ALL_LESSONS } from '../../content/curriculum.js';
 import { migrateKeys } from '../../content/legacy-ids.js';
 
 const $ = (id) => document.getElementById(id);
+const LESSON_BY_SLUG = new Map(ALL_LESSONS.map((l) => [l.slug, l]));
 const LS_PROGRESS = 'mp.progress';
 const LS_DRAFTS = 'mp.drafts';
 const LS_SPLIT = 'mp.split';
@@ -354,6 +355,10 @@ function renderExercise(ex) {
   title.onclick = () => {
     state.openId = open ? null : ex.id;
     if (!open) selectExercise(ex);
+    // Keep the hash in step so the open exercise is linkable and survives a
+    // reload. replaceState rather than the hash property: setting the hash
+    // pushes a history entry per click, which turns Back into a chore.
+    history.replaceState(null, '', open ? location.pathname : `#${ex.id}`);
     renderExercises();
   };
   card.appendChild(title);
@@ -373,6 +378,17 @@ function renderExercise(ex) {
   prompt.className = 'ex-prompt';
   prompt.innerHTML = markdownish(ex.prompt);
   body.appendChild(prompt);
+
+  // The way back out of a drill you cannot do. Every exercise names the lesson
+  // that teaches it, so this is never a guess.
+  const lesson = LESSON_BY_SLUG.get(ex.lesson);
+  if (lesson) {
+    const link = document.createElement('a');
+    link.className = 'lesson-link';
+    link.href = `/learn/${lesson.slug}/`;
+    link.textContent = `Read: ${lesson.title}`;
+    body.appendChild(link);
+  }
 
   const actions = document.createElement('div');
   actions.className = 'ex-actions';
@@ -587,4 +603,30 @@ $('editor').addEventListener('keydown', (e) => {
 
 renderCollections();
 renderSidebarDetail();
-renderExercises();
+
+/**
+ * `/practice/#top-customers-by-spend` opens that drill directly. Every lesson
+ * and module page links in this way, so this is the seam between the static
+ * pages and the app - if it silently no-ops, all of those links go nowhere.
+ */
+function openFromHash({ scroll = true } = {}) {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const ex = id && EXERCISES.find((e) => e.id === id);
+  if (!ex) return false;
+
+  state.openId = ex.id;
+  selectExercise(ex);
+  renderExercises();
+  if (scroll) {
+    // The list is a scrolling pane, not the page, so scrollIntoView on the card
+    // is the only thing that actually moves it. Optional call: it is cosmetic,
+    // and it must never be the reason a deep link fails to open.
+    $('exerciseList').querySelector('.ex.open')?.scrollIntoView?.({ block: 'center' });
+  }
+  return true;
+}
+
+if (!openFromHash()) renderExercises();
+
+// Someone editing the hash, or following a second link from an open tab.
+window.addEventListener('hashchange', () => openFromHash());

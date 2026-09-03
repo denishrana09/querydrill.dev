@@ -14,7 +14,9 @@
     "test": "node test/curriculum.mjs && node test/browser-grade.mjs && node test/dom-smoke.mjs",
     "test:browser": "node test/browser-grade.mjs",
     "test:dom": "node test/dom-smoke.mjs",
-    "test:curriculum": "node test/curriculum.mjs"
+    "test:curriculum": "node test/curriculum.mjs",
+    "test:links": "node test/links.mjs",
+    "verify": "npm run build && node test/links.mjs && npm test"
   },
   "dependencies": {
     "mingo": "^7.2.4",

@@ -112,7 +112,15 @@ and then comes back to practice.
       - `batch2.md:1320-1464` — a second full worked example.
       The rest is `# Batch N` preamble and can go. Everything else is migrated;
       re-check with the gap script before deleting.
-- [ ] Render lessons **in-app** beside the editor, not as separate files
+- [x] **Lesson, module and reference pages exist and are linked.** 74 pages.
+      `/learn/<lesson>/`, `/modules/<module>/`, `/reference/<page>/`, plus
+      `/dataset/`. Reading pages ship zero JavaScript.
+- [x] **The dataset page** — generated from `ecommerce.build()` and `inferSchema`,
+      so it can never drift from what the app actually loads. Shows field types,
+      presence percentages and a sample document per collection, and calls out
+      the deliberately-optional fields the `$ifNull` drills depend on.
+- [ ] Render lessons **in-app** beside the editor as well, so a drill and its
+      lesson can be read side by side without leaving the practice page
 - [ ] Every lesson gets a runnable example, pre-filled into the editor in one click
 - [ ] **Rewrite problem descriptions** for a worldwide audience:
       - state the goal, the collection, and the exact expected shape
@@ -186,22 +194,32 @@ and then comes back to practice.
 
 The brand name will bring almost nothing. Lesson pages bring the traffic.
 
-- [ ] **One prerendered URL per lesson** (`/learn/lookup-join-collections`) with
-      real server-rendered content — not client-rendered
-- [ ] One URL per exercise (`/practice/group-revenue-by-category`)
+- [x] **One prerendered URL per lesson** — 54 of them, fully server-rendered.
+      Plus 12 module hubs and 4 reference pages. 74 pages total.
+- [>] One URL per exercise. Deferred, not skipped: drills are deep-linked as
+      `/practice/#<slug>` today, which is one page, not 38. A real per-exercise
+      page is worth doing once there is a reason for it to rank on its own.
 - [ ] Target **long-tail operator keywords**: "mongodb $unwind example",
       "mongodb $lookup tutorial", "mongodb aggregation practice"
 - [ ] Do **not** fight head terms — W3Schools/GeeksforGeeks own "mongodb exercises"
-- [ ] The differentiator for ranking: page-one results for `$lookup`/`$unwind` are
-      Medium posts, YouTube, and vendor blogs — **none of them let you run the query**.
-      Every lesson page must have a live editor above the fold.
-- [ ] Unique `<title>` + `<meta description>` per page
-- [ ] JSON-LD structured data: `LearningResource` / `HowTo` / `FAQPage`
-- [ ] `sitemap.xml` + `robots.txt`
-- [ ] Canonical URLs
-- [ ] OG/Twitter cards per lesson
-- [ ] Internal linking: lesson ↔ exercise ↔ related operators
-- [ ] Core Web Vitals — Astro ships zero JS on static pages; keep it that way
+- [ ] **The differentiator: a live editor on the lesson page itself.** Page-one
+      results for `$lookup`/`$unwind` are Medium posts, YouTube and vendor blogs,
+      and *none of them let you run the query*. Right now a lesson links to the
+      drill; it does not let you run the example in place. This is the single
+      highest-value remaining SEO item and it is not done.
+- [x] Unique `<title>` + `<meta description>` per page — enforced, including
+      the no-duplicate-titles check, by `test/links.mjs`
+- [x] JSON-LD: `LearningResource` per lesson, `Course` per module, `ItemList`
+      on the index, `Article` on reference pages
+- [x] `sitemap.xml` + `robots.txt` — generated from `allPaths()`, so a page that
+      is not part of the curriculum never gets advertised
+- [x] Canonical URLs (already enforced by `Base.astro` for every page)
+- [x] OG/Twitter cards per lesson — via `Base.astro`; still needs a real
+      `og-default.png`, which does not exist yet
+- [x] Internal linking: lesson → its module → its drills → back to the lesson,
+      prev/next through the whole course, and `test/links.mjs` proves every
+      exercise is reachable from at least one page
+- [x] Core Web Vitals — verified: reading pages ship **zero JavaScript**
 - [ ] Plausible or Umami analytics (privacy-friendly, no cookie banner needed)
 - [ ] Submit to Google Search Console + Bing Webmaster Tools
 

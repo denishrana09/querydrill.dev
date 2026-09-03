@@ -1,0 +1,138 @@
+---
+import { getCollection } from 'astro:content';
+import Doc from '../../layouts/Doc.astro';
+import { MODULES, trackBySlug, moduleNeighbours } from '../../../content/curriculum.js';
+import { EXERCISES } from '../../../server/exercises/index.js';
+
+/**
+ * The module hub. Two jobs at once, which is why it is worth building:
+ * it is the "read it all, then drill it all" view for people who learn that
+ * way, and it is the hub page that links out to every lesson for search.
+ */
+export async function getStaticPaths() {
+  return MODULES.map((module) => ({ params: { slug: module.slug }, props: { module } }));
+}
+
+const { module } = Astro.props;
+const track = trackBySlug(module.track);
+const { prev, next } = moduleNeighbours(module.slug);
+
+const lessons = await getCollection('lessons', (e) => e.data.module === module.slug);
+const bySlug = new Map(lessons.map((e) => [e.id, e]));
+const ordered = module.lessons.map((l) => ({ ...l, entry: bySlug.get(l.slug) }));
+
+const drills = EXERCISES.filter((e) => e.module === module.slug);
+const spread = ['easy', 'medium', 'hard']
+  .map((d) => ({ d, n: drills.filter((x) => x.difficulty === d).length }))
+  .filter((x) => x.n);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Course',
+  name: module.title,
+  description: module.summary,
+  inLanguage: 'en',
+  hasCourseInstance: {
+    '@type': 'CourseInstance',
+    courseMode: 'online',
+    courseWorkload: `PT${Math.max(1, Math.round(module.lessons.length * 0.2))}H`,
+  },
+  syllabusSections: module.lessons.map((l, i) => ({
+    '@type': 'Syllabus',
+    name: l.title,
+    position: i + 1,
+    url: new URL(`/learn/${l.slug}/`, Astro.site).href,
+  })),
+};
+---
+<Doc
+  nav="learn"
+  title={`${module.title} — MongoDB course module`}
+  description={module.summary}
+  jsonLd={jsonLd}
+>
+  <p class="crumbs"><a href="/learn/">Learn</a> › <span>{track?.title}</span></p>
+
+  <h1 style="margin:0 0 10px;font-size:clamp(1.5rem,4vw,2rem)">{module.title}</h1>
+  <p class="lede">{module.summary}</p>
+
+  <blockquote class="goal"><strong>By the end:</strong> {module.goal}</blockquote>
+
+  <div class="section-head">
+    <h2>Lessons</h2>
+    <span class="meta">{module.lessons.length}</span>
+  </div>
+  <ol class="lesson-list">
+    {ordered.map((l) => (
+      <li>
+        <span class="n"></span>
+        <div>
+          <a href={`/learn/${l.slug}/`}>{l.title}</a>
+          {l.entry && <p class="sub">{l.entry.data.description}</p>}
+        </div>
+      </li>
+    ))}
+  </ol>
+
+  <div class="section-head">
+    <h2>Drills</h2>
+    <span class="meta">{spread.map((s) => `${s.n} ${s.d}`).join(' · ')}</span>
+  </div>
+  <ul class="drill-list">
+    {drills.map((d) => (
+      <li>
+        <span class={`diff ${d.difficulty}`} title={d.difficulty}></span>
+        <a href={`/practice/#${d.id}`}>{d.title}</a>
+        {d.type === 'write' && <span class="tag">write</span>}
+      </li>
+    ))}
+  </ul>
+
+  <div class="cta-row">
+    <a class="btn primary" href={`/learn/${module.lessons[0].slug}/`}>Start reading →</a>
+    <a class="btn" href={`/practice/#${drills[0].id}`}>Skip to the drills</a>
+  </div>
+
+  <nav class="pager">
+    {prev ? (
+      <a href={`/modules/${prev.slug}/`}><small>Previous module</small>{prev.title}</a>
+    ) : (
+      <a href="/learn/"><small>Back to</small>All modules</a>
+    )}
+    {next ? (
+      <a class="next" href={`/modules/${next.slug}/`}><small>Next module</small>{next.title}</a>
+    ) : (
+      <a class="next" href="/practice/"><small>Last module</small>Go and practise</a>
+    )}
+  </nav>
+</Doc>
+
+<style>
+  .goal {
+    margin: 0 0 6px;
+    padding: 10px 14px;
+    border-left: 3px solid var(--accent-dim);
+    background: var(--panel);
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+  }
+  .lesson-list .sub { margin: 2px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .lesson-list li { align-items: flex-start; padding: 9px 0; }
+  .drill-list .diff {
+    flex: 0 0 auto;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .drill-list .diff.easy { background: var(--accent); }
+  .drill-list .diff.medium { background: var(--warn); }
+  .drill-list .diff.hard { background: var(--danger); }
+  .drill-list .tag {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(212,163,74,.15);
+    color: var(--warn);
+  }
+</style>

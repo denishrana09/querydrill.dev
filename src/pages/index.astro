@@ -1,46 +1,120 @@
 ---
-import Base from '../layouts/Base.astro';
+import Doc from '../layouts/Doc.astro';
 import { EXERCISES } from '../../server/exercises/index.js';
+import { MODULES, TRACKS, ALL_LESSONS } from '../../content/curriculum.js';
 
-// Placeholder. The real landing page (positioning, live editor above the fold,
-// module list) is section 5 of ROADMAP.md.
+// Still a placeholder for the real positioning work in section 5 of ROADMAP.md
+// - what it now has is a way through to the course, which it did not before.
 const count = EXERCISES.length;
 ---
-<Base
-  title="MongoDB Practice — run and grade MongoDB queries in your browser"
-  description="Practice MongoDB with hand-written, auto-graded exercises that tell you exactly which field of your result is wrong. No signup, no install, no database."
+<Doc
+  wide
+  title="MongoDB Practice — learn and run MongoDB queries in your browser"
+  description="A MongoDB course with 54 lessons and 38 auto-graded exercises that tell you exactly which field of your result is wrong. No signup, no install, no database."
 >
-  <main class="hero">
-    <h1>Practice MongoDB in your browser</h1>
+  <section class="hero">
+    <h1>Learn MongoDB by running queries, not reading about them</h1>
     <p>
-      {count} hand-written exercises, graded against a live reference solution.
-      When you get one wrong it tells you <em>which field</em> was wrong — not just
-      that you were.
+      {ALL_LESSONS.length} lessons across {MODULES.length} modules, and {count} hand-written
+      exercises graded against a live reference solution. Get one wrong and it tells you
+      <em>which field</em> was wrong — not just that you were.
     </p>
     <p class="sub">No signup. No install. No database. Queries run in this tab.</p>
-    <a class="cta" href="/practice/">Start practising →</a>
-  </main>
+    <div class="cta-row">
+      <a class="btn primary" href="/learn/">Start the course →</a>
+      <a class="btn" href="/practice/">Jump straight to the exercises</a>
+    </div>
+  </section>
 
-  <style>
-    .hero {
-      max-width: 46rem;
-      margin: 12vh auto;
-      padding: 0 1.5rem;
-      font-family: system-ui, sans-serif;
-      color: #d6deeb;
-    }
-    h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0 0 1rem; }
-    p { font-size: 1.05rem; line-height: 1.6; color: #a8b6c9; }
-    .sub { font-size: 0.95rem; color: #7d8ba0; }
-    .cta {
-      display: inline-block;
-      margin-top: 1.5rem;
-      padding: 0.7rem 1.3rem;
-      background: #10b981;
-      color: #08131a;
-      font-weight: 600;
-      border-radius: 6px;
-      text-decoration: none;
-    }
-  </style>
-</Base>
+  <div class="section-head">
+    <h2>The course</h2>
+    <span class="meta">{ALL_LESSONS.length} lessons · {count} drills</span>
+  </div>
+  <div class="grid">
+    {TRACKS.map((t) => (
+      <a class="card" href="/learn/">
+        <div class="card-row">
+          <h3>{t.title}</h3>
+          <span class="meta">{MODULES.filter((m) => m.track === t.slug).length} modules</span>
+        </div>
+        <p>{t.summary}</p>
+      </a>
+    ))}
+  </div>
+
+  <div class="section-head"><h2>Why this one</h2></div>
+  <div class="grid">
+    <div class="card">
+      <h3>It says what was wrong</h3>
+      <p>
+        Not "incorrect". <code>row 0.revenue: expected 53000, got 27000</code> — the
+        field, the expected value and yours.
+      </p>
+    </div>
+    <div class="card">
+      <h3>Graded against a live solution</h3>
+      <p>
+        Answers are not stored JSON that goes stale. The reference query runs against
+        the same data as yours, every time.
+      </p>
+    </div>
+    <div class="card">
+      <h3>Nothing leaves your browser</h3>
+      <p>
+        The <a href="/dataset/">dataset</a> is built in your tab from a fixed seed. There
+        is no server to send a query to.
+      </p>
+    </div>
+    <div class="card">
+      <h3>Hand-written, not generated</h3>
+      <p>
+        {count} exercises, each a distinct concept. No padding the count with the same
+        question and a different product name.
+      </p>
+    </div>
+  </div>
+
+  <p class="soon-note">
+    Coming soon, through a local <code>npx</code> mode: connect your own MongoDB,
+    <code>explain()</code>, and index tuning.
+  </p>
+</Doc>
+
+<style>
+  .hero { margin: 4vh 0 10px; max-width: 40rem; }
+  .hero h1 { font-size: clamp(1.7rem, 5vw, 2.5rem); line-height: 1.2; margin: 0 0 14px; }
+  .hero p { font-size: 1rem; line-height: 1.6; color: #a8b6c9; }
+  .hero .sub { font-size: .9rem; color: var(--muted); }
+  .hero em { color: var(--text); font-style: normal; font-weight: 600; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 8px;
+  }
+  .grid .card { margin-bottom: 0; }
+  .card-row .meta { font-family: var(--mono); font-size: 10.5px; white-space: nowrap; }
+  .card code {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    background: var(--panel-2);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  .card a { color: var(--accent); }
+
+  .soon-note {
+    margin: 34px 0 0;
+    padding: 11px 14px;
+    border: 1px dashed var(--line);
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+  .soon-note code {
+    font-family: var(--mono);
+    background: var(--panel-2);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+</style>

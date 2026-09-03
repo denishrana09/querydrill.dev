@@ -244,3 +244,41 @@ export const ALL_LESSONS = MODULES.flatMap((m) =>
 
 /** Exercise ids in curriculum order - the order the practice list renders in. */
 export const EXERCISE_ORDER = MODULES.flatMap((m) => m.exercises);
+
+/* ---------- navigation ---------- */
+
+export const trackBySlug = (slug) => TRACKS.find((t) => t.slug === slug);
+export const moduleBySlug = (slug) => MODULES.find((m) => m.slug === slug);
+export const lessonBySlug = (slug) => ALL_LESSONS.find((l) => l.slug === slug);
+
+/**
+ * The lesson before and after this one, walking the whole course rather than
+ * stopping at a module boundary - someone reading straight through should not
+ * hit a dead end halfway.
+ */
+export function lessonNeighbours(slug) {
+  const i = ALL_LESSONS.findIndex((l) => l.slug === slug);
+  if (i < 0) return { prev: null, next: null };
+  return { prev: ALL_LESSONS[i - 1] ?? null, next: ALL_LESSONS[i + 1] ?? null };
+}
+
+export function moduleNeighbours(slug) {
+  const i = MODULES.findIndex((m) => m.slug === slug);
+  if (i < 0) return { prev: null, next: null };
+  return { prev: MODULES[i - 1] ?? null, next: MODULES[i + 1] ?? null };
+}
+
+export const modulesInTrack = (slug) => MODULES.filter((m) => m.track === slug);
+
+/** Every URL the site publishes, for the sitemap and for link checking. */
+export function allPaths() {
+  return [
+    '/',
+    '/learn/',
+    '/practice/',
+    '/dataset/',
+    ...MODULES.map((m) => `/modules/${m.slug}/`),
+    ...ALL_LESSONS.map((l) => `/learn/${l.slug}/`),
+    ...REFERENCES.map((r) => `/reference/${r.slug}/`),
+  ];
+}

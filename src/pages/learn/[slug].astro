@@ -1,0 +1,111 @@
+---
+import { getCollection, render } from 'astro:content';
+import Doc from '../../layouts/Doc.astro';
+import {
+  moduleBySlug,
+  trackBySlug,
+  lessonNeighbours,
+} from '../../../content/curriculum.js';
+import { EXERCISES } from '../../../server/exercises/index.js';
+
+export async function getStaticPaths() {
+  const lessons = await getCollection('lessons');
+  return lessons.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+
+const module = moduleBySlug(entry.data.module);
+const track = trackBySlug(entry.data.track);
+const { prev, next } = lessonNeighbours(entry.id);
+
+// The drills this lesson is the one that teaches. Landing on "$unwind" from a
+// search and finding an exercise for it is the entire point of the site.
+const drills = EXERCISES.filter((e) => e.lesson === entry.id);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LearningResource',
+  name: entry.data.title,
+  description: entry.data.description,
+  learningResourceType: 'lesson',
+  educationalLevel: 'beginner to intermediate',
+  teaches: entry.data.operators ?? undefined,
+  isPartOf: { '@type': 'Course', name: module?.title, description: module?.summary },
+  inLanguage: 'en',
+};
+---
+<Doc
+  nav="learn"
+  title={`${entry.data.title} — MongoDB`}
+  description={entry.data.description}
+  jsonLd={jsonLd}
+>
+  <p class="crumbs">
+    <a href="/learn/">Learn</a> ›
+    <span>{track?.title}</span> ›
+    <a href={`/modules/${module?.slug}/`}>{module?.title}</a>
+  </p>
+
+  <article class="prose">
+    <h1>{entry.data.title}</h1>
+    {entry.data.operators?.length ? (
+      <div class="tagrow">
+        {entry.data.operators.map((op) => <span class="chip">{op}</span>)}
+      </div>
+    ) : null}
+    <Content />
+  </article>
+
+  {drills.length > 0 && (
+    <>
+      <div class="section-head">
+        <h2>Practise this</h2>
+        <span class="meta">{drills.length} {drills.length === 1 ? 'exercise' : 'exercises'}</span>
+      </div>
+      <ul class="drill-list">
+        {drills.map((d) => (
+          <li>
+            <span class={`diff ${d.difficulty}`} title={d.difficulty}></span>
+            <a href={`/practice/#${d.id}`}>{d.title}</a>
+            {d.type === 'write' && <span class="tag">write</span>}
+          </li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  <nav class="pager">
+    {prev ? (
+      <a href={`/learn/${prev.slug}/`}><small>Previous</small>{prev.title}</a>
+    ) : (
+      <a href="/learn/"><small>Back to</small>All modules</a>
+    )}
+    {next ? (
+      <a class="next" href={`/learn/${next.slug}/`}><small>Next</small>{next.title}</a>
+    ) : (
+      <a class="next" href="/practice/"><small>Course finished</small>Go and practise</a>
+    )}
+  </nav>
+</Doc>
+
+<style>
+  .drill-list .diff {
+    flex: 0 0 auto;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .drill-list .diff.easy { background: var(--accent); }
+  .drill-list .diff.medium { background: var(--warn); }
+  .drill-list .diff.hard { background: var(--danger); }
+  .drill-list .tag {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(212,163,74,.15);
+    color: var(--warn);
+  }
+</style>
