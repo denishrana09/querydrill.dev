@@ -91,6 +91,7 @@ function renderResult(payload) {
   if (!payload.ok) {
     meta.innerHTML = `<span class="err">error</span> · ${payload.ms}ms`;
     body.textContent = payload.error;
+    $('copyResultBtn').hidden = false;
     return;
   }
 
@@ -102,6 +103,7 @@ function renderResult(payload) {
   if (payload.isUndefined) bits.push('no value returned — add a `return` for multi-statement code');
   meta.innerHTML = bits.join(' · ');
   body.innerHTML = highlight(payload.value);
+  $('copyResultBtn').hidden = false;
 }
 
 /* ---------- collections sidebar ---------- */
@@ -207,6 +209,61 @@ async function run() {
   $('dirtyBar').hidden = !state.dirty;
 }
 
+/* ---------- format & copy ---------- */
+
+/**
+ * Prettier is ~390KB, which is eight times the whole app - so it is imported
+ * only when someone actually presses Format. Vite splits it into its own chunk
+ * and the initial load never pays for it.
+ */
+async function formatQuery() {
+  const el = $('editor');
+  const source = el.value.trim();
+  if (!source) return;
+
+  const btn = $('formatBtn');
+  btn.disabled = true;
+  try {
+    const [prettier, babel, estree] = await Promise.all([
+      import('prettier/standalone'),
+      import('prettier/plugins/babel'),
+      import('prettier/plugins/estree'),
+    ]);
+    const out = await prettier.format(source, {
+      parser: 'babel',
+      plugins: [babel.default ?? babel, estree.default ?? estree],
+      printWidth: 68,
+      semi: false,
+      trailingComma: 'none',   // a trailing comma before ) is not shell style
+    });
+    el.value = out.trim();
+    el.focus();
+  } catch (err) {
+    // A query mid-edit is usually unparseable, so say where rather than just no.
+    const loc = err?.loc?.start ?? err?.loc;
+    toast(
+      loc?.line
+        ? `Can't format — syntax error at line ${loc.line}, column ${loc.column ?? 0}`
+        : `Can't format — ${String(err?.message || err).split('\n')[0]}`,
+      true
+    );
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function copyText(text, btn) {
+  if (!text) return;
+  const original = btn.textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = 'Copied';
+  } catch {
+    btn.textContent = 'Press Ctrl+C';
+  }
+  setTimeout(() => { btn.textContent = original; }, 1400);
+}
+
 /* ---------- exercises ---------- */
 
 const markdownish = (text) =>
@@ -275,37 +332,29 @@ function renderExercise(ex) {
   check.onclick = () => checkAnswer(ex, body, check);
   actions.appendChild(check);
 
-  const hint = document.createElement('button');
-  hint.className = 'ghost';
-  hint.textContent = 'Hint';
-  hint.onclick = () => {
-    if (body.querySelector('.ex-hint')) return;
-    const el = document.createElement('div');
-    el.className = 'ex-hint';
-    el.innerHTML = markdownish(ex.hint || 'No hint for this one.');
-    body.appendChild(el);
+  // One escalating button rather than three. Three crowded the card and let
+  // someone jump straight past the hint to the answer; this walks the ladder in
+  // order, and each label says what the next click will do.
+  const help = document.createElement('button');
+  help.className = 'ghost';
+
+  const steps = [
+    { label: 'Hint', run: () => showHint(ex, body) },
+    // Starters give only the call and empty slots; this restores the heavier
+    // scaffold, so a thin default never strands a beginner.
+    ...(ex.scaffold ? [{ label: 'Show the shape', run: () => setEditor(ex.scaffold) }] : []),
+    { label: 'Show solution', run: () => revealSolution(ex, body) },
+  ];
+
+  let step = 0;
+  help.textContent = steps[0].label;
+  help.onclick = () => {
+    if (steps[step].run() === false) return; // reveal was cancelled
+    step += 1;
+    if (step >= steps.length) help.disabled = true;
+    else help.textContent = steps[step].label;
   };
-  actions.appendChild(hint);
-
-  // Starters deliberately give only the call and empty slots. This restores the
-  // heavier scaffold for anyone stuck, so a thin default never strands a beginner.
-  if (ex.scaffold) {
-    const more = document.createElement('button');
-    more.className = 'ghost';
-    more.textContent = 'More structure';
-    more.title = 'Fill in more of the query shape';
-    more.onclick = () => {
-      setEditor(ex.scaffold);
-      more.disabled = true;
-    };
-    actions.appendChild(more);
-  }
-
-  const reveal = document.createElement('button');
-  reveal.className = 'ghost';
-  reveal.textContent = 'Show solution';
-  reveal.onclick = () => revealSolution(ex, body);
-  actions.appendChild(reveal);
+  actions.appendChild(help);
 
   body.appendChild(actions);
 
@@ -365,22 +414,36 @@ async function checkAnswer(ex, body, button) {
   button.textContent = 'Check';
 }
 
+function showHint(ex, body) {
+  if (body.querySelector('.ex-hint')) return;
+  const el = document.createElement('div');
+  el.className = 'ex-hint';
+  el.innerHTML = markdownish(ex.hint || 'No hint for this one.');
+  body.appendChild(el);
+}
+
+/** @returns false if the learner backed out, so the help ladder does not advance. */
 function revealSolution(ex, body) {
-  if (body.querySelector('.ex-solution')) return;
+  if (body.querySelector('.ex-solution')) return true;
   const ok = confirm(
     'Show the reference solution?\n\n' +
-    'Try the Hint first — reading the answer now is what stops this from being practice.'
+    'Reading the answer now is what stops this from being practice.'
   );
-  if (!ok) return;
+  if (!ok) return false;
   const el = document.createElement('div');
   el.className = 'ex-solution';
   el.textContent = ex.solution;
   body.appendChild(el);
+  return true;
 }
 
 /* ---------- wiring ---------- */
 
 $('runBtn').onclick = run;
+$('formatBtn').onclick = formatQuery;
+$('copyQueryBtn').onclick = (e) => copyText($('editor').value, e.currentTarget);
+// textContent, not the value: this copies exactly what is rendered, minus markup.
+$('copyResultBtn').onclick = (e) => copyText($('resultBody').textContent, e.currentTarget);
 
 $('resetBtn').onclick = () => setEditor(state.current ? state.current.starter : '');
 
@@ -454,6 +517,11 @@ $('editor').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
     run();
+    return;
+  }
+  if ((e.key === 'F' || e.key === 'f') && e.altKey && e.shiftKey) {
+    e.preventDefault();
+    formatQuery();
     return;
   }
   if (e.key === 'Tab') {

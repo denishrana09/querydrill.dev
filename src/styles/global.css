@@ -387,3 +387,10 @@ kbd {
 .splitter:hover::after, .splitter:focus-visible::after { background: var(--accent-dim); }
 .splitter:focus-visible { outline: none; }
 body.dragging { cursor: row-resize; user-select: none; }
+
+/* ---------- results header ---------- */
+
+.results-head { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.results-head .result-meta { flex: 1; }
+
+button.tiny { font-size: 10.5px; padding: 2px 8px; }

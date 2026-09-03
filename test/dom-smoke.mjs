@@ -131,6 +131,71 @@ check('restore brings the dataset back', afterDelete === '0' && afterReset === '
   `after delete ${afterDelete}, after reset ${afterReset}`);
 check('restore hides itself again', $('dirtyBar').hidden);
 
+// --- help ladder: one button that escalates, rather than three ---
+const withScaffold = EXERCISES.find((e) => e.batch === 1 && e.scaffold);
+const idx = EXERCISES.indexOf(withScaffold);
+const cards = [...$('exerciseList').querySelectorAll('.ex .ex-title')];
+cards[idx].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+const helpCard = $('exerciseList').querySelector('.ex.open');
+const helpBtn = [...helpCard.querySelectorAll('.ex-actions button')].find((b) => !b.classList.contains('primary'));
+
+check('help ladder starts at Hint', helpBtn.textContent === 'Hint', helpBtn.textContent);
+check('only two buttons on a card', helpCard.querySelectorAll('.ex-actions button').length === 2,
+  `${helpCard.querySelectorAll('.ex-actions button').length} buttons`);
+
+helpBtn.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+check('first click shows the hint', Boolean(helpCard.querySelector('.ex-hint')));
+check('label advances to the shape', helpBtn.textContent === 'Show the shape', helpBtn.textContent);
+
+helpBtn.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+check('second click loads the scaffold', $('editor').value === withScaffold.scaffold, $('editor').value);
+check('label advances to the solution', helpBtn.textContent === 'Show solution', helpBtn.textContent);
+
+helpBtn.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+check('third click reveals the solution',
+  helpCard.querySelector('.ex-solution')?.textContent === withScaffold.solution);
+check('ladder ends disabled', helpBtn.disabled);
+
+// --- copy ---
+let copied = null;
+// Node 22 exposes a read-only `navigator` global, so it has to be redefined
+// rather than assigned. jsdom has no clipboard implementation either way.
+Object.defineProperty(globalThis, 'navigator', {
+  configurable: true,
+  value: { clipboard: { writeText: async (t) => { copied = t; } } },
+});
+$('editor').value = 'db.users.find({})';
+$('copyQueryBtn').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+for (let i = 0; i < 10; i++) await tick();
+check('copy query puts the editor text on the clipboard', copied === 'db.users.find({})', copied);
+
+// --- format ---
+$('editor').value = 'db.users.find({status:"active"},{_id:0,name:1})';
+$('formatBtn').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+for (let i = 0; i < 200; i++) await tick();
+// A short query correctly stays on one line - what must change is the spacing.
+check('format normalises spacing',
+  $('editor').value === 'db.users.find({ status: "active" }, { _id: 0, name: 1 })',
+  JSON.stringify($('editor').value));
+check('format does not add a trailing comma before )', !/,\s*\)/.test($('editor').value),
+  JSON.stringify($('editor').value));
+
+// A pipeline past the print width must wrap onto multiple lines.
+$('editor').value = 'db.orders.aggregate([{$match:{status:"completed"}},{$group:{_id:"$items.category",n:{$sum:1}}},{$sort:{n:-1}}])';
+$('formatBtn').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+for (let i = 0; i < 200; i++) await tick();
+check('format wraps a long pipeline',
+  $('editor').value.split('\n').length > 3 && $('editor').value.includes('$items.category'),
+  JSON.stringify($('editor').value.slice(0, 60)));
+
+$('editor').value = 'db.users.find({ status: "active"';
+$('formatBtn').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+for (let i = 0; i < 200; i++) await tick();
+check('format reports where a broken query fails',
+  /line \d+/.test($('toast').textContent), $('toast').textContent);
+check('format leaves a broken query untouched',
+  $('editor').value === 'db.users.find({ status: "active"');
+
 // The splitter must be usable without a mouse.
 const pane = document.querySelector('.editor-pane');
 const before = pane.style.getPropertyValue('--editor-h');

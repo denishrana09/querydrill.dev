@@ -16,7 +16,8 @@
     "test:dom": "node test/dom-smoke.mjs"
   },
   "dependencies": {
-    "mingo": "^7.2.4"
+    "mingo": "^7.2.4",
+    "prettier": "^3.9.6"
   },
   "devDependencies": {
     "astro": "^7.2.10",

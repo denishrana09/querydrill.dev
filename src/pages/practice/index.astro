@@ -30,6 +30,8 @@ import Base from '../../layouts/Base.astro';
     <section class="pane editor-pane">
       <div class="toolbar">
         <button id="runBtn" class="primary">Run <kbd>Ctrl</kbd>+<kbd>Enter</kbd></button>
+        <button id="formatBtn" class="ghost" title="Tidy the query — Shift+Alt+F">Format</button>
+        <button id="copyQueryBtn" class="ghost" title="Copy the query">Copy</button>
 
         <!-- Only appears once a query has actually written to the data, so it
              explains itself instead of sitting there as a permanent puzzle. -->
@@ -50,7 +52,10 @@ import Base from '../../layouts/Base.astro';
         tabindex="0" title="Drag to resize"></div>
 
       <div class="results">
-        <div id="resultMeta" class="result-meta muted">results appear here</div>
+        <div class="results-head">
+          <div id="resultMeta" class="result-meta muted">results appear here</div>
+          <button id="copyResultBtn" class="ghost tiny" hidden title="Copy the results">Copy</button>
+        </div>
         <pre id="resultBody" class="result-body"></pre>
       </div>
     </section>
