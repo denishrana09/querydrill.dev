@@ -75,6 +75,14 @@ in the user's own tab against their own in-memory data, exactly like devtools.
 This is precisely why hosting is safe — and why a hosted server that ran user
 code, or accepted a user's connection string, would not be.
 
+**Vite does not discover dynamically-imported packages.** Prettier loads only
+when someone clicks Format, so Vite never sees it while scanning. The first
+click then triggered a dependency re-optimisation and the in-flight import died
+with "error importing dynamic module" — once, until a reload fixed it. Anything
+reached *solely* through a dynamic `import()` must be listed in
+`optimizeDeps.include` in `astro.config.mjs`. Dev-server only; the production
+build already code-splits it correctly, which is why the build looked fine.
+
 **The shipped site depends only on `mingo`.** `mongodb` and `jsdom` are dev-only.
 If the runtime dependency list grows, something has leaked from `server/` into
 `engine/` or `src/`.

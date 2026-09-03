@@ -216,6 +216,22 @@ async function run() {
  * only when someone actually presses Format. Vite splits it into its own chunk
  * and the initial load never pays for it.
  */
+let prettierPromise = null;
+
+function loadPrettier() {
+  // Cached so repeat clicks do not re-import, and so a failed load can be
+  // retried rather than being permanently poisoned.
+  prettierPromise ??= Promise.all([
+    import('prettier/standalone'),
+    import('prettier/plugins/babel'),
+    import('prettier/plugins/estree'),
+  ]).catch((err) => {
+    prettierPromise = null;
+    throw Object.assign(new Error('formatter failed to load'), { loadFailure: true, cause: err });
+  });
+  return prettierPromise;
+}
+
 async function formatQuery() {
   const el = $('editor');
   const source = el.value.trim();
@@ -224,11 +240,7 @@ async function formatQuery() {
   const btn = $('formatBtn');
   btn.disabled = true;
   try {
-    const [prettier, babel, estree] = await Promise.all([
-      import('prettier/standalone'),
-      import('prettier/plugins/babel'),
-      import('prettier/plugins/estree'),
-    ]);
+    const [prettier, babel, estree] = await loadPrettier();
     const out = await prettier.format(source, {
       parser: 'babel',
       plugins: [babel.default ?? babel, estree.default ?? estree],
@@ -239,14 +251,20 @@ async function formatQuery() {
     el.value = out.trim();
     el.focus();
   } catch (err) {
-    // A query mid-edit is usually unparseable, so say where rather than just no.
-    const loc = err?.loc?.start ?? err?.loc;
-    toast(
-      loc?.line
-        ? `Can't format — syntax error at line ${loc.line}, column ${loc.column ?? 0}`
-        : `Can't format — ${String(err?.message || err).split('\n')[0]}`,
-      true
-    );
+    // Two very different failures. A load failure is about the network and is
+    // worth retrying; a syntax error is about the query and never is.
+    if (err?.loadFailure) {
+      toast('Formatter could not load — check your connection and try again.', true);
+    } else {
+      // A query mid-edit is usually unparseable, so say where rather than just no.
+      const loc = err?.loc?.start ?? err?.loc;
+      toast(
+        loc?.line
+          ? `Can't format — syntax error at line ${loc.line}, column ${loc.column ?? 0}`
+          : `Can't format — ${String(err?.message || err).split('\n')[0]}`,
+        true
+      );
+    }
   } finally {
     btn.disabled = false;
   }
