@@ -115,7 +115,7 @@ breaks both.
 | `npm test` | nothing | curriculum, examples, contrast, browser grading, DOM wiring |
 | `npm run test:links` | a `dist/` build | no dead links, unique titles, real descriptions |
 | `npm run test:island` | a `dist/` build | the runnable examples work on the real built markup |
-| `npm run test:mobile` | a `dist/` build, Chrome | no page scrolls sideways at 360px |
+| `npm run test:mobile` | a `dist/` build, Chrome | no page scrolls sideways at 360px, and the pane switcher is visible |
 | `npm run verify` | nothing | build, then all of the above |
 | `npm run conformance` | a local `mongod` | mingo agrees with real MongoDB |
 | `npm run selfcheck` | a local `mongod` | every solution passes on the driver |
@@ -166,6 +166,13 @@ Rebuilding per block would teach that updates do nothing. The cost is that a wri
 persists across the page, so the result meta says so and offers to restore it.
 
 ## Traps already hit — don't re-introduce these
+
+**A surface token is not automatically a visible surface.** The mobile pane
+switcher was `--panel` on a `--bg` page, which is 1.08:1 - correct by the token
+system and invisible to a person, who then never found two of the three panes.
+`test/contrast.mjs` did not catch it because every rule in it is about text on a
+background; nothing asked whether a *control* could be seen. `test/mobile.mjs`
+asks now, at the 3:1 WCAG 1.4.11 bar for non-text contrast.
 
 **Any author rule that sets `display` defeats the `hidden` attribute.** Author
 styles beat the user-agent sheet whatever the specificity, so

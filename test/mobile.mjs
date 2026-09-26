@@ -168,16 +168,85 @@ for (const path of paths) {
   }
 }
 
+/* ---------- the pane switcher has to be findable ---------- */
+
+// The first version of this bar sat flush at the bottom in `--panel` on a `--bg`
+// page: 1.08:1. A real surface in the token set, and invisible as one - grey
+// labels on top of it read as a footer, and people did not find the other two
+// panes at all. WCAG 1.4.11 asks for 3:1 on a UI component against what is beside
+// it, which is exactly the right question, so it is the one asked here.
+await send('Page.navigate', { url: base + '/practice/' });
+// Past the bar's entrance animation, so nothing is measured mid-flight.
+await new Promise((r) => setTimeout(r, 1100));
+
+const NAV_PROBE = `(() => {
+  const bar = document.getElementById('tabbar');
+  if (!bar || getComputedStyle(bar).display === 'none') return JSON.stringify({ missing: true });
+  const active = bar.querySelector('button[aria-pressed="true"]');
+  const buttons = [...bar.querySelectorAll('button')];
+  return JSON.stringify({
+    pageBg: getComputedStyle(document.body).backgroundColor,
+    activeBg: getComputedStyle(active).backgroundColor,
+    shortest: Math.min(...buttons.map((b) => Math.round(b.getBoundingClientRect().height))),
+    count: buttons.length,
+  });
+})()`;
+
+const navRes = await send('Runtime.evaluate', { expression: NAV_PROBE, returnByValue: true });
+const nav = JSON.parse(navRes.result.result.value);
+
 ws.close();
 await server.stop();
 
-if (bad.length) {
-  console.log(`  ${RED}FAIL${OFF}  ${bad.length} of ${paths.length} pages overflow at ${WIDTH}px`);
-  for (const b of bad) console.log(`        ${b}`);
-  console.log('');
-  process.exit(1);
+const channels = (css) => (css.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+const relLum = (css) => {
+  const [r, g, b] = channels(css)
+    .map((v) => v / 255)
+    .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a, b) => {
+  const [hi, lo] = [relLum(a), relLum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+const navProblems = [];
+if (nav.missing) {
+  navProblems.push(`no tab bar is shown at ${WIDTH}px - two of the three panes are unreachable`);
+} else {
+  const ratio = contrast(nav.activeBg, nav.pageBg);
+  if (ratio < 3) {
+    navProblems.push(
+      `the selected tab is ${ratio.toFixed(2)}:1 against the page and needs 3:1 ` +
+      `(${nav.activeBg} on ${nav.pageBg})`
+    );
+  }
+  // Something you can see but cannot reliably hit is only half-fixed.
+  if (nav.shortest < 44) {
+    navProblems.push(`the smallest tab is ${nav.shortest}px tall; 44px is the minimum touch target`);
+  }
+  if (nav.count !== 3) navProblems.push(`expected 3 panes in the tab bar, found ${nav.count}`);
 }
 
-console.log(`  ${GREEN}ok${OFF}    all ${paths.length} pages fit ${WIDTH}px with no sideways scroll`);
-console.log(`\n  ${GREEN}mobile OK${OFF}\n`);
-process.exit(0);
+/* ---------- report ---------- */
+
+let failed = 0;
+
+if (bad.length) {
+  failed++;
+  console.log(`  ${RED}FAIL${OFF}  ${bad.length} of ${paths.length} pages overflow at ${WIDTH}px`);
+  for (const b of bad) console.log(`        ${b}`);
+} else {
+  console.log(`  ${GREEN}ok${OFF}    all ${paths.length} pages fit ${WIDTH}px with no sideways scroll`);
+}
+
+if (navProblems.length) {
+  failed++;
+  console.log(`  ${RED}FAIL${OFF}  the pane switcher is not findable at ${WIDTH}px`);
+  for (const n of navProblems) console.log(`        ${n}`);
+} else {
+  console.log(`  ${GREEN}ok${OFF}    the pane switcher stands out from the page and is thumb-sized`);
+}
+
+console.log(failed ? `\n  ${RED}${failed} mobile check(s) failed${OFF}\n` : `\n  ${GREEN}mobile OK${OFF}\n`);
+process.exit(failed ? 1 : 0);

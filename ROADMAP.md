@@ -82,6 +82,17 @@ one commit per file, and never any AI attribution trailer.
       - The app's three panes become three **views** below 880px, with a tab bar
         carrying the progress count. Stacking them would have buried the editor
         under a 38-item list and turned the fixed shell into a scrolling page.
+      - That bar was redone after first contact with a real person, who did not
+        find it. It was flush at the bottom in `--panel` on a `--bg` page -
+        **1.08:1** - with grey 12px labels and a 2px underline on the active one:
+        a real surface in the token set and invisible as one, so it read as a
+        footer. It is now a floating pill with icons, a filled active segment and
+        one slide-up on arrival. A hamburger was considered and rejected: it hides
+        three destinations behind a tap and an icon people already ignore, and the
+        problem was never the pattern - a bottom bar is the most discoverable
+        mobile navigation there is - it was that mine whispered.
+      - `test/mobile.mjs` now also fails if the selected tab drops below **3:1**
+        against the page (WCAG 1.4.11, non-text contrast) or any tab below 44px.
       - Opening a drill switches back to the editor, or tapping an exercise on a
         phone looks like it did nothing.
       - `100dvh`, because `100vh` on a phone counts the address bar and puts the
@@ -92,6 +103,9 @@ one commit per file, and never any AI attribution trailer.
       - Found and fixed on the way: `[hidden]` was being defeated by any rule that
         set `display`, so the "data modified" bar had been permanently visible on
         every screen size, desktop included.
+      - Lesson worth keeping: every contrast rule in this project was about *text*.
+        Nothing checked whether a **control** was visible, and that is the failure
+        that actually reached a user.
 - [x] **Light theme + a toggle.** This item used to say "dark mode", which was
       backwards — the site was dark-only, and that was the complaint. Done
       2026-09-26. Defaults to `prefers-color-scheme`, the toggle overrides it,

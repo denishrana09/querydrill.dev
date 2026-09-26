@@ -115,6 +115,7 @@ body.app {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 /* On a phone `100vh` counts the address bar, so the bottom of the app - the tab
    bar, and the results above it - sits underneath it and cannot be reached.
@@ -485,29 +486,73 @@ kbd {
   .pane { display: none; }
   .pane.on { display: block; }
   .editor-pane.on { display: flex; }
+  /* Room for the bar to float over, so the end of a list is still reachable. */
+  .pane { padding-bottom: 86px; }
 
   .tabbar {
     display: flex;
-    flex: 0 0 auto;
+    gap: 4px;
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: 40;
+    width: min(420px, calc(100% - 24px));
+    padding: 5px;
+    border-radius: 999px;
     background: var(--panel);
-    border-top: 1px solid var(--line);
+    border: 1px solid var(--line);
+    /* The elevation is the whole point: lifted off the page, it reads as a
+       control. Flush against the background it read as a footnote. */
+    box-shadow: 0 8px 26px var(--shadow), 0 2px 6px var(--shadow);
   }
+
   .tabbar button {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     border: 0;
-    border-radius: 0;
+    border-radius: 999px;
     background: none;
-    color: var(--muted);
+    color: var(--text-soft);
     padding: 13px 4px;
-    font-size: 12.5px;
-    /* Room for the indicator, which sits on the edge the panes are on. */
-    box-shadow: inset 0 2px 0 transparent;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
   }
+  .tabbar button svg { width: 15px; height: 15px; flex: 0 0 auto; }
+
+  /* Filled, not underlined. A 2px rule under slightly-brighter grey was the
+     other half of why nobody saw this. */
   .tabbar button[aria-pressed='true'] {
-    color: var(--text);
-    box-shadow: inset 0 2px 0 var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 600;
   }
-  .tabbar .tab-count { color: var(--muted-2); font-size: 11px; }
+
+  .tab-count { font-size: 10.5px; color: var(--muted-2); font-family: var(--mono); }
+  .tabbar button[aria-pressed='true'] .tab-count { color: var(--on-accent); }
+
+  /* Under about 340px the labels and the count stop fitting together; the count
+     is the first thing that can go, because the icons still say which is which. */
+  @media (max-width: 342px) {
+    .tab-count { display: none; }
+  }
+
+  /* One slide-up on arrival. Motion is what makes something at the bottom of the
+     screen get looked at, and it costs nothing after the first second. */
+  @keyframes tabbar-in {
+    from { opacity: 0; transform: translate(-50%, 14px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  .tabbar { animation: tabbar-in .42s .3s both cubic-bezier(.2, .8, .25, 1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tabbar { animation: none; }
+  }
 
   .topbar { padding: 9px 12px; gap: 10px; }
   .status { font-size: 11px; }

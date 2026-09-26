@@ -72,14 +72,43 @@ import ThemeToggle from '../../components/ThemeToggle.astro';
     </aside>
   </main>
 
-  <!-- Only visible once there is no room for three columns. Buttons with
-       aria-pressed rather than a tablist: on a wide screen all three panes are
-       shown at once and none of them is a tab. -->
+  <!--
+    Only visible once there is no room for three columns. Buttons with
+    aria-pressed rather than a tablist: on a wide screen all three panes are
+    shown at once and none of them is a tab.
+
+    It floats, and it is loud on purpose. The first version sat flush at the
+    bottom in `--panel`, which is 1.08:1 against the page - a real surface in the
+    token set, and invisible as one. Grey 12px labels on top of that read as a
+    footer, and people did not find it.
+  -->
   <nav id="tabbar" class="tabbar" aria-label="Panes">
-    <button type="button" data-pane="paneData" aria-pressed="false">Data</button>
-    <button type="button" data-pane="paneEditor" aria-pressed="true">Editor</button>
+    <button type="button" data-pane="paneData" aria-pressed="false">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <ellipse cx="8" cy="3.6" rx="5.4" ry="2.1" />
+        <path d="M2.6 3.6v8.8c0 1.16 2.42 2.1 5.4 2.1s5.4-.94 5.4-2.1V3.6" />
+        <path d="M2.6 8c0 1.16 2.42 2.1 5.4 2.1s5.4-.94 5.4-2.1" />
+      </svg>
+      <span class="tab-label">Data</span>
+    </button>
+    <button type="button" data-pane="paneEditor" aria-pressed="true">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5.6 4.2 2 8l3.6 3.8" />
+        <path d="M10.4 4.2 14 8l-3.6 3.8" />
+      </svg>
+      <span class="tab-label">Editor</span>
+    </button>
     <button type="button" data-pane="paneExercises" aria-pressed="false">
-      Exercises <span id="tabCount" class="tab-count"></span>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2 4.6 3.4 6 6 3.2" />
+        <path d="M2 11.4 3.4 12.8 6 10" />
+        <path d="M8.6 4.6H14" />
+        <path d="M8.6 11.4H14" />
+      </svg>
+      <span class="tab-label">Exercises</span>
+      <span id="tabCount" class="tab-count"></span>
     </button>
   </nav>
 
