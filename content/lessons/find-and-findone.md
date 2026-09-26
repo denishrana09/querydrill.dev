@@ -18,7 +18,7 @@ db.users.find()
 
 ```js
 db.users.findOne({
-  email: "denish@example.com"
+  email: "denish101@example.com"
 })
 ```
 

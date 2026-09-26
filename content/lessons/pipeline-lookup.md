@@ -128,3 +128,39 @@ $$variable
 ```
 
 This `$lookup` pattern is worth knowing.
+
+## Try it
+
+```js
+db.users.aggregate([
+  { $limit: 3 },
+  {
+    $lookup: {
+      from: "orders",
+      let: { userId: "$_id" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ["$userId", "$$userId"] },
+                { $eq: ["$status", "completed"] }
+              ]
+            }
+          }
+        },
+        { $project: { status: 1 } }
+      ],
+      as: "completedOrders"
+    }
+  },
+  {
+    $project: {
+      name: 1,
+      completedOrders: 1
+    }
+  }
+])
+```
+
+Only completed orders came back. The basic `$lookup` would have joined all of them and left you to filter afterwards - same answer, more documents carried through the pipeline to get it.

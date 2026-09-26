@@ -61,3 +61,18 @@ $pull: {
   skills: "MongoDB"
 }
 ```
+
+## Try it
+
+User `101` starts with `["Node.js", "Kafka"]`:
+
+```js
+db.users.updateOne(
+  { _id: 101 },
+  {
+    $addToSet: { skills: "MongoDB" }
+  }
+)
+```
+
+Run it twice: the second time `modifiedCount` is `0`, because the value is already there. Swap `$addToSet` for `$push` and it gets added again.

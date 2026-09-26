@@ -127,3 +127,20 @@ vs:
 Field reference.
 
 This is one of the most important syntax rules in aggregation.
+
+## Try it
+
+```js
+db.orders.aggregate([
+  {
+    $project: {
+      _id: 0,
+      userId: 1,
+      status: 1
+    }
+  },
+  { $limit: 5 }
+])
+```
+
+Everything not named is gone. Drop the `_id: 0` line and it comes back.

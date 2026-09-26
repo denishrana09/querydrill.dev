@@ -154,3 +154,30 @@ Keep array structure
 Break array into documents
 → $unwind
 ```
+
+## Try it
+
+```js
+db.orders.aggregate([
+  {
+    $project: {
+      _id: 0,
+      items: {
+        $map: {
+          input: "$items",
+          as: "item",
+          in: {
+            product: "$$item.product",
+            total: {
+              $multiply: ["$$item.price", "$$item.quantity"]
+            }
+          }
+        }
+      }
+    }
+  },
+  { $limit: 3 }
+])
+```
+
+Three documents in, three out, each with a rebuilt array. `$unwind` would have given you one document per item instead.

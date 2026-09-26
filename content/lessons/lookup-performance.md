@@ -44,3 +44,30 @@ Also:
 * Avoid joining huge unnecessary datasets.
 * Consider schema design: sometimes embedding is better than repeatedly joining.
 * `$lookup` is not automatically "bad"; the access pattern and data volume matter.
+
+## Try it
+
+Filtered down to five documents *before* the join:
+
+```js
+db.orders.aggregate([
+  { $match: { status: "completed" } },
+  { $limit: 5 },
+  {
+    $lookup: {
+      from: "users",
+      localField: "userId",
+      foreignField: "_id",
+      as: "user"
+    }
+  },
+  {
+    $project: {
+      status: 1,
+      "user.name": 1
+    }
+  }
+])
+```
+
+Move `{ $limit: 5 }` to the end and the answer is identical - but the join ran against every completed order to produce the same five rows. Browser mode has no `explain()`, so you cannot see the cost here; the point is that the stage order, not the output, is what changed.

@@ -41,7 +41,7 @@ For large datasets, prefer **cursor/range-based pagination**.
 
 Example:
 
-```js
+```js no-run
 db.users.find({
   createdAt: {
     $lt: lastSeenCreatedAt

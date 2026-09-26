@@ -125,3 +125,21 @@ Grouped result
 ```
 
 This distinction is fundamental.
+
+## Try it
+
+The `$group` mistake, run rather than described:
+
+```js
+db.orders.aggregate([
+  {
+    $group: {
+      _id: "$userId",
+      count: { $sum: 1 }
+    }
+  },
+  { $limit: 3 }
+])
+```
+
+Two fields. `status`, `createdAt`, `items` and `rating` all went in and none came out. Add `status: { $first: "$status" }` to the `$group` and it comes back - because you asked for it, which is the only way anything survives a `$group`.

@@ -63,3 +63,23 @@ $push
 $addToSet
 → unique values
 ```
+
+## Try it
+
+Both, side by side, so the difference is in one output:
+
+```js
+db.orders.aggregate([
+  { $unwind: "$items" },
+  {
+    $group: {
+      _id: "$userId",
+      all: { $push: "$items.product" },
+      distinct: { $addToSet: "$items.product" }
+    }
+  },
+  { $limit: 3 }
+])
+```
+
+`all` has the repeats; `distinct` does not. Wrap the second one in `$size` and you have a count of distinct products per user.

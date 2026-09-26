@@ -82,3 +82,32 @@ especially for grouping?
 
 → $unwind
 ```
+
+## Try it
+
+One total per order, and the order never came apart:
+
+```js
+db.orders.aggregate([
+  {
+    $set: {
+      orderTotal: {
+        $reduce: {
+          input: "$items",
+          initialValue: 0,
+          in: {
+            $add: [
+              "$$value",
+              { $multiply: ["$$this.price", "$$this.quantity"] }
+            ]
+          }
+        }
+      }
+    }
+  },
+  { $project: { orderTotal: 1 } },
+  { $limit: 5 }
+])
+```
+
+Five documents in, five out. The `$unwind` version needs a `$group` afterwards just to put back together what it took apart.

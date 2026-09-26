@@ -9,28 +9,24 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
 
 ## Start here
 
-**Done so far:** light + dark themes with a toggle, contrast-tested (§2). The
-app runs entirely in the browser (§1). 38 drills audited so
-starters show structure, never answer (§3). Content restructured into 3 tracks →
-12 modules → 54 lessons (§3). 74 static pages with full SEO plumbing, sitemap,
-JSON-LD and internal linking (§4). `npm run verify` builds and checks all of it.
+**Done so far:** runnable examples on every lesson - 73 of them, Run/Edit/Copy
+against the real engine (§4). Light + dark themes with a toggle, contrast-tested
+(§2). The app runs entirely in the browser (§1). 38 drills audited so starters
+show structure, never answer (§3). Content restructured into 3 tracks → 12
+modules → 54 lessons (§3). 74 static pages with full SEO plumbing, sitemap,
+JSON-LD and internal linking (§4). `npm run verify` builds and runs seven suites
+over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Runnable examples on lesson pages** (§4, the live-editor item). *The*
-   differentiator and the biggest remaining gap. A lesson currently links to its
-   drill; it does not let you run the example where you are standing. Every
-   page-one Google result for `$lookup` is a Medium post you cannot run a query
-   on — and so, right now, is ours. The engine is already browser-safe and the
-   dataset builder is pure, so this is a compact editor + results island, not a
-   second copy of the app.
-2. **Responsive layout** (§2). The 3-pane grid is unusable on a phone and search
-   traffic is majority phone. Paired with (1), this is what makes 54 pages worth
-   having.
-3. **Tag vocabulary cleanup, then chip filtering** (§2). See the measurements in
+1. **Responsive layout** (§2). The 3-pane app grid is unusable on a phone, and
+   search traffic is majority phone. Now that all 54 lessons are runnable, this
+   is what decides whether any of that reaches the people who find it.
+2. **Tag vocabulary cleanup, then chip filtering** (§2). See the measurements in
    that item before starting — the clicking is not the hard part.
-4. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
+3. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
    legally open source however the README describes it.
+4. **Rewrite problem descriptions** (§3). The last content job of any size.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -186,14 +182,20 @@ and then comes back to practice.
       re-check with the gap script before deleting.
 - [x] **Lesson, module and reference pages exist and are linked.** 74 pages.
       `/learn/<lesson>/`, `/modules/<module>/`, `/reference/<page>/`, plus
-      `/dataset/`. Reading pages ship zero JavaScript.
+      `/dataset/`. Reading pages ship 1.7 KB of JavaScript, or none at all
+      where there is no runnable example.
 - [x] **The dataset page** — generated from `ecommerce.build()` and `inferSchema`,
       so it can never drift from what the app actually loads. Shows field types,
       presence percentages and a sample document per collection, and calls out
       the deliberately-optional fields the `$ifNull` drills depend on.
 - [ ] Render lessons **in-app** beside the editor as well, so a drill and its
       lesson can be read side by side without leaving the practice page
-- [ ] Every lesson gets a runnable example, pre-filled into the editor in one click
+- [x] **Every lesson gets a runnable example.** All 54 lessons plus 2 of the 4
+      reference pages - 73 examples, run in place rather than pre-filled into
+      the app, which turned out to be the better version of this idea: you never
+      leave the lesson. The two pages without one are pure tables with no query
+      on them to run, and `test/examples.mjs` names them rather than exempting
+      reference pages as a class.
 - [ ] **Rewrite problem descriptions** for a worldwide audience:
       - state the goal, the collection, and the exact expected shape
       - no assumed context from having read the notes end to end
@@ -274,11 +276,21 @@ The brand name will bring almost nothing. Lesson pages bring the traffic.
 - [ ] Target **long-tail operator keywords**: "mongodb $unwind example",
       "mongodb $lookup tutorial", "mongodb aggregation practice"
 - [ ] Do **not** fight head terms — W3Schools/GeeksforGeeks own "mongodb exercises"
-- [ ] **The differentiator: a live editor on the lesson page itself.** Page-one
-      results for `$lookup`/`$unwind` are Medium posts, YouTube and vendor blogs,
-      and *none of them let you run the query*. Right now a lesson links to the
-      drill; it does not let you run the example in place. This is the single
-      highest-value remaining SEO item and it is not done.
+- [x] **The differentiator: a live editor on the lesson page itself.** DONE
+      2026-09-26. Page-one results for `$lookup`/`$unwind` are Medium posts,
+      YouTube and vendor blogs, and *none of them let you run the query*. Every
+      example on every lesson now has Run / Edit / Copy, against the same engine
+      and the same dataset as the drills.
+      - The rule for what counts as runnable is in `engine/runnable.js`: the block
+        has to open with `db.<collection>.` naming a collection that exists. A
+        Shiki transformer marks those, `src/scripts/runnable.js` enhances them.
+      - One dataset per page, shared by every block, so a `$set` in one example
+        is visible in the next - with an offer to restore it.
+      - `test/examples.mjs` runs all 73 and fails on any that throws *or that
+        returns nothing*. The second half is the valuable one: it found six
+        lessons querying `users` by `_id: 1` in a collection whose ids start at
+        101, plus a `$all` on two skills that never co-occur. Those had been
+        wrong since the notes were written and nothing could have noticed.
 - [x] Unique `<title>` + `<meta description>` per page — enforced, including
       the no-duplicate-titles check, by `test/links.mjs`
 - [x] JSON-LD: `LearningResource` per lesson, `Course` per module, `ItemList`
@@ -291,7 +303,10 @@ The brand name will bring almost nothing. Lesson pages bring the traffic.
 - [x] Internal linking: lesson → its module → its drills → back to the lesson,
       prev/next through the whole course, and `test/links.mjs` proves every
       exercise is reachable from at least one page
-- [x] Core Web Vitals — verified: reading pages ship **zero JavaScript**
+- [x] Core Web Vitals — reading pages ship **1.7 KB** of JavaScript gzipped
+      (was zero before the runnable examples). The engine is 36 KB gzipped and
+      loads on the first Run, not on page load; the 18 pages with no runnable
+      example still ship nothing at all.
 - [ ] Plausible or Umami analytics (privacy-friendly, no cookie banner needed)
 - [ ] Submit to Google Search Console + Bing Webmaster Tools
 

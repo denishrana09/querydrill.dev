@@ -193,3 +193,35 @@ $sort
    ↓
 $limit
 ```
+
+## Try it
+
+All six questions, in order, in one pipeline - revenue per product from completed orders:
+
+```js
+db.orders.aggregate([
+  { $match: { status: "completed" } },
+  { $unwind: "$items" },
+  {
+    $group: {
+      _id: "$items.product",
+      revenue: {
+        $sum: {
+          $multiply: ["$items.price", "$items.quantity"]
+        }
+      }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      product: "$_id",
+      revenue: 1
+    }
+  },
+  { $sort: { revenue: -1 } },
+  { $limit: 5 }
+])
+```
+
+Delete stages from the bottom up and run it after each one. You are watching the six questions get answered in reverse, and it is the fastest way to learn to read someone else's pipeline.

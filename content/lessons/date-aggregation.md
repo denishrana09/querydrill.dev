@@ -96,3 +96,22 @@ Then:
   }
 }
 ```
+
+## Try it
+
+```js
+db.orders.aggregate([
+  {
+    $group: {
+      _id: {
+        year: { $year: "$createdAt" },
+        month: { $month: "$createdAt" }
+      },
+      orders: { $sum: 1 }
+    }
+  },
+  { $sort: { "_id.year": 1, "_id.month": 1 } }
+])
+```
+
+The label is an object, so sorting means reaching through `_id`. Try `$dateToString` instead and the label becomes `"2025-11"` - one string, sortable on its own.

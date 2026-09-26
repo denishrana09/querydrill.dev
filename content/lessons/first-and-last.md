@@ -48,3 +48,22 @@ $first = oldest order
 ## Important interview rule
 
 > `$first` and `$last` only make sense when you understand the order of documents entering the `$group`.
+
+## Try it
+
+```js
+db.orders.aggregate([
+  { $sort: { createdAt: -1 } },
+  {
+    $group: {
+      _id: "$userId",
+      latestOrder: { $first: "$_id" },
+      latestAt: { $first: "$createdAt" }
+    }
+  },
+  { $sort: { _id: 1 } },
+  { $limit: 5 }
+])
+```
+
+Now change the first `$sort` to `createdAt: 1` and run it again. Not one character of the `$group` changed, and every answer did.

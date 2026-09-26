@@ -13,30 +13,30 @@ Given:
 
 ```js
 {
-  _id: 1,
+  _id: 101,
 
   orders: [
     {
-      _id: 101,
+      _id: 1011,
       product: "Laptop",
-      status: "pending"
+      status: "completed"
     },
     {
-      _id: 102,
-      product: "Mouse",
+      _id: 1012,
+      product: "Notebook",
       status: "pending"
     }
   ]
 }
 ```
 
-Update order `101`:
+Update order `1012`:
 
 ```js
 db.users.updateOne(
   {
-    _id: 1,
-    "orders._id": 101
+    _id: 101,
+    "orders._id": 1012
   },
   {
     $set: {
@@ -64,7 +64,7 @@ Example:
 
 ```js
 db.users.updateOne(
-  { _id: 1 },
+  { _id: 101 },
   {
     $set: {
       "orders.$[].status": "archived"

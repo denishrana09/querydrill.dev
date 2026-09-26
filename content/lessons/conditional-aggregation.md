@@ -91,3 +91,31 @@ if (status === "completed") {
 ```
 
 inside aggregation.
+
+## Try it
+
+Three statuses counted in one pass:
+
+```js
+db.orders.aggregate([
+  {
+    $group: {
+      _id: "$userId",
+      totalOrders: { $sum: 1 },
+      completed: {
+        $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
+      },
+      pending: {
+        $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] }
+      },
+      cancelled: {
+        $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] }
+      }
+    }
+  },
+  { $sort: { totalOrders: -1 } },
+  { $limit: 5 }
+])
+```
+
+The three counts add up to `totalOrders` on every row. Doing this with `$match` would have been three trips over 200 documents instead of one.

@@ -87,3 +87,16 @@ Order + Laptop
 
 Order + Mouse
 ```
+
+## Try it
+
+Order `1` in the sample data has four items:
+
+```js
+db.orders.aggregate([
+  { $match: { _id: 1 } },
+  { $unwind: "$items" }
+])
+```
+
+Four documents came out, each carrying the same `_id`, `userId` and `status` - and one item. Change the `_id` and the number of output documents follows the array length.

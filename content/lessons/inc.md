@@ -39,3 +39,16 @@ $inc
 ```
 
 is atomic at the document level.
+
+## Try it
+
+```js
+db.products.updateOne(
+  { product: "Laptop" },
+  {
+    $inc: { inStock: 1 }
+  }
+)
+```
+
+Run it twice. The counter moves both times, and at no point did you read the old value.

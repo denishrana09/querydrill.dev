@@ -1,5 +1,6 @@
 ---
 import { getCollection, render } from 'astro:content';
+import RunnableExamples from '../../components/RunnableExamples.astro';
 import Doc from '../../layouts/Doc.astro';
 import {
   moduleBySlug,
@@ -7,6 +8,7 @@ import {
   lessonNeighbours,
 } from '../../../content/curriculum.js';
 import { EXERCISES } from '../../../server/exercises/index.js';
+import { hasRunnable } from '../../../engine/runnable.js';
 
 export async function getStaticPaths() {
   const lessons = await getCollection('lessons');
@@ -23,6 +25,10 @@ const { prev, next } = lessonNeighbours(entry.id);
 // The drills this lesson is the one that teaches. Landing on "$unwind" from a
 // search and finding an exercise for it is the entire point of the site.
 const drills = EXERCISES.filter((e) => e.lesson === entry.id);
+
+// Read off the markdown source rather than the rendered HTML, so the decision to
+// ship the script and the decision to mark a block come from the same rule.
+const runnable = hasRunnable(entry.body);
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -88,6 +94,8 @@ const jsonLd = {
       <a class="next" href="/practice/"><small>Course finished</small>Go and practise</a>
     )}
   </nav>
+
+  {runnable && <RunnableExamples />}
 </Doc>
 
 <style>

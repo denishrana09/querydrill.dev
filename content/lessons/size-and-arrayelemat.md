@@ -82,3 +82,21 @@ Conceptually:
 ```js
 scores[0]
 ```
+
+## Try it
+
+```js
+db.users.aggregate([
+  {
+    $project: {
+      _id: 0,
+      name: 1,
+      skillCount: { $size: "$skills" },
+      firstSkill: { $arrayElemAt: ["$skills", 0] }
+    }
+  },
+  { $limit: 5 }
+])
+```
+
+`$arrayElemAt` takes negative indexes too: `-1` is the last element.

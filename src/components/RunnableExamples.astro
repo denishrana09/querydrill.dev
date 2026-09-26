@@ -1,0 +1,13 @@
+---
+/**
+ * Ships the runnable-examples script, and nothing else.
+ *
+ * It exists as a component purely so a page can decide not to render it: Astro
+ * bundles a component's `<script>` onto the pages that actually use it, so a
+ * lesson whose examples are all teaching fragments stays a zero-JavaScript page.
+ * Putting the same tag directly in the layout would put the bundle on all 58.
+ */
+---
+<script>
+  import '../scripts/runnable.js';
+</script>

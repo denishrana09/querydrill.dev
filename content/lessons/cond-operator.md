@@ -101,3 +101,27 @@ completed += status === "completed" ? 1 : 0
 ```
 
 This is a **very useful interview pattern**.
+
+## Try it
+
+```js
+db.products.aggregate([
+  {
+    $project: {
+      _id: 0,
+      product: 1,
+      price: 1,
+      tier: {
+        $cond: {
+          if: { $gte: ["$price", 250] },
+          then: "high-value",
+          else: "normal"
+        }
+      }
+    }
+  },
+  { $limit: 6 }
+])
+```
+
+Move the threshold and the labels move with it. No branch ran in your application - the database returned the label.

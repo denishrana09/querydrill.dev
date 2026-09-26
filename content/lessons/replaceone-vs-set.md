@@ -13,9 +13,9 @@ Given:
 
 ```js
 {
-  _id: 1,
+  _id: 101,
   name: "Denish",
-  age: 28,
+  age: 21,
   role: "admin"
 }
 ```
@@ -24,7 +24,7 @@ Using:
 
 ```js
 db.users.replaceOne(
-  { _id: 1 },
+  { _id: 101 },
   {
     name: "New Name"
   }
@@ -35,7 +35,7 @@ The document becomes essentially:
 
 ```js
 {
-  _id: 1,
+  _id: 101,
   name: "New Name"
 }
 ```
@@ -46,7 +46,7 @@ Whereas:
 
 ```js
 db.users.updateOne(
-  { _id: 1 },
+  { _id: 101 },
   {
     $set: {
       name: "New Name"

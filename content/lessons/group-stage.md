@@ -51,3 +51,19 @@ All documents where userId = 102
         ↓
 Put them in group 102
 ```
+
+## Try it
+
+```js
+db.orders.aggregate([
+  {
+    $group: {
+      _id: "$userId"
+    }
+  },
+  { $sort: { _id: 1 } },
+  { $limit: 5 }
+])
+```
+
+200 orders in, one document per distinct `userId` out. No count, no total - `_id` on its own answers "which users have ordered at all".

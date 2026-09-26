@@ -35,6 +35,14 @@ seed data, and the results must match under the grader's own rules.
 If you add an exercise using something mingo cannot do, conformance goes red
 before a learner ever sees it. That is the point.
 
+The gap conformance does *not* cover is prose: `server/runner.js` allows a method
+the browser shim never implemented, and a lesson teaches it. That is how
+`replaceOne` came to be documented on a site that could not run it, and it only
+surfaced once `test/examples.mjs` started executing the lessons. `findOneAndUpdate`
+and `bulkWrite` are still in that position — allowed on the driver side, missing
+from `engine/mingo-db.js` — and are fine only because nothing on the site mentions
+them. Teach one and it has to be implemented first.
+
 ## The content model
 
 `content/curriculum.js` is the single source of truth for **ordering and URLs**:
@@ -104,13 +112,20 @@ breaks both.
 
 | command | needs | what it proves |
 |---|---|---|
-| `npm test` | nothing | curriculum integrity + browser grading + DOM wiring |
+| `npm test` | nothing | curriculum, examples, contrast, browser grading, DOM wiring |
 | `npm run test:links` | a `dist/` build | no dead links, unique titles, real descriptions |
-| `npm run verify` | nothing | build, then both of the above |
+| `npm run test:island` | a `dist/` build | the runnable examples work on the real built markup |
+| `npm run verify` | nothing | build, then all of the above |
 | `npm run conformance` | a local `mongod` | mingo agrees with real MongoDB |
 | `npm run selfcheck` | a local `mongod` | every solution passes on the driver |
 
 `npm test` is the one that runs everywhere; the last two need a database.
+
+`test/examples.mjs` is the one that earns its keep on content changes. It runs all
+73 runnable examples and fails on any that throws **or that returns nothing** -
+`null`, `[]`, or a write with `matchedCount: 0`. The second half is why it exists:
+an example that queries `{ _id: 1 }` against a collection whose ids start at 101
+is not broken code, it is a broken lesson, and it looks completely fine in review.
 
 `test/curriculum.mjs` is the cheap one worth knowing about: it catches the
 mistakes that produce a dead link or lost progress rather than a stack trace —
@@ -118,7 +133,51 @@ a duplicate slug, a drill in no module, two lessons written from the same lines,
 or a drill whose lesson lives in a *later* module (a prerequisite violation the
 learner would hit as "how was I supposed to know that?").
 
+## Runnable examples
+
+A lesson is a static page that happens to be runnable. The pieces, in order:
+
+1. `engine/runnable.js` — the rule. A fenced block is runnable if it is `js` and
+   opens with `db.<collection>.` naming a collection the dataset really has.
+   Everything else — `{ $group: { _id: "$x" } }`, `$gt // greater than`, a
+   pipeline with `/* stage 1 */` in it — is a teaching fragment, and offering to
+   run those is how the feature would look broken on its best pages. Escape hatch
+   for a `db.`-shaped block that is still pseudo-code: ` ```js no-run `.
+2. A Shiki transformer in `astro.config.mjs` puts `data-runnable` on the matching
+   `<pre>`. It is done there because that is the one place with the raw source,
+   the language and the fence's info string all in scope.
+3. `src/components/RunnableExamples.astro` carries the `<script>` and nothing
+   else, so a page can decide not to render it and stay scriptless.
+4. `src/scripts/runnable.js` builds every control at runtime. Nothing about the
+   toolbar exists in the HTML, so a page with the script blocked is exactly the
+   code block it always was — and the code itself is read out of the `<pre>` with
+   `textContent` rather than duplicated into a data attribute.
+
+Two decisions worth not undoing:
+
+**The engine is behind a dynamic import.** The eager stub is 1.7 KB gzipped; mingo
+plus the dataset is 36 KB and loads on the first Run. Making that static would put
+36 KB on 56 reading pages to serve the minority who press the button.
+
+**One dataset per page, shared by every block.** A lesson on `$set` writes, and
+the `find` below it should show the write — that is the truth about a database.
+Rebuilding per block would teach that updates do nothing. The cost is that a write
+persists across the page, so the result meta says so and offers to restore it.
+
 ## Traps already hit — don't re-introduce these
+
+**Astro caches rendered markdown between builds.** Change the rule in
+`engine/runnable.js` and only the files whose mtime also changed get re-rendered
+through it. The build succeeds, prints 74 pages, and ships 6 marked pages instead
+of 26. Clear `.astro/` and `node_modules/.astro/`, or trust the check in
+`test/links.mjs` that compares the built HTML against the rule — which is there
+because eyeballing a green build did not catch this.
+
+**A freshly created `<textarea>` is not hidden.** The island's `code()` returns
+the editor's value when the editor is visible and the block's text otherwise, so
+reading it *after* creating the editor returned an empty string — the first Edit
+click emptied the query. Capture the code before creating the element.
+`test/dom-runnable.mjs` covers it.
 
 **mingo's operators only register from the package root.** `import { Query } from
 'mingo/query'` gives you a Query class with an empty operator table and every

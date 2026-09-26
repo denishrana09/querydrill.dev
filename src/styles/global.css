@@ -270,11 +270,14 @@ kbd {
   line-height: 1.5;
   white-space: pre;
 }
-.result-body .k { color: var(--syn-key); }
-.result-body .s { color: var(--syn-string); }
-.result-body .num { color: var(--syn-number); }
-.result-body .b { color: var(--syn-bool); }
-.result-body .d { color: var(--syn-date); }
+/* Keyed on `.json-view`, not on the app's results pane, because the runnable
+   examples on lesson pages render through the same formatter (engine/format.js)
+   and have to colour identically - that sameness is the claim they make. */
+.json-view .k { color: var(--syn-key); }
+.json-view .s { color: var(--syn-string); }
+.json-view .num { color: var(--syn-number); }
+.json-view .b { color: var(--syn-bool); }
+.json-view .d { color: var(--syn-date); }
 
 /* ---------- exercises ---------- */
 

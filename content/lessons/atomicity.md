@@ -52,3 +52,21 @@ decrement balance by 100
 in one atomic operation.
 
 That pattern is the standard answer to any interview question about two processes racing for the same document.
+
+## Try it
+
+Same shape as above, on the sample data. `Mouse` has stock, so the decrement happens:
+
+```js
+db.products.updateOne(
+  {
+    product: "Mouse",
+    inStock: { $gte: 1 }
+  },
+  {
+    $inc: { inStock: -1 }
+  }
+)
+```
+
+Edit it to `Laptop`, which is out of stock, and you get `matchedCount: 0`. Nothing was read, checked and then written - the condition and the write were the same operation.

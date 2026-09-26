@@ -49,3 +49,21 @@ nickname ?? "Anonymous"
 ```
 
 Useful when dealing with optional fields.
+
+## Try it
+
+Half the orders in the sample data have no `rating`:
+
+```js
+db.orders.aggregate([
+  {
+    $project: {
+      rating: 1,
+      ratingOrDefault: { $ifNull: ["$rating", "not rated"] }
+    }
+  },
+  { $limit: 6 }
+])
+```
+
+Compare the two fields on the rows where `rating` is missing. The first one is simply absent from the output - that is what your arithmetic would have been handed.

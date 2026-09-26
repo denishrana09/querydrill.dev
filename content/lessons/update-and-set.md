@@ -13,10 +13,10 @@ Suppose:
 
 ```js
 {
-  _id: 1,
+  _id: 101,
   name: "Denish",
-  age: 28,
-  skills: ["Node.js"]
+  age: 21,
+  skills: ["Node.js", "Kafka"]
 }
 ```
 
@@ -24,7 +24,7 @@ Suppose:
 
 ```js
 db.users.updateOne(
-  { _id: 1 },
+  { _id: 101 },
   {
     $set: {
       age: 29

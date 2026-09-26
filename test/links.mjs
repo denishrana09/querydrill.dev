@@ -8,6 +8,7 @@ import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { allPaths } from '../content/curriculum.js';
+import { fencesIn } from '../engine/runnable.js';
 
 const DIST = fileURLToPath(new URL('../dist', import.meta.url));
 const green = (s) => `\x1b[32m${s}\x1b[0m`;
@@ -107,6 +108,38 @@ check('every page has a description', noDesc.length === 0,
 const titles = htmlFiles.map((f) => readFileSync(f, 'utf8').match(/<title>([^<]*)<\/title>/)?.[1]);
 const dupeTitles = [...new Set(titles.filter((t, i) => titles.indexOf(t) !== i))];
 check('no two pages share a title', dupeTitles.length === 0, dupeTitles.join(' | '));
+
+/* ---------- runnable examples ---------- */
+
+// Astro caches rendered markdown between builds, so a change to the rule in
+// engine/runnable.js reaches only the files whose mtime also changed. That looks
+// like a clean build and ships 6 marked pages instead of 26. Comparing the built
+// HTML against the rule is the only way to notice.
+const runnableInContent = [];
+for (const dir of ['content/lessons', 'content/reference']) {
+  for (const file of readdirSync(new URL(`../${dir}`, import.meta.url))) {
+    const source = readFileSync(new URL(`../${dir}/${file}`, import.meta.url), 'utf8');
+    const n = fencesIn(source).filter((f) => f.runnable).length;
+    if (n) runnableInContent.push({ slug: file.replace(/\.md$/, ''), n });
+  }
+}
+
+const expectedBlocks = runnableInContent.reduce((sum, p) => sum + p.n, 0);
+const builtBlocks = htmlFiles.reduce(
+  (sum, f) => sum + (readFileSync(f, 'utf8').match(/data-runnable/g)?.length ?? 0), 0);
+check('the built pages mark exactly the blocks the rule marks',
+  builtBlocks === expectedBlocks, `built ${builtBlocks}, rule says ${expectedBlocks}`);
+
+// The island is only any use if its script came along, and the script is only
+// worth its bytes on a page that has a block for it.
+const withBlocks = htmlFiles.filter((f) => readFileSync(f, 'utf8').includes('data-runnable'));
+const withScript = htmlFiles.filter((f) => /RunnableExamples\.astro_astro_type_script/.test(readFileSync(f, 'utf8')));
+const noScript = withBlocks.filter((f) => !withScript.includes(f));
+const noBlocks = withScript.filter((f) => !withBlocks.includes(f));
+check('every page with a runnable block ships the script', noScript.length === 0,
+  noScript.map((f) => relative(DIST, f)).join(', '));
+check('no page ships the script without a runnable block', noBlocks.length === 0,
+  noBlocks.map((f) => relative(DIST, f)).join(', '));
 
 console.log(failed ? `\n  \x1b[31m${failed} link check(s) failed\x1b[0m\n` : `\n  ${green('links OK')}\n`);
 process.exit(failed ? 1 : 0);

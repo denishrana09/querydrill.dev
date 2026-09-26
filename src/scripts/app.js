@@ -5,6 +5,7 @@
 import { makeMingoDb } from '../../engine/mingo-db.js';
 import { runCode } from '../../engine/run.js';
 import { gradeExercise } from '../../engine/grade.js';
+import { esc, highlight } from '../../engine/format.js';
 import ecommerce from '../../server/datasets/ecommerce.js';
 import { inferSchema } from './schema.js';
 import { EXERCISES } from '../../server/exercises/index.js';
@@ -53,8 +54,6 @@ loadDataset();
 
 /* ---------- chrome ---------- */
 
-const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-
 let toastTimer;
 function toast(message, bad = false) {
   const el = $('toast');
@@ -65,31 +64,6 @@ function toast(message, bad = false) {
 }
 
 /* ---------- rendering results ---------- */
-
-function highlight(value, indent = 0) {
-  const pad = '  '.repeat(indent);
-  const padIn = '  '.repeat(indent + 1);
-
-  if (value === null) return '<span class="b">null</span>';
-  if (value === undefined) return '<span class="b">undefined</span>';
-  if (typeof value === 'boolean') return `<span class="b">${value}</span>`;
-  if (typeof value === 'number') return `<span class="num">${value}</span>`;
-  if (typeof value === 'string') return `<span class="s">"${esc(value)}"</span>`;
-  // Dates print shell-style, matching what the notes show.
-  if (value instanceof Date) return `<span class="d">ISODate("${value.toISOString()}")</span>`;
-
-  if (Array.isArray(value)) {
-    if (!value.length) return '[]';
-    return '[\n' + value.map((v) => padIn + highlight(v, indent + 1)).join(',\n') + '\n' + pad + ']';
-  }
-
-  const keys = Object.keys(value);
-  if (!keys.length) return '{}';
-  const rows = keys.map(
-    (k) => `${padIn}<span class="k">${esc(k)}</span>: ${highlight(value[k], indent + 1)}`
-  );
-  return '{\n' + rows.join(',\n') + '\n' + pad + '}';
-}
 
 function renderResult(payload) {
   const meta = $('resultMeta');

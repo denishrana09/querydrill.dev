@@ -64,3 +64,37 @@ One document = one order
 We need to change the shape.
 
 This is where `$unwind` comes in.
+
+## Try it
+
+Run the instinct first, so you have seen it fail:
+
+```js
+db.orders.aggregate([
+  {
+    $group: {
+      _id: "$items.product",
+      totalQuantity: { $sum: "$items.quantity" }
+    }
+  },
+  { $limit: 3 }
+])
+```
+
+No error. `_id` came back as a whole array of product names, and `$sum` over an array of arrays gave `0`. That is the failure mode worth remembering: it does not crash, it just answers a different question.
+
+With `$unwind` in front:
+
+```js
+db.orders.aggregate([
+  { $unwind: "$items" },
+  {
+    $group: {
+      _id: "$items.product",
+      totalQuantity: { $sum: "$items.quantity" }
+    }
+  },
+  { $sort: { totalQuantity: -1 } },
+  { $limit: 5 }
+])
+```

@@ -104,3 +104,37 @@ Example:
 ```
 
 This pattern is good to understand even if you wouldn't always write it exactly this way.
+
+## Try it
+
+Filter the array, then reduce what survived:
+
+```js
+db.orders.aggregate([
+  {
+    $project: {
+      electronicsTotal: {
+        $reduce: {
+          input: {
+            $filter: {
+              input: "$items",
+              as: "item",
+              cond: { $eq: ["$$item.category", "Electronics"] }
+            }
+          },
+          initialValue: 0,
+          in: {
+            $add: [
+              "$$value",
+              { $multiply: ["$$this.price", "$$this.quantity"] }
+            ]
+          }
+        }
+      }
+    }
+  },
+  { $limit: 5 }
+])
+```
+
+Read it inside out and it is two steps, not one dense expression. Orders with no Electronics come back as `0`, not missing - `initialValue` decided that.

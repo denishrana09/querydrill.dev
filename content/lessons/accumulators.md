@@ -47,3 +47,30 @@ Example:
   }
 }
 ```
+
+## Try it
+
+Four of them at once, per user:
+
+```js
+db.orders.aggregate([
+  { $unwind: "$items" },
+  {
+    $group: {
+      _id: "$userId",
+      total: {
+        $sum: {
+          $multiply: ["$items.price", "$items.quantity"]
+        }
+      },
+      average: { $avg: "$items.price" },
+      biggest: { $max: "$items.price" },
+      smallest: { $min: "$items.price" }
+    }
+  },
+  { $sort: { total: -1 } },
+  { $limit: 5 }
+])
+```
+
+One pass over the data produces all four. They are not four queries.

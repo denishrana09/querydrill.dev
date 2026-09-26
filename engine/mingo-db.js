@@ -207,6 +207,36 @@ function makeCollection(store, name, onMutate) {
       return ack({ acknowledged: true, matchedCount: r.matchedCount, modifiedCount: r.modifiedCount });
     },
 
+    // The driver allows this (see server/runner.js) and a lesson teaches it, so
+    // leaving it out meant `replaceone-vs-set` taught something the hosted site
+    // could not run. mingo has no replace primitive - a replacement is not an
+    // update document, it has no operators - so it is a splice.
+    replaceOne(filter, replacement, options = {}) {
+      const list = docs();
+      const i = list.findIndex((d) => new Query(filter, mingoOpts).test(d));
+
+      if (i < 0) {
+        if (options.upsert) {
+          list.push(clone(replacement));
+          return ack({ acknowledged: true, matchedCount: 0, modifiedCount: 0, upsertedId: replacement._id ?? null });
+        }
+        return ack({ acknowledged: true, matchedCount: 0, modifiedCount: 0 });
+      }
+
+      const previous = list[i];
+      // Real MongoDB rejects a replacement that would change _id rather than
+      // quietly picking one, and being told that is the point of the lesson.
+      if ('_id' in replacement && replacement._id !== previous._id) {
+        return Promise.reject(new Error(
+          "After applying the update, the (immutable) field '_id' was found to have been altered."
+        ));
+      }
+      // Everything not in the replacement is gone - that is the whole difference
+      // from $set, and the reason the lesson exists.
+      list[i] = { _id: previous._id, ...clone(replacement) };
+      return ack({ acknowledged: true, matchedCount: 1, modifiedCount: 1 });
+    },
+
     deleteOne(filter = {}) {
       const list = docs();
       const q = new Query(filter, mingoOpts);

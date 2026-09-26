@@ -1,8 +1,8 @@
 # MongoDB Practice Playground
 
 A page for drilling MongoDB against real data. 54 lessons across 12 modules,
-and 38 auto-graded exercises that tell you *why* an answer is wrong — not just
-that it is.
+every example runnable on the page it is explained on, and 38 auto-graded
+exercises that tell you *why* an answer is wrong — not just that it is.
 
 Lessons live in [content/lessons/](content/lessons/), with four reference pages
 in [content/reference/](content/reference/). The order they are taught in is

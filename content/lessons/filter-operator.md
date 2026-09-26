@@ -127,3 +127,28 @@ $filter
 ```
 
 This distinction is extremely useful.
+
+## Try it
+
+Each user in the sample data carries an embedded `orders` array:
+
+```js
+db.users.aggregate([
+  {
+    $project: {
+      _id: 0,
+      name: 1,
+      completedOrders: {
+        $filter: {
+          input: "$orders",
+          as: "order",
+          cond: { $eq: ["$$order.status", "completed"] }
+        }
+      }
+    }
+  },
+  { $limit: 4 }
+])
+```
+
+Four users in, four users out - some with an empty array. That is the difference: `$match` would have removed those rows entirely.

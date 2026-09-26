@@ -56,3 +56,23 @@ $project
 $set / $addFields
 → "Add or modify this field"
 ```
+
+## Try it
+
+`$unwind` first so there is a single `price` and `quantity` to multiply:
+
+```js
+db.orders.aggregate([
+  { $unwind: "$items" },
+  {
+    $set: {
+      total: {
+        $multiply: ["$items.price", "$items.quantity"]
+      }
+    }
+  },
+  { $limit: 3 }
+])
+```
+
+Notice what is still in the output: everything. `$set` added a field and touched nothing else. Swap it for `$project` and you have to list every field you want to keep.

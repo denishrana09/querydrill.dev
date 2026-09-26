@@ -94,3 +94,20 @@ Result:
   totalSpent: 800
 }
 ```
+
+## Try it
+
+```js
+db.orders.aggregate([
+  {
+    $group: {
+      _id: "$userId",
+      orderCount: { $sum: 1 }
+    }
+  },
+  { $sort: { orderCount: -1 } },
+  { $limit: 5 }
+])
+```
+
+The busiest five users. Change `$sum: 1` to `$sum: "$rating"` and the same pipeline totals a field instead of counting documents.

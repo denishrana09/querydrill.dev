@@ -46,3 +46,11 @@ The biggest difference is usually:
 > In MongoDB, you design documents based heavily on how your application reads and writes data.
 
 Choosing between them is the central schema design question in MongoDB, and the answer depends entirely on how you read the data back.
+
+## Try it
+
+One real document out of the sample data - embedded object, array and all:
+
+```js
+db.users.findOne({ _id: 101 })
+```

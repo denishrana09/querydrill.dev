@@ -1,7 +1,9 @@
 ---
 import { getCollection, render } from 'astro:content';
+import RunnableExamples from '../../components/RunnableExamples.astro';
 import Doc from '../../layouts/Doc.astro';
 import { REFERENCES } from '../../../content/curriculum.js';
+import { hasRunnable } from '../../../engine/runnable.js';
 
 export async function getStaticPaths() {
   const pages = await getCollection('reference');
@@ -39,4 +41,6 @@ const jsonLd = {
       <div class="card-row"><h3>{r.title}</h3></div>
     </a>
   ))}
+
+  {hasRunnable(entry.body) && <RunnableExamples />}
 </Doc>

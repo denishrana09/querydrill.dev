@@ -117,3 +117,24 @@ Meaning:
 > Calculate one total across all documents.
 
 This is a common interview pattern.
+
+## Try it
+
+```js
+db.orders.aggregate([
+  { $unwind: "$items" },
+  {
+    $group: {
+      _id: {
+        userId: "$userId",
+        product: "$items.product"
+      },
+      quantity: { $sum: "$items.quantity" }
+    }
+  },
+  { $sort: { quantity: -1 } },
+  { $limit: 5 }
+])
+```
+
+Look at the shape of `_id` in the output. If you wanted to sort by user next, the field is `_id.userId`, not `userId` - that is the cost of the compound key.

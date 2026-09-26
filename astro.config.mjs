@@ -1,4 +1,5 @@
 import { defineConfig } from 'astro/config';
+import { isRunnable } from './engine/runnable.js';
 
 // `site` is what makes canonical URLs, OG tags and the sitemap emit absolute
 // URLs. It is a placeholder until the domain is bought - see ROADMAP.md.
@@ -24,6 +25,13 @@ export default defineConfig({
             node.properties.style = String(node.properties.style ?? '')
               .replace(/background-color:[^;]*;?/, '')
               .trim();
+
+            // Marks the blocks that src/scripts/runnable.js turns into a Run
+            // button. Decided here because this is the one place that sees the
+            // raw source, the language and the fence's info string at once.
+            if (isRunnable(this.source, this.options.lang, this.options.meta?.__raw)) {
+              node.properties['data-runnable'] = '';
+            }
           },
         },
       ],

@@ -162,3 +162,24 @@ Across documents
 Inside one array
 → $reduce
 ```
+
+## Try it
+
+```js
+db.orders.aggregate([
+  {
+    $project: {
+      itemCount: {
+        $reduce: {
+          input: "$items",
+          initialValue: 0,
+          in: { $add: ["$$value", "$$this.quantity"] }
+        }
+      }
+    }
+  },
+  { $limit: 5 }
+])
+```
+
+`$$value` is the running total, `$$this` is the element. Change `$add` to `$max` and the same three lines give you the largest quantity in the order instead of the sum.

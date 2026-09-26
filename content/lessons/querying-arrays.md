@@ -59,7 +59,7 @@ Meaning:
 ```js
 db.users.find({
   skills: {
-    $all: ["MongoDB", "Kafka"]
+    $all: ["MongoDB", "Redis"]
   }
 })
 ```

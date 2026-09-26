@@ -19,3 +19,18 @@ updateMany()
 ```
 
 Updates every matching document.
+
+## Try it
+
+Six users are `pending` in the sample data:
+
+```js
+db.users.updateMany(
+  { status: "pending" },
+  {
+    $set: { status: "active" }
+  }
+)
+```
+
+`modifiedCount: 6`. Change it to `updateOne` and the same filter gives you `1`.
