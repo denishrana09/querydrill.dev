@@ -9,24 +9,24 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
 
 ## Start here
 
-**Done so far:** runnable examples on every lesson - 73 of them, Run/Edit/Copy
-against the real engine (§4). Light + dark themes with a toggle, contrast-tested
+**Done so far:** a layout that works on a phone, checked in a real browser (§2).
+Runnable examples on every lesson - 73 of them, Run/Edit/Copy against the real
+engine (§4). Light + dark themes with a toggle, contrast-tested
 (§2). The app runs entirely in the browser (§1). 38 drills audited so starters
 show structure, never answer (§3). Content restructured into 3 tracks → 12
 modules → 54 lessons (§3). 74 static pages with full SEO plumbing, sitemap,
-JSON-LD and internal linking (§4). `npm run verify` builds and runs seven suites
+JSON-LD and internal linking (§4). `npm run verify` builds and runs eight suites
 over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Responsive layout** (§2). The 3-pane app grid is unusable on a phone, and
-   search traffic is majority phone. Now that all 54 lessons are runnable, this
-   is what decides whether any of that reaches the people who find it.
-2. **Tag vocabulary cleanup, then chip filtering** (§2). See the measurements in
+1. **Tag vocabulary cleanup, then chip filtering** (§2). See the measurements in
    that item before starting — the clicking is not the hard part.
-3. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
+2. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
    legally open source however the README describes it.
-4. **Rewrite problem descriptions** (§3). The last content job of any size.
+3. **Rewrite problem descriptions** (§3). The last content job of any size.
+4. **CodeMirror 6** (§2), replacing the `<textarea>` in the app and the one the
+   lesson examples swap in.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -75,7 +75,23 @@ one commit per file, and never any AI attribution trailer.
 
 - [ ] **CodeMirror 6** replacing the `<textarea>` — JS syntax highlighting, bracket matching, auto-indent
 - [ ] Autocomplete for collection names and `$` operators (big perceived-quality win)
-- [ ] **Responsive layout** — the 3-pane grid is unusable on a phone, and Google will send phones
+- [x] **Responsive layout.** DONE 2026-09-26. Verified in a real browser, not by
+      narrowing a window: all 74 pages fit 360px with no sideways scroll, and
+      `npm run test:mobile` keeps it that way by driving headless Chrome over CDP
+      and naming the widest offending element when it fails.
+      - The app's three panes become three **views** below 880px, with a tab bar
+        carrying the progress count. Stacking them would have buried the editor
+        under a 38-item list and turned the fixed shell into a scrolling page.
+      - Opening a drill switches back to the editor, or tapping an exercise on a
+        phone looks like it did nothing.
+      - `100dvh`, because `100vh` on a phone counts the address bar and puts the
+        tab bar underneath it.
+      - The editor toolbar wraps on a **container** query, not a media query: at a
+        900px viewport the editor column is 368px, and only the pane knows that.
+      - Bigger touch targets on the example buttons and the app toolbar.
+      - Found and fixed on the way: `[hidden]` was being defeated by any rule that
+        set `display`, so the "data modified" bar had been permanently visible on
+        every screen size, desktop included.
 - [x] **Light theme + a toggle.** This item used to say "dark mode", which was
       backwards — the site was dark-only, and that was the complaint. Done
       2026-09-26. Defaults to `prefers-color-scheme`, the toggle overrides it,
@@ -393,7 +409,8 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
 - [ ] Deploy (Cloudflare Pages or Vercel — both free, static)
 - [ ] Verify the whole thing works with JS-only, no backend, no env vars
 - [ ] Lighthouse pass ≥ 95 on all four scores
-- [ ] Test on a real phone
+- [ ] Test on a real phone — `npm run test:mobile` proves nothing overflows at
+      360px, which is not the same as proving it feels right to use
 - [ ] Post: LinkedIn, r/mongodb, r/webdev, Hacker News (Show HN), dev.to
 - [ ] Answer the MongoDB community forum thread where someone asked exactly for this
       (people finish M001 and ask "where do I practice?" — the best answer today is

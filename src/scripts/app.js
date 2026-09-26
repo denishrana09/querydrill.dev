@@ -271,6 +271,8 @@ const markdownish = (text) =>
 function renderProgress() {
   const done = EXERCISES.filter((e) => state.progress[e.id] === 'pass').length;
   $('progress').textContent = `${done}/${EXERCISES.length} passed`;
+  // The exercises pane is hidden on a narrow screen, so the count moves to the tab.
+  $('tabCount').textContent = `${done}/${EXERCISES.length}`;
 }
 
 function renderExercises() {
@@ -403,9 +405,37 @@ function renderExercise(ex) {
   return card;
 }
 
+/* ---------- panes on a narrow screen ---------- */
+
+// Whether the panes are views or columns is read off the tab bar's own computed
+// style, so the breakpoint lives in one place - the stylesheet - instead of being
+// copied into a matchMedia query that then drifts from it.
+const narrow = () => getComputedStyle($('tabbar')).display !== 'none';
+
+function showPane(id) {
+  for (const pane of document.querySelectorAll('.pane')) {
+    pane.classList.toggle('on', pane.id === id);
+  }
+  for (const tab of $('tabbar').querySelectorAll('button')) {
+    tab.setAttribute('aria-pressed', String(tab.dataset.pane === id));
+  }
+}
+
+$('tabbar').addEventListener('click', (e) => {
+  const tab = e.target.closest('button[data-pane]');
+  if (tab) showPane(tab.dataset.pane);
+});
+
+// The class is inert above the breakpoint - the media query is what gives it
+// meaning - so this is safe to set once on every screen size.
+showPane('paneEditor');
+
 function selectExercise(ex) {
   state.current = ex;
   setEditor(state.drafts[ex.id] ?? ex.starter);
+  // On a phone the exercise list and the editor are different views, so opening a
+  // drill has to bring the editor with it or it looks like nothing happened.
+  if (narrow()) showPane('paneEditor');
   const module = MODULES.find((m) => m.slug === ex.module);
   $('editorLabel').textContent = `${module ? module.title + ' · ' : ''}${ex.title}`;
 }

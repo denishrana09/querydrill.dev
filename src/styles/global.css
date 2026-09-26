@@ -93,6 +93,14 @@
 
 * { box-sizing: border-box; }
 
+/* Any author rule that sets `display` beats the browser's `[hidden]`, because
+   author styles win over the user-agent sheet whatever the specificity. So
+   `.dirty { display: inline-flex }` quietly made `<span hidden>` visible, and the
+   "data modified" bar sat in the toolbar permanently - the one thing its comment
+   in the markup says it must not do. This is the standard fix and it has to stay
+   above everything that sets a display. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -107,6 +115,12 @@ body.app {
   height: 100vh;
   display: flex;
   flex-direction: column;
+}
+/* On a phone `100vh` counts the address bar, so the bottom of the app - the tab
+   bar, and the results above it - sits underneath it and cannot be reached.
+   `dvh` is the fix; the `vh` above stays as the fallback. */
+@supports (height: 100dvh) {
+  body.app { height: 100dvh; }
 }
 
 /* ---------- top bar ---------- */
@@ -229,7 +243,24 @@ kbd {
 
 /* ---------- editor ---------- */
 
-.editor-pane { display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+/* A container, so the toolbar below can wrap when *this pane* is narrow. That is
+   not the same question as the viewport being narrow: at a 900px viewport the
+   three columns leave the editor 368px, which is phone-width, and a media query
+   cannot see that. */
+.editor-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+@container (max-width: 520px) {
+  .toolbar { flex-wrap: wrap; gap: 7px; }
+  /* The spacer is `flex: 1`, so giving it the full basis turns it into the line
+     break rather than a gap. */
+  .toolbar .spacer { flex-basis: 100%; height: 0; }
+}
 
 .toolbar { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
 .check { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12px; cursor: pointer; }
@@ -437,6 +468,59 @@ kbd {
 
 @media (max-width: 1150px) {
   .layout { grid-template-columns: 200px 1fr 330px; }
+}
+
+/* ---------- one pane at a time ---------- */
+
+/* Hidden until there is not room for three columns. */
+.tabbar { display: none; }
+
+@media (max-width: 880px) {
+  .layout { grid-template-columns: 1fr; }
+
+  /* Three panes become three views rather than three stacked sections. Stacking
+     would put a collections list and a 38-item exercise list above the editor and
+     turn the app into a scrolling document, which is the one thing the fixed
+     shell exists to avoid. */
+  .pane { display: none; }
+  .pane.on { display: block; }
+  .editor-pane.on { display: flex; }
+
+  .tabbar {
+    display: flex;
+    flex: 0 0 auto;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+  }
+  .tabbar button {
+    flex: 1;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--muted);
+    padding: 13px 4px;
+    font-size: 12.5px;
+    /* Room for the indicator, which sits on the edge the panes are on. */
+    box-shadow: inset 0 2px 0 transparent;
+  }
+  .tabbar button[aria-pressed='true'] {
+    color: var(--text);
+    box-shadow: inset 0 2px 0 var(--accent);
+  }
+  .tabbar .tab-count { color: var(--muted-2); font-size: 11px; }
+
+  .topbar { padding: 9px 12px; gap: 10px; }
+  .status { font-size: 11px; }
+}
+
+/* Below this the toolbar above the editor is more buttons than fit on one line,
+   so it is allowed to wrap and the editor keeps a workable share of the height. */
+@media (max-width: 560px) {
+  .editor-pane { --editor-h: 40%; }
+  #editor { font-size: 12.5px; }
+  /* Same reason as the example buttons on lesson pages: these are thumb targets
+     here, not mouse targets. */
+  .toolbar button { padding: 8px 13px; }
 }
 
 /* ---------- header note ---------- */

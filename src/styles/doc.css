@@ -238,6 +238,14 @@
   .doc-main { padding: 22px 15px 44px; }
   .pager { flex-direction: column; }
   .pager a.next { text-align: left; }
+
+  /* Four nav links, a wordmark and the theme toggle do not fit on one line at
+     phone width, so the header is allowed two - with the toggle staying on the
+     first, beside the wordmark, where it is reachable. */
+  .site-head { flex-wrap: wrap; gap: 8px 16px; padding: 10px 15px; }
+  .site-head .brand { flex: 1 0 auto; }
+  .site-head nav { order: 3; flex-basis: 100%; gap: 14px; margin-right: 0; }
+
 }
 
 /* ---------- runnable examples ---------- */
@@ -356,3 +364,17 @@
   white-space: pre;
 }
 .rx .rx-body:empty { display: none; }
+
+/* These have to come after the rules above, not up with the other phone styles:
+   same specificity, so the later block is the one that wins. */
+@media (max-width: 640px) {
+  /* A 22rem result on a 640px-tall screen is most of the screen. The example is
+     an illustration inside a lesson, so it gives the prose back its room. */
+  .rx .rx-body { max-height: 14rem; }
+  /* 22px tall is a fine mouse target and a poor thumb one, and this is the
+     primary control on 56 pages. */
+  .rx-btn { padding: 7px 13px; font-size: 12px; }
+  /* Once the bar wraps, pushing the note to the right only leaves a gap in the
+     button row. */
+  .rx-note { margin-left: 0; flex-basis: 100%; }
+}

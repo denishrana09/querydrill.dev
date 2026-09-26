@@ -16,10 +16,11 @@
     "test:dom": "node test/dom-smoke.mjs",
     "test:curriculum": "node test/curriculum.mjs",
     "test:links": "node test/links.mjs",
-    "verify": "npm run build && node test/links.mjs && node test/dom-runnable.mjs && npm test",
+    "verify": "npm run build && node test/links.mjs && node test/dom-runnable.mjs && node test/mobile.mjs && npm test",
     "test:contrast": "node test/contrast.mjs",
     "test:examples": "node test/examples.mjs",
-    "test:island": "node test/dom-runnable.mjs"
+    "test:island": "node test/dom-runnable.mjs",
+    "test:mobile": "node test/mobile.mjs"
   },
   "dependencies": {
     "mingo": "^7.2.4",

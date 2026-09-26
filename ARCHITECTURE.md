@@ -115,6 +115,7 @@ breaks both.
 | `npm test` | nothing | curriculum, examples, contrast, browser grading, DOM wiring |
 | `npm run test:links` | a `dist/` build | no dead links, unique titles, real descriptions |
 | `npm run test:island` | a `dist/` build | the runnable examples work on the real built markup |
+| `npm run test:mobile` | a `dist/` build, Chrome | no page scrolls sideways at 360px |
 | `npm run verify` | nothing | build, then all of the above |
 | `npm run conformance` | a local `mongod` | mingo agrees with real MongoDB |
 | `npm run selfcheck` | a local `mongod` | every solution passes on the driver |
@@ -165,6 +166,13 @@ Rebuilding per block would teach that updates do nothing. The cost is that a wri
 persists across the page, so the result meta says so and offers to restore it.
 
 ## Traps already hit — don't re-introduce these
+
+**Any author rule that sets `display` defeats the `hidden` attribute.** Author
+styles beat the user-agent sheet whatever the specificity, so
+`.dirty { display: inline-flex }` made `<span hidden>` visible and the "data
+modified" bar sat in the toolbar permanently - the exact thing the comment next to
+it says it must not do. `[hidden] { display: none !important }` at the top of
+global.css is the fix, and it has to stay above everything that sets a display.
 
 **Astro caches rendered markdown between builds.** Change the rule in
 `engine/runnable.js` and only the files whose mtime also changed get re-rendered

@@ -18,7 +18,7 @@ import ThemeToggle from '../../components/ThemeToggle.astro';
   </header>
 
   <main class="layout">
-    <aside class="pane sidebar">
+    <aside id="paneData" class="pane sidebar">
       <h2>Collections</h2>
       <ul id="collections" class="collections"></ul>
 
@@ -30,7 +30,7 @@ import ThemeToggle from '../../components/ThemeToggle.astro';
       <pre id="sampleDoc" class="sample" hidden></pre>
     </aside>
 
-    <section class="pane editor-pane">
+    <section id="paneEditor" class="pane editor-pane">
       <div class="toolbar">
         <button id="runBtn" class="primary">Run <kbd>Ctrl</kbd>+<kbd>Enter</kbd></button>
         <button id="formatBtn" class="ghost" title="Tidy the query — Shift+Alt+F">Format</button>
@@ -63,7 +63,7 @@ import ThemeToggle from '../../components/ThemeToggle.astro';
       </div>
     </section>
 
-    <aside class="pane exercises-pane">
+    <aside id="paneExercises" class="pane exercises-pane">
       <div class="ex-head">
         <h2>Exercises</h2>
         <span id="progress" class="progress"></span>
@@ -71,6 +71,17 @@ import ThemeToggle from '../../components/ThemeToggle.astro';
       <div id="exerciseList" class="ex-list"></div>
     </aside>
   </main>
+
+  <!-- Only visible once there is no room for three columns. Buttons with
+       aria-pressed rather than a tablist: on a wide screen all three panes are
+       shown at once and none of them is a tab. -->
+  <nav id="tabbar" class="tabbar" aria-label="Panes">
+    <button type="button" data-pane="paneData" aria-pressed="false">Data</button>
+    <button type="button" data-pane="paneEditor" aria-pressed="true">Editor</button>
+    <button type="button" data-pane="paneExercises" aria-pressed="false">
+      Exercises <span id="tabCount" class="tab-count"></span>
+    </button>
+  </nav>
 
   <div id="toast" class="toast"></div>
 

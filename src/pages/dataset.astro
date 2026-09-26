@@ -51,6 +51,10 @@ const json = (v) =>
         <span class="meta">{c.count} documents · {c.fields.filter((f) => !f.inArray).length} top-level fields</span>
       </div>
 
+      <!-- Four columns of field names and sample values do not fit on a phone,
+           and a table is the right shape for this - so it scrolls rather than
+           reflows. -->
+      <div class="table-wrap">
       <table class="fields">
         <thead>
           <tr><th>Field</th><th>Type</th><th>Present</th><th>Example</th></tr>
@@ -70,6 +74,7 @@ const json = (v) =>
           ))}
         </tbody>
       </table>
+      </div>
 
       <details>
         <summary>One <code>{c.name}</code> document</summary>
@@ -114,7 +119,8 @@ const json = (v) =>
     font-size: 13.5px;
   }
   h2 code { font-size: 1em; background: none; padding: 0; color: var(--accent); }
-  .fields { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px; }
+  .table-wrap { overflow-x: auto; margin-bottom: 10px; }
+  .fields { width: 100%; border-collapse: collapse; font-size: 13px; }
   .fields th, .fields td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; }
   .fields th { background: var(--panel); font-weight: 600; font-size: 11.5px; color: var(--muted); }
   .fields code { font-family: var(--mono); font-size: 12px; background: none; padding: 0; }

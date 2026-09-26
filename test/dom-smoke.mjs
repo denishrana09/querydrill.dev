@@ -239,6 +239,37 @@ await tick();
 check('an unknown hash leaves the open exercise alone',
   $('exerciseList').querySelector('.ex.open .ex-name')?.textContent === other.title);
 
+/* ---------- panes on a narrow screen ---------- */
+
+// jsdom loads no stylesheet, so the tab bar's computed display is `block` and the
+// app behaves as it does on a phone. That is the state worth driving here: on a
+// desktop the `on` class is inert and there is nothing to test.
+const tab = (label) => [...$('tabbar').querySelectorAll('button')]
+  .find((b) => b.textContent.trim().startsWith(label));
+
+check('the tab bar offers all three panes', $('tabbar').querySelectorAll('button').length === 3);
+check('the editor is the pane you land on',
+  $('paneEditor').classList.contains('on') && tab('Editor').getAttribute('aria-pressed') === 'true');
+check('the tab bar carries the progress count while its pane is hidden',
+  /^\d+\/38$/.test($('tabCount').textContent), $('tabCount').textContent);
+
+tab('Data').click();
+check('tapping a tab shows that pane and only that pane',
+  $('paneData').classList.contains('on') &&
+  !$('paneEditor').classList.contains('on') &&
+  !$('paneExercises').classList.contains('on'));
+check('and moves the pressed state with it',
+  tab('Data').getAttribute('aria-pressed') === 'true' &&
+  tab('Editor').getAttribute('aria-pressed') === 'false');
+
+// The failure this guards against: tapping a drill in the exercises view loads it
+// into an editor you cannot see, so the app looks like it ignored the tap.
+tab('Exercises').click();
+$('exerciseList').querySelector('.ex .ex-name').click();
+await tick();
+check('opening an exercise brings the editor back with it',
+  $('paneEditor').classList.contains('on') && $('editor').value.length > 0);
+
 if (failures.length) {
   console.log(`\n  ${RED}${failures.length} failure(s):${OFF}`);
   for (const f of failures) console.log(`    ${f}`);
