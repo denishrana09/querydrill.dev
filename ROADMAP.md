@@ -16,20 +16,27 @@ JSON-LD and internal linking (§4). `npm run verify` builds and checks all of it
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Runnable examples on lesson pages** (§4, the live-editor item). *The*
+1. **Light theme + toggle** (§2). Moved to the front on 2026-09-26: the user
+   does not want an all-black site, and every component built before this lands
+   is one more component whose colours have to be untangled afterwards. Cheaper
+   now than at any later point.
+2. **Runnable examples on lesson pages** (§4, the live-editor item). *The*
    differentiator and the biggest remaining gap. A lesson currently links to its
    drill; it does not let you run the example where you are standing. Every
    page-one Google result for `$lookup` is a Medium post you cannot run a query
    on — and so, right now, is ours. The engine is already browser-safe and the
    dataset builder is pure, so this is a compact editor + results island, not a
    second copy of the app.
-2. **Responsive layout** (§2). The 3-pane grid is unusable on a phone and search
-   traffic is majority phone. Paired with (1), this is what makes 54 pages worth
+3. **Responsive layout** (§2). The 3-pane grid is unusable on a phone and search
+   traffic is majority phone. Paired with (2), this is what makes 54 pages worth
    having.
-3. **Tag vocabulary cleanup, then chip filtering** (§2). See the measurements in
+4. **Tag vocabulary cleanup, then chip filtering** (§2). See the measurements in
    that item before starting — the clicking is not the hard part.
-4. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
+5. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
    legally open source however the README describes it.
+
+**Before any deploy**, read §8's blocker list first — `site:` is still
+`https://example.com`, which poisons every canonical URL on every page.
 
 **Working agreement:** go step by step and pause after each step for review,
 rather than finishing everything and then reporting. Opinions and pushback are
@@ -76,7 +83,23 @@ one commit per file, and never any AI attribution trailer.
 - [ ] **CodeMirror 6** replacing the `<textarea>` — JS syntax highlighting, bracket matching, auto-indent
 - [ ] Autocomplete for collection names and `$` operators (big perceived-quality win)
 - [ ] **Responsive layout** — the 3-pane grid is unusable on a phone, and Google will send phones
-- [ ] Dark mode (site is dark-first; respect `prefers-color-scheme`)
+- [ ] **Light theme + a toggle.** This item used to say "dark mode", which was
+      backwards — the site is *already* dark-only, and that is the complaint.
+      Default to `prefers-color-scheme`, let the toggle override it, remember the
+      choice. Audited 2026-09-26, the work is:
+      - The structural colours are already tokens on `:root` (`--bg`, `--panel`,
+        `--line`, `--text`, `--muted`, `--accent`…), so a second palette is
+        mostly a second set of values. Good starting position.
+      - **~25 hardcoded colours escape the tokens** and would stay dark on a
+        light page. Mostly the results-pane JSON highlighting (`#b48ce0`,
+        `#7fb3e8`, `#6fb6a8`, `#cf9f6a`), plus `#3d4657` used as a hover border
+        in four places. These have to become tokens first.
+      - **Shiki is pinned to `github-dark`**, so every code block on all 58
+        content pages would be dark-on-light and unreadable. Astro supports
+        `shikiConfig.themes: { light, dark }`, which emits both and switches on
+        a CSS class — that is the supported path, not a hand-rolled override.
+      - Doing this *before* more UI is built is much cheaper than after: every
+        new component written in the meantime adds more colours to untangle.
 - [ ] Results pane: table view toggle alongside raw JSON
 - [ ] Keyboard shortcuts, discoverable (`Ctrl+Enter` run, `Ctrl+/` comment)
 - [ ] Loading/empty/error states that don't look broken
@@ -324,6 +347,33 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
 ---
 
 ## 8. Launch
+
+### Blockers — things that are actively wrong until fixed
+
+Audited 2026-09-26. These are not polish. Each one is currently shipped-broken
+in `dist/`, and the first is the kind of mistake that costs the whole SEO effort.
+
+- [ ] **`site: 'https://example.com'` in `astro.config.mjs` poisons every page.**
+      All 74 pages emit `<link rel="canonical" href="https://example.com/...">`,
+      and the sitemap and every OG URL do the same. A canonical tells Google
+      "this is the real address of this page", so right now all 74 declare a
+      domain we do not own as authoritative. Changing the one line fixes all of
+      them at once — but nothing can be deployed before it is changed, and a
+      deploy that happens to go out first is worse than not deploying.
+- [ ] **`/og-default.png` is referenced by `Base.astro` and does not exist.**
+      Every share on LinkedIn, Twitter or Slack renders a broken image — which
+      is most of the launch plan in §8. Needs a real 1200×630 image.
+- [ ] **No `404.astro`.** A mistyped URL falls through to whatever the host
+      shows, which is a dead end off-site rather than a way back into the course.
+- [ ] **Sitemap has no `<lastmod>`.** It has `<priority>`, which Google ignores,
+      and lacks the one field Google actually reads. Backwards. Wire it to the
+      lesson files' mtime or the git commit date.
+- [ ] Add a check to `test/links.mjs` that every referenced local asset exists —
+      `og-default.png` was referenced for weeks and nothing noticed.
+- [ ] Decide whether `example.com` should instead fail the build. A placeholder
+      that silently produces valid-looking wrong output is the trap here.
+
+### The rest
 
 - [ ] Buy the domain, point at the host
 - [ ] Deploy (Cloudflare Pages or Vercel — both free, static)
