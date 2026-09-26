@@ -9,30 +9,27 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
 
 ## Start here
 
-**Done so far:** the app runs entirely in the browser (§1). 38 drills audited so
+**Done so far:** light + dark themes with a toggle, contrast-tested (§2). The
+app runs entirely in the browser (§1). 38 drills audited so
 starters show structure, never answer (§3). Content restructured into 3 tracks →
 12 modules → 54 lessons (§3). 74 static pages with full SEO plumbing, sitemap,
 JSON-LD and internal linking (§4). `npm run verify` builds and checks all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Light theme + toggle** (§2). Moved to the front on 2026-09-26: the user
-   does not want an all-black site, and every component built before this lands
-   is one more component whose colours have to be untangled afterwards. Cheaper
-   now than at any later point.
-2. **Runnable examples on lesson pages** (§4, the live-editor item). *The*
+1. **Runnable examples on lesson pages** (§4, the live-editor item). *The*
    differentiator and the biggest remaining gap. A lesson currently links to its
    drill; it does not let you run the example where you are standing. Every
    page-one Google result for `$lookup` is a Medium post you cannot run a query
    on — and so, right now, is ours. The engine is already browser-safe and the
    dataset builder is pure, so this is a compact editor + results island, not a
    second copy of the app.
-3. **Responsive layout** (§2). The 3-pane grid is unusable on a phone and search
-   traffic is majority phone. Paired with (2), this is what makes 54 pages worth
+2. **Responsive layout** (§2). The 3-pane grid is unusable on a phone and search
+   traffic is majority phone. Paired with (1), this is what makes 54 pages worth
    having.
-4. **Tag vocabulary cleanup, then chip filtering** (§2). See the measurements in
+3. **Tag vocabulary cleanup, then chip filtering** (§2). See the measurements in
    that item before starting — the clicking is not the hard part.
-5. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
+4. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
    legally open source however the README describes it.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
@@ -83,23 +80,25 @@ one commit per file, and never any AI attribution trailer.
 - [ ] **CodeMirror 6** replacing the `<textarea>` — JS syntax highlighting, bracket matching, auto-indent
 - [ ] Autocomplete for collection names and `$` operators (big perceived-quality win)
 - [ ] **Responsive layout** — the 3-pane grid is unusable on a phone, and Google will send phones
-- [ ] **Light theme + a toggle.** This item used to say "dark mode", which was
-      backwards — the site is *already* dark-only, and that is the complaint.
-      Default to `prefers-color-scheme`, let the toggle override it, remember the
-      choice. Audited 2026-09-26, the work is:
-      - The structural colours are already tokens on `:root` (`--bg`, `--panel`,
-        `--line`, `--text`, `--muted`, `--accent`…), so a second palette is
-        mostly a second set of values. Good starting position.
-      - **~25 hardcoded colours escape the tokens** and would stay dark on a
-        light page. Mostly the results-pane JSON highlighting (`#b48ce0`,
-        `#7fb3e8`, `#6fb6a8`, `#cf9f6a`), plus `#3d4657` used as a hover border
-        in four places. These have to become tokens first.
-      - **Shiki is pinned to `github-dark`**, so every code block on all 58
-        content pages would be dark-on-light and unreadable. Astro supports
-        `shikiConfig.themes: { light, dark }`, which emits both and switches on
-        a CSS class — that is the supported path, not a hand-rolled override.
-      - Doing this *before* more UI is built is much cheaper than after: every
-        new component written in the meantime adds more colours to untangle.
+- [x] **Light theme + a toggle.** This item used to say "dark mode", which was
+      backwards — the site was dark-only, and that was the complaint. Done
+      2026-09-26. Defaults to `prefers-color-scheme`, the toggle overrides it,
+      the choice is remembered, and the OS is still followed live until someone
+      actually clicks. What it took:
+      - Every colour is now a token. ~25 hardcoded values had escaped (the
+        results-pane JSON highlighting, `#3d4657` as a hover border in four
+        places); a hex outside the `:root` blocks is now a bug by definition.
+      - `data-theme` is written by a **blocking inline script** in `Base.astro`
+        before first paint. Applying it later is a white flash on every
+        navigation, which is worse than no toggle. Inline also means the pages
+        that ship zero JavaScript still ship zero bundled JavaScript.
+      - Shiki emits **both** themes per token (light inline, dark as
+        `--shiki-dark`); `doc.css` swaps them. Overriding an inline style needs
+        `!important` — that is the documented path, not a hack.
+      - `test/contrast.mjs` parses both palettes out of `global.css` and checks
+        every foreground against `--bg`, `--panel` *and* `--panel-2`. It caught
+        three tokens below AA that eyeballing had passed, and it fails if the
+        two palettes ever stop defining the same tokens.
 - [ ] Results pane: table view toggle alongside raw JSON
 - [ ] Keyboard shortcuts, discoverable (`Ctrl+Enter` run, `Ctrl+/` comment)
 - [ ] Loading/empty/error states that don't look broken

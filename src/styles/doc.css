@@ -20,7 +20,7 @@
   text-decoration: none;
 }
 .site-head .brand span { color: var(--accent); }
-.site-head nav { display: flex; gap: 16px; flex-wrap: wrap; }
+.site-head nav { display: flex; gap: 16px; flex-wrap: wrap; margin-right: auto; }
 .site-head nav a {
   color: var(--muted);
   text-decoration: none;
@@ -46,7 +46,7 @@
   font-size: 12px;
 }
 .site-foot p { margin: 4px 0; }
-.site-foot .fine { color: #6b7482; font-size: 11px; }
+.site-foot .fine { color: var(--muted-2); font-size: 11px; }
 
 /* ---------- breadcrumbs and paging ---------- */
 
@@ -79,7 +79,7 @@
   background: var(--panel);
   min-width: 0;
 }
-.pager a:hover { border-color: #3d4657; }
+.pager a:hover { border-color: var(--line-strong); }
 .pager a.next { text-align: right; }
 .pager small { display: block; color: var(--muted); font-size: 11px; margin-bottom: 2px; }
 
@@ -129,6 +129,19 @@
 }
 .prose pre code { background: none; padding: 0; font-size: inherit; }
 
+/* Shiki emits both themes on every token: the light colour as an inline
+   `color:` and the dark one as a `--shiki-dark` custom property. Activating
+   dark means overriding an inline style, so `!important` is required here -
+   this is the documented way, not a specificity workaround. The background
+   stays ours (`--panel`) in both themes so code blocks match the page. */
+:root[data-theme='dark'] .astro-code,
+:root[data-theme='dark'] .astro-code span {
+  color: var(--shiki-dark) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
 .prose table {
   width: 100%;
   border-collapse: collapse;
@@ -164,7 +177,7 @@
   color: var(--text);
   margin-bottom: 8px;
 }
-.card:hover { border-color: #3d4657; }
+.card:hover { border-color: var(--line-strong); }
 .card h3 { margin: 0 0 4px; font-size: 14px; }
 .card p { margin: 0; color: var(--muted); font-size: 12.5px; }
 
@@ -217,9 +230,9 @@
   color: var(--text);
   background: var(--panel);
 }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #08131a; }
-.btn:hover { border-color: #3d4657; }
-.btn.primary:hover { background: #58c088; border-color: #58c088; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn:hover { border-color: var(--line-strong); }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
 @media (max-width: 640px) {
   .doc-main { padding: 22px 15px 44px; }

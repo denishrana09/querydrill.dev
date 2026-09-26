@@ -1,15 +1,94 @@
-:root {
+/* Two palettes, one token set. Every colour in the app resolves through these -
+   a hardcoded hex anywhere else is a bug that only shows up in one theme.
+
+   `data-theme` is written onto <html> by a blocking inline script in Base.astro
+   before first paint, so there is no flash and no duplicated media query. With
+   JavaScript off, no attribute is set and the dark default below applies. */
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
   --bg: #16181d;
   --panel: #1c1f26;
   --panel-2: #22262f;
   --line: #2f3440;
+  --line-strong: #3d4657;
   --text: #dfe3ea;
+  --text-soft: #a8b6c9;
   --muted: #8a93a3;
+  --muted-2: #8a93a1;
+
   --accent: #4db07a;
+  --accent-hover: #58c088;
   --accent-dim: #2f6d4d;
+  --accent-dim-hover: #37805b;
+  --on-accent: #08131a;
+  --on-accent-dim: #eaf6ef;
+
   --danger: #e06b62;
+  --danger-text: #f4b9b3;
+  --danger-border: rgba(224, 107, 98, .4);
   --warn: #d4a34a;
+  --warn-soft: rgba(212, 163, 74, .15);
+  --warn-border: rgba(212, 163, 74, .4);
+
+  /* Drawn out of the tokens because they mean "look here", not "warning". */
+  --attn: #cf9f6a;
+  --attn-soft: rgba(207, 159, 106, .14);
+
+  /* Result-pane JSON highlighting. The light values are the same hues, darkened
+     until they pass contrast on a white panel. */
+  --syn-key: #7fb3e8;
+  --syn-string: #cf9f6a;
+  --syn-number: #b48ce0;
+  --syn-bool: #4db07a;
+  --syn-date: #6fb6a8;
+
+  --shadow: rgba(0, 0, 0, .3);
+  --glass-line: rgba(255, 255, 255, .13);
+
   --mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f6f8fa;
+  --panel: #ffffff;
+  --panel-2: #eef1f5;
+  --line: #d8dee6;
+  --line-strong: #b6c0cd;
+  --text: #1b1f27;
+  --text-soft: #47515f;
+  --muted: #5f6977;
+  --muted-2: #61697a;
+
+  --accent: #10794c;
+  --accent-hover: #0c6640;
+  --accent-dim: #10794c;
+  --accent-dim-hover: #0c6640;
+  --on-accent: #ffffff;
+  --on-accent-dim: #ffffff;
+
+  --danger: #b4322a;
+  --danger-text: #8c2019;
+  --danger-border: rgba(180, 50, 42, .35);
+  --warn: #8a6100;
+  --warn-soft: rgba(138, 97, 0, .12);
+  --warn-border: rgba(138, 97, 0, .32);
+
+  --attn: #9a5518;
+  --attn-soft: rgba(154, 85, 24, .1);
+
+  --syn-key: #1a5fd0;
+  --syn-string: #9a4600;
+  --syn-number: #7134d0;
+  --syn-bool: #10794c;
+  --syn-date: #0f6e66;
+
+  --shadow: rgba(16, 24, 40, .16);
+  --glass-line: rgba(0, 0, 0, .1);
 }
 
 * { box-sizing: border-box; }
@@ -67,18 +146,18 @@ button {
   background: var(--panel-2);
   color: var(--text);
 }
-button:hover:not(:disabled) { border-color: #46506a; }
+button:hover:not(:disabled) { border-color: var(--line-strong); }
 button:disabled { opacity: .5; cursor: default; }
 
-button.primary { background: var(--accent-dim); border-color: var(--accent-dim); color: #eaf6ef; }
-button.primary:hover:not(:disabled) { background: #37805b; }
+button.primary { background: var(--accent-dim); border-color: var(--accent-dim); color: var(--on-accent-dim); }
+button.primary:hover:not(:disabled) { background: var(--accent-dim-hover); border-color: var(--accent-dim-hover); }
 button.ghost { background: transparent; color: var(--muted); }
 button.ghost:hover { color: var(--text); }
 
 kbd {
   font: 11px var(--mono);
-  background: rgba(0,0,0,.3);
-  border: 1px solid rgba(255,255,255,.13);
+  background: var(--shadow);
+  border: 1px solid var(--glass-line);
   border-radius: 3px;
   padding: 0 3px;
 }
@@ -191,11 +270,11 @@ kbd {
   line-height: 1.5;
   white-space: pre;
 }
-.result-body .k { color: #7fb3e8; }
-.result-body .s { color: #cf9f6a; }
-.result-body .num { color: #b48ce0; }
-.result-body .b { color: #4db07a; }
-.result-body .d { color: #6fb6a8; }
+.result-body .k { color: var(--syn-key); }
+.result-body .s { color: var(--syn-string); }
+.result-body .num { color: var(--syn-number); }
+.result-body .b { color: var(--syn-bool); }
+.result-body .d { color: var(--syn-date); }
 
 /* ---------- exercises ---------- */
 
@@ -238,7 +317,7 @@ kbd {
   background: var(--panel);
   overflow: hidden;
 }
-.ex.open { border-color: #3d4657; }
+.ex.open { border-color: var(--line-strong); }
 .ex.pass { border-left: 3px solid var(--accent); }
 .ex.fail { border-left: 3px solid var(--danger); }
 
@@ -271,7 +350,7 @@ kbd {
   font-size: 10px;
   padding: 1px 5px;
   border-radius: 3px;
-  background: rgba(212,163,74,.15);
+  background: var(--warn-soft);
   color: var(--warn);
   flex: 0 0 auto;
 }
@@ -288,8 +367,8 @@ kbd {
   color: var(--muted);
 }
 .chip.easy { color: var(--accent); border-color: var(--accent-dim); }
-.chip.medium { color: var(--warn); border-color: rgba(212,163,74,.4); }
-.chip.hard { color: var(--danger); border-color: rgba(224,107,98,.4); }
+.chip.medium { color: var(--warn); border-color: var(--warn-border); }
+.chip.hard { color: var(--danger); border-color: var(--danger-border); }
 .ex-prompt { white-space: pre-wrap; font-size: 13px; margin: 10px 0; }
 .ex-prompt code {
   font-family: var(--mono);
@@ -351,7 +430,7 @@ kbd {
   z-index: 50;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.bad { border-color: var(--danger); color: #f4b9b3; }
+.toast.bad { border-color: var(--danger); color: var(--danger-text); }
 
 @media (max-width: 1150px) {
   .layout { grid-template-columns: 200px 1fr 330px; }
@@ -390,7 +469,7 @@ kbd {
 .schema .row .ty { color: var(--muted); font-size: 10.5px; }
 
 /* An optional field is the thing a raw sample document cannot show you. */
-.schema .row .opt { color: #cf9f6a; font-size: 10px; }
+.schema .row .opt { color: var(--attn); font-size: 10px; }
 .schema .row.d1 { padding-left: 16px; }
 .schema .row.d2 { padding-left: 30px; }
 .schema .row.arr .nm::after { content: '[]'; color: var(--muted); }
@@ -399,7 +478,7 @@ kbd {
 
 .dirty {
   font-size: 11.5px;
-  color: #cf9f6a;
+  color: var(--attn);
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -413,7 +492,7 @@ kbd {
   font-size: 11px;
   cursor: pointer;
 }
-.dirty button:hover { background: rgba(207,159,106,.14); }
+.dirty button:hover { background: var(--attn-soft); }
 
 /* ---------- editor / results splitter ---------- */
 

@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import ThemeToggle from '../../components/ThemeToggle.astro';
 ---
 <Base
   bodyClass="app"
@@ -13,6 +14,7 @@ import Base from '../../layouts/Base.astro';
       Coming soon: connect your own MongoDB · <code>explain()</code> · indexes
     </div>
     <div id="status" class="status ok"><i></i><span>runs in your browser</span></div>
+    <ThemeToggle />
   </header>
 
   <main class="layout">

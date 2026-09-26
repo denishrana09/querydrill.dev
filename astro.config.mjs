@@ -10,7 +10,11 @@ export default defineConfig({
 
   markdown: {
     shikiConfig: {
-      theme: 'github-dark',
+      // Both themes are emitted at once: the light colours become inline
+      // styles and the dark ones become `--shiki-dark-*` custom properties on
+      // the same spans, which doc.css swaps in. A single pinned theme would
+      // leave every code block on all 58 content pages dark-on-light.
+      themes: { light: 'github-light', dark: 'github-dark' },
       transformers: [
         {
           // Shiki writes its theme's background as an inline style, which beats

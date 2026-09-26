@@ -1,0 +1,47 @@
+---
+/**
+ * Theme switch. Stateless markup - all the behaviour lives in the inline
+ * scripts in Base.astro, so this works identically on the static pages and
+ * inside the practice app, and adds no JavaScript to a page that had none.
+ */
+---
+<button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch theme">
+  <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true" width="15" height="15">
+    <circle cx="12" cy="12" r="4.2" fill="currentColor" />
+    <g stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2" />
+      <path d="M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4L17 7M7 17l-1.6 1.6" />
+    </g>
+  </svg>
+  <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true" width="15" height="15">
+    <path
+      d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2z"
+      fill="currentColor"
+    />
+  </svg>
+</button>
+
+<style is:global>
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    width: 28px;
+    height: 28px;
+    color: var(--muted);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .theme-toggle:hover { color: var(--text); border-color: var(--line); background: var(--panel-2); }
+
+  /* Show the icon for the theme the click will switch *to*, which is what
+     people read a theme button as promising. */
+  .theme-toggle .i-sun { display: none; }
+  .theme-toggle .i-moon { display: block; }
+  :root[data-theme='light'] .theme-toggle .i-sun { display: block; }
+  :root[data-theme='light'] .theme-toggle .i-moon { display: none; }
+</style>
