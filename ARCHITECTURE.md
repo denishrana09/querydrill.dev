@@ -64,6 +64,33 @@ rename silently loses their progress. Adding an exercise means adding it to a
 module's `exercises` list too; the index throws at import if you forget, in
 either direction.
 
+`content/topics.js` is the other closed vocabulary: every tag a drill or a
+lesson may carry, in one list. Drills are checked against it at import in
+`server/exercises/index.js`; lesson `operators` frontmatter is checked by the
+collection schema in `src/content.config.mjs`. Before it existed the two sides
+had separate, free-form vocabularies — which is how `sort` and `$sort` both came
+to exist, and how the arrays lesson came to declare `$contains`, an operator its
+own prose says is not real, into the JSON-LD `teaches` property.
+
+Two rules live in that file and are enforced by `test/topics.mjs`:
+
+- **A tag must not restate the structure.** `aggregation` was on 23 of 38 drills
+  and was byte-identical to "track is not fundamentals"; `find` + `update`
+  partitioned the fundamentals track exactly. `track` and `module` already carry
+  that, and they are real pages.
+- **A tag becomes a clickable filter only if it crosses a module and has 3+
+  drills.** 32 of the original 43 never left one module, and for those
+  `/modules/<slug>/` is the same filter with prose around it. The filter list is
+  *computed* from that rule rather than listed, so it cannot drift from the
+  content; the test prints which tags are one drill short, so growth is a prompt
+  rather than a surprise.
+
+What is deliberately *not* merged: `sort`/`$sort`, `projection`/`$project` and
+`.skip()/.limit()`/`$skip` are cursor methods versus pipeline stages. Same goal,
+different mechanism, and treating them as interchangeable is a mistake learners
+make on their own. They keep separate tags, and the cursor-side labels carry the
+syntax you type so the pair does not read as a typo.
+
 A lesson's title lives in two places — `curriculum.js` for navigation, and the
 file's own frontmatter. That is deliberate: nothing should have to parse 54
 markdown files to render a sidebar. `test/curriculum.mjs` fails if they drift.
@@ -112,7 +139,7 @@ breaks both.
 
 | command | needs | what it proves |
 |---|---|---|
-| `npm test` | nothing | curriculum, examples, contrast, browser grading, DOM wiring |
+| `npm test` | nothing | curriculum, tags, examples, contrast, browser grading, DOM wiring |
 | `npm run test:links` | a `dist/` build | no dead links, unique titles, real descriptions |
 | `npm run test:island` | a `dist/` build | the runnable examples work on the real built markup |
 | `npm run test:mobile` | a `dist/` build, Chrome | no page scrolls sideways at 360px, and the pane switcher is visible |
@@ -166,6 +193,15 @@ Rebuilding per block would teach that updates do nothing. The cost is that a wri
 persists across the page, so the result meta says so and offers to restore it.
 
 ## Traps already hit — don't re-introduce these
+
+**A test must not import the threshold it is checking.** `test/topics.mjs`
+asserted that every filter chip had `MIN_FILTER_DRILLS` drills behind it — and
+imported `MIN_FILTER_DRILLS` from the module it was checking. Lowering the
+constant to 1 passed that check while putting three 2-drill chips in the filter
+row: the test only ever proved the module agreed with itself. The floor is now
+written out as a literal in the test, so changing the policy has to fail and be
+argued for. This was found by deliberately breaking the check, which is the only
+reason it was found at all.
 
 **A surface token is not automatically a visible surface.** The mobile pane
 switcher was `--panel` on a `--bg` page, which is 1.08:1 - correct by the token

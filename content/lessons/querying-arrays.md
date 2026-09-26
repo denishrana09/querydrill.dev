@@ -3,7 +3,7 @@ title: 'Querying arrays'
 module: 'nested-and-arrays'
 track: 'fundamentals'
 description: 'How MongoDB matches arrays: a scalar match tests every element, and $all requires all of your values to be present.'
-operators: ['$all', '$contains', '$in']
+operators: ['$all', '$in']
 source: 'batch1.md:254-320'
 ---
 

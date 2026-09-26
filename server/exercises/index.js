@@ -2,6 +2,7 @@ import batch1 from './batch1.js';
 import batch2 from './batch2.js';
 import batch3 from './batch3.js';
 import { MODULES, MODULE_OF_EXERCISE, EXERCISE_ORDER, ALL_LESSONS } from '../../content/curriculum.js';
+import { isTopic } from '../../content/topics.js';
 
 // The batch*.js filenames are only how the exercises are stored. Where an
 // exercise sits in the course, and in what order, comes from the curriculum.
@@ -28,6 +29,20 @@ for (const e of RAW) {
   }
   if (!Array.isArray(e.topics) || !e.topics.length) {
     throw new Error(`Exercise ${e.id} needs at least one topic tag.`);
+  }
+  // A closed vocabulary, checked at import. This is how `sort` and `$sort` both
+  // came to exist: nothing was stopping a new spelling of an existing idea, so
+  // two of them sat in the table for months. Adding a tag now means adding it to
+  // content/topics.js, where the existing ones are visible next to it.
+  for (const topic of e.topics) {
+    if (!isTopic(topic)) {
+      throw new Error(
+        `Exercise ${e.id} uses topic "${topic}", which is not in content/topics.js.`
+      );
+    }
+  }
+  if (new Set(e.topics).size !== e.topics.length) {
+    throw new Error(`Exercise ${e.id} lists the same topic twice.`);
   }
   if (!LESSON_SLUGS.has(e.lesson)) {
     throw new Error(`Exercise ${e.id} points at unknown lesson "${e.lesson}".`);

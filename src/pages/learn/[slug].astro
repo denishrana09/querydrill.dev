@@ -9,6 +9,7 @@ import {
 } from '../../../content/curriculum.js';
 import { EXERCISES } from '../../../server/exercises/index.js';
 import { hasRunnable } from '../../../engine/runnable.js';
+import { labelOf } from '../../../content/topics.js';
 
 export async function getStaticPaths() {
   const lessons = await getCollection('lessons');
@@ -58,7 +59,7 @@ const jsonLd = {
     <h1>{entry.data.title}</h1>
     {entry.data.operators?.length ? (
       <div class="tagrow">
-        {entry.data.operators.map((op) => <span class="chip">{op}</span>)}
+        {entry.data.operators.map((op) => <span class="chip">{labelOf(op)}</span>)}
       </div>
     ) : null}
     <Content />

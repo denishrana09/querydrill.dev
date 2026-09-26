@@ -15,13 +15,15 @@ engine (§4). Light + dark themes with a toggle, contrast-tested
 (§2). The app runs entirely in the browser (§1). 38 drills audited so starters
 show structure, never answer (§3). Content restructured into 3 tracks → 12
 modules → 54 lessons (§3). 74 static pages with full SEO plumbing, sitemap,
-JSON-LD and internal linking (§4). `npm run verify` builds and runs eight suites
-over all of it.
+JSON-LD and internal linking (§4). The tag vocabulary normalised into one closed
+list, 43 tags down to 7 that earn a clickable chip (§2). `npm run verify` builds
+and runs nine suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Tag vocabulary cleanup, then chip filtering** (§2). See the measurements in
-   that item before starting — the clicking is not the hard part.
+1. **Chip filtering** (§2). The vocabulary half is done — 43 tags down to a
+   closed list with 7 earning a clickable chip. What is left is the filtering
+   itself on the practice list.
 2. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
    legally open source however the README describes it.
 3. **Rewrite problem descriptions** (§3). The last content job of any size.
@@ -146,25 +148,55 @@ one commit per file, and never any AI attribution trailer.
       A coloured dot carries difficulty in the list (scannable down 38 rows
       without competing with the title); the word plus topic chips appear in the
       opened card. `content/legacy-ids.js` migrates existing localStorage.
-- [ ] **Make the tag chips do something.** They currently render in two places
-      and neither is clickable — on the practice card (`app.js`, difficulty +
-      topics) and on lesson pages (`learn/[slug].astro`, operators). A chip that
-      looks like a control and is not is worse than no chip.
-      **Fix the vocabulary first — clicking is not the hard part.** Measured
-      2026-09-26 across the 38 drills:
-      - 43 tags total, and **29 of them match exactly one exercise**. Clicking a
-        tag to be shown the one thing you were already looking at is worse than
-        it not clicking; as pages, that is 29 thin pages, which is the same
-        padding this project criticises MongoPractice for.
-      - `sort` and `$sort` both exist. Same concept, two spellings, a mistake in
-        the original tag table.
-      - `aggregation` is on **23 of 38** exercises — useless as a filter and a
-        duplicate of `/learn/` as a page.
-      Order of work: normalise the vocabulary (one spelling, drop `aggregation`
-      as noise, fold singletons into their parent concept) → chips filter the
-      practice list client-side → topic *pages* only for the ~12 tags with real
-      volume (`$group` 11, `find` 9, `arrays` 9, `update` 6, `$unwind` 5,
-      `$lookup` 4), which are also the long-tail keywords worth ranking for.
+- [~] **Make the tag chips do something.** Vocabulary done 2026-09-27, filtering
+      still to come. Chips render in two places — the practice card (`app.js`)
+      and lesson pages (`learn/[slug].astro`) — and neither is clickable yet. A
+      chip that looks like a control and is not is worse than no chip.
+      **The vocabulary had to go first**, and it is now `content/topics.js`: one
+      closed list, checked at import for drills and by the collection schema for
+      lessons, so a second spelling of an existing idea cannot appear again.
+      - 43 tags over 38 drills, **29 of them on exactly one drill**.
+      - `aggregation` was on **23 of 38** and proved *byte-identical* to "track is
+        not fundamentals"; `find` + `update` partitioned the fundamentals track
+        exactly, 9 and 6, no overlap. Those were the `track` and `module` fields
+        spelled a second time somewhere nothing kept them in step. `aggregation`
+        is gone. `find`/`update` stay — read-vs-write is worth filtering on, and
+        neither is a page that already exists.
+      - **32 of the 43 never left a single module.** For those, `/modules/<slug>/`
+        is already that filter and it has a title, a goal and prose. So a tag is
+        promoted to a clickable filter only if it crosses a module *and* has 3+
+        drills behind it: **7 chips** today — `$group` 11, `find()` 9, `arrays` 9,
+        `update` 6, `$unwind` 5, `$lookup` 4, `$map` 3, reaching 33 of 38 drills.
+        The remaining 49 tags stay labels, and now have to *look* like labels.
+      - **This item used to say `sort`/`$sort` were "the same concept, two
+        spellings, a mistake in the original tag table". That was wrong.** They
+        are the cursor method and the pipeline stage — as are `projection` and
+        `$project`, and `.skip()/.limit()` and `$skip`/`$limit`. Merging them
+        would have taught that they are interchangeable, which is a mistake
+        people actually make. They stay separate, and the cursor-side ones carry
+        the syntax you type, so `.sort()` next to `$sort` reads as a distinction
+        instead of a typo. `facet-pagination` was carrying the cursor
+        `pagination` tag while using the stages; retagged.
+      - Found on the way: the arrays lesson declared **`$contains`** among the
+        operators it teaches — an operator its own prose says does not exist —
+        and that field becomes the JSON-LD `teaches` property. Every build was
+        telling Google we teach an imaginary operator. Lessons now validate
+        against the same closed list, so the free-form string array that allowed
+        it is gone.
+      - `test/topics.mjs` — 11 checks, in `npm test` — holds the line: no dead
+        tags, no tag restating a module or any combination of tracks, every
+        operator tag present in its own drill's solution, and the filter row
+        bounded so it cannot drift back towards 43 chips. It also prints which
+        tags are one drill short of earning one, so growth past 38 drills is a
+        prompt to look rather than a silent change to the UI.
+      - Every check was proven to fail first: five deliberate breaks, including
+        putting `aggregation` back on all 23 drills. One was **missed** and had to
+        be rewritten — the filter-quality check imported the same constant it was
+        validating, so lowering it passed while putting three 2-drill chips in the
+        row. A test that imports its own threshold tests nothing.
+      Still to do: make the chips filter the practice list, then topic *pages* for
+      the tags with real volume — those are the long-tail keywords worth ranking
+      for.
 - [ ] Copy-query and share-a-permalink button (query encoded in URL hash)
 - [ ] Progress indicator: X/38 solved, per-topic breakdown
 - [ ] Favicon, OG image, 404 page
@@ -258,7 +290,9 @@ and then comes back to practice.
       only as "not all one value"; the calibration is a judgement call and worth
       revisiting once real people have attempted them.
 - [x] Topic tags per exercise (`find`, `$group`, `$lookup`, `update`, …).
-      Not yet wired to a filter UI — that is the next §2 item.
+      Vocabulary normalised 2026-09-27 into `content/topics.js`, a closed list
+      shared with lesson frontmatter — see the §2 item for what the measurements
+      found. Not yet wired to a filter UI; that is the remaining half.
 - [x] A defined **learning track**: tracks -> modules -> ordered drills, and the
       practice list now renders in that order instead of by batch file.
 - [ ] **Thin modules, to fill honestly.** The structure exposed where coverage is

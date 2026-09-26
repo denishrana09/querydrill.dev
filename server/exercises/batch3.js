@@ -4,7 +4,7 @@ export default [
   {
     id: 'lookup-join',
     difficulty: 'medium',
-    topics: ['aggregation', '$lookup'],
+    topics: ['$lookup'],
     title: '$lookup - the join',
     prompt:
       'For orders 1, 2 and 3, attach the matching `users` document as an array field named `user`. Project `_id`, `userId` and `user`. Sort by `_id` ascending.',
@@ -19,7 +19,7 @@ export default [
   {
     id: 'flatten-a-join',
     difficulty: 'medium',
-    topics: ['aggregation', '$lookup', '$unwind'],
+    topics: ['$lookup', '$unwind'],
     title: '$lookup + $unwind - flatten the join',
     prompt:
       'Same three orders, but `user` must be a single OBJECT rather than a one-element array. Return `_id`, `userId` and `userName` (the joined name). Sort by `_id` ascending.',
@@ -34,7 +34,7 @@ export default [
   {
     id: 'pipeline-lookup',
     difficulty: 'hard',
-    topics: ['aggregation', '$lookup', '$expr'],
+    topics: ['$lookup', '$expr'],
     title: 'Pipeline $lookup with let / $expr',
     prompt:
       'For users 101 and 102, attach only their COMPLETED orders as an array `completedOrders`, each entry projected down to `{ _id, status }`. Use the pipeline form of $lookup.\n\nProject `_id`, `name`, `completedOrders`. Sort by `_id` ascending.',
@@ -49,7 +49,7 @@ export default [
   {
     id: 'filter-array',
     difficulty: 'medium',
-    topics: ['aggregation', '$filter', 'arrays'],
+    topics: ['$filter', 'arrays'],
     title: '$filter - keep some array elements',
     prompt:
       'For orders 1 to 5, return `_id` and `pricyItems`: only those `items` whose price is 200 or more. The other fields of each item stay as they are. Sort by `_id` ascending.',
@@ -64,7 +64,7 @@ export default [
   {
     id: 'map-array',
     difficulty: 'medium',
-    topics: ['aggregation', '$map', 'arrays'],
+    topics: ['$map', 'arrays'],
     title: '$map - transform every element',
     prompt:
       'For orders 1 to 5, return `_id` and `lineTotals`: an array holding price x quantity for each item, in the same order. Sort by `_id` ascending.',
@@ -79,7 +79,7 @@ export default [
   {
     id: 'reduce-array',
     difficulty: 'hard',
-    topics: ['aggregation', '$reduce', 'arrays'],
+    topics: ['$reduce', 'arrays'],
     title: '$reduce - array down to one value',
     prompt:
       'For orders 1 to 5, return `_id` and `orderTotal`: the sum of price x quantity across all items - computed WITHOUT $unwind. Sort by `_id` ascending.',
@@ -94,7 +94,7 @@ export default [
   {
     id: 'conditional-counting',
     difficulty: 'medium',
-    topics: ['aggregation', '$cond', '$group'],
+    topics: ['$cond', '$group'],
     title: '$cond - conditional counting',
     prompt:
       'In ONE pass over `orders`, produce a single document { _id: null, completed, pending, cancelled } counting orders of each status.\n\nNo $match, no three separate queries - use $cond inside the accumulators.',
@@ -109,7 +109,7 @@ export default [
   {
     id: 'ifnull-default',
     difficulty: 'easy',
-    topics: ['aggregation', '$ifNull'],
+    topics: ['$ifNull'],
     title: '$ifNull - defaults for missing fields',
     prompt:
       'Only some orders have a `discount` field. For orders 1 to 8, return `_id`, `discount` as-is, and `effectiveDiscount` which falls back to 0 when `discount` is missing. Sort by `_id` ascending.',
@@ -124,7 +124,7 @@ export default [
   {
     id: 'facet-dashboard',
     difficulty: 'hard',
-    topics: ['aggregation', '$facet'],
+    topics: ['$facet'],
     title: '$facet - dashboard in one query',
     prompt:
       'Return ONE document with three independently computed fields:\n\n- `byStatus`: count per status as { _id, count }, sorted by `_id` ascending\n- `topProducts`: top 3 products by total quantity sold, as { _id, qty } sorted by qty descending\n- `totalOrders`: a single-element array like [{ n: 200 }]\n\nAll from `orders`, in a single pass.',
@@ -139,7 +139,7 @@ export default [
   {
     id: 'facet-pagination',
     difficulty: 'hard',
-    topics: ['aggregation', '$facet', 'pagination'],
+    topics: ['$facet', '$skip', '$limit'],
     title: '$facet - page of results plus total count',
     prompt:
       'The classic paginated API response. From completed orders sorted by `createdAt` descending, return one document with:\n\n- `data`: rows 6-10 (skip 5, limit 5), projected to { _id, userId, createdAt }\n- `total`: the FULL number of completed orders, not just the page\n\nMake `total` a plain number, not an array.',
@@ -154,7 +154,7 @@ export default [
   {
     id: 'group-by-month',
     difficulty: 'medium',
-    topics: ['aggregation', 'dates', '$dateToString', '$group'],
+    topics: ['dates', '$dateToString', '$group'],
     title: '$dateToString - group by month label',
     prompt:
       'Count completed orders per month, labelled "YYYY-MM". Output { _id: "2026-01", count: <n> } sorted by `_id` ascending.',
@@ -169,7 +169,7 @@ export default [
   {
     id: 'filter-then-calculate',
     difficulty: 'hard',
-    topics: ['aggregation', '$filter', '$map', '$sum'],
+    topics: ['$filter', '$map', '$sum'],
     title: 'Filter an array, THEN calculate',
     prompt:
       'For orders 1 to 10, return `_id` and `electronicsTotal`: the summed price x quantity of ONLY the items in category "Electronics". Orders with no electronics must still appear, with 0.\n\nDo not use $unwind - filter the array, then reduce it. Sort by `_id` ascending.',
@@ -184,7 +184,7 @@ export default [
   {
     id: 'capstone-top-customers',
     difficulty: 'hard',
-    topics: ['aggregation', '$lookup', '$unwind', '$group'],
+    topics: ['$lookup', '$unwind', '$group'],
     title: 'Full coding-round problem',
     prompt:
       'The interview question from the end of Batch 3.\n\nFind the top 5 users by total spending across COMPLETED orders, including their names. Output { _id: <userId>, name: <string>, totalSpent: <n> } sorted by totalSpent descending.\n\nThink about the order: filter, explode the items, total per user, rank, join the user, flatten.',

@@ -11,7 +11,7 @@
     "seed": "node server/seed.js",
     "selfcheck": "node server/selfcheck.js",
     "conformance": "node test/conformance.mjs",
-    "test": "node test/curriculum.mjs && node test/examples.mjs && node test/contrast.mjs && node test/browser-grade.mjs && node test/dom-smoke.mjs",
+    "test": "node test/curriculum.mjs && node test/topics.mjs && node test/examples.mjs && node test/contrast.mjs && node test/browser-grade.mjs && node test/dom-smoke.mjs",
     "test:browser": "node test/browser-grade.mjs",
     "test:dom": "node test/dom-smoke.mjs",
     "test:curriculum": "node test/curriculum.mjs",
@@ -20,7 +20,8 @@
     "test:contrast": "node test/contrast.mjs",
     "test:examples": "node test/examples.mjs",
     "test:island": "node test/dom-runnable.mjs",
-    "test:mobile": "node test/mobile.mjs"
+    "test:mobile": "node test/mobile.mjs",
+    "test:topics": "node test/topics.mjs"
   },
   "dependencies": {
     "mingo": "^7.2.4",

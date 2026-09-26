@@ -1,5 +1,6 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
+import { isTopic } from '../content/topics.js';
 
 // Lessons live in `content/`, not `src/content/`, because they are the product
 // rather than an implementation detail of the site - the same reason exercises
@@ -16,7 +17,14 @@ const lessons = defineCollection({
     module: z.string(),
     track: z.string(),
     description: z.string().min(40).max(165),
-    operators: z.array(z.string()).optional(),
+    // Checked against the shared vocabulary, because this field is not just a
+    // chip row: it becomes the JSON-LD `teaches` property. `$contains` was
+    // listed here for months on the arrays lesson, whose own prose says the
+    // operator does not exist - so the page told Google it taught something
+    // imaginary. A free-form array of strings could not have caught that.
+    operators: z.array(z.string().refine(isTopic, {
+      message: 'not in content/topics.js - add it there, or fix the spelling',
+    })).optional(),
     // Line range in the original notes. Provenance, not a live pointer.
     source: z.string().optional(),
   }),

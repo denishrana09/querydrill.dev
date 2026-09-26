@@ -10,6 +10,7 @@ import ecommerce from '../../server/datasets/ecommerce.js';
 import { inferSchema } from './schema.js';
 import { EXERCISES } from '../../server/exercises/index.js';
 import { MODULES, TRACKS, ALL_LESSONS } from '../../content/curriculum.js';
+import { labelOf } from '../../content/topics.js';
 import { migrateKeys } from '../../content/legacy-ids.js';
 
 const $ = (id) => document.getElementById(id);
@@ -347,7 +348,7 @@ function renderExercise(ex) {
   chips.className = 'chips';
   chips.innerHTML =
     `<span class="chip ${ex.difficulty}">${ex.difficulty}</span>` +
-    ex.topics.map((t) => `<span class="chip">${esc(t)}</span>`).join('');
+    ex.topics.map((t) => `<span class="chip">${esc(labelOf(t))}</span>`).join('');
   body.appendChild(chips);
 
   const prompt = document.createElement('div');

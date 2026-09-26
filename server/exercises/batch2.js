@@ -4,7 +4,7 @@ export default [
   {
     id: 'match-then-sort',
     difficulty: 'easy',
-    topics: ['aggregation', '$match', '$sort'],
+    topics: ['$match', '$sort'],
     title: '$match then $sort',
     prompt:
       'Using `orders`, keep only completed orders, sort by `createdAt` descending, and return the 3 newest. Project `_id`, `userId`, `status`, `createdAt`.',
@@ -19,7 +19,7 @@ export default [
   {
     id: 'project-computed-field',
     difficulty: 'medium',
-    topics: ['aggregation', '$project', '$size'],
+    topics: ['$project', '$size'],
     title: '$project with a computed field',
     prompt:
       'For orders 1, 2 and 3, return `_id` and a new field `itemCount` holding how many entries are in `items`. Nothing else. Sort by `_id` ascending.',
@@ -34,7 +34,7 @@ export default [
   {
     id: 'count-by-group',
     difficulty: 'easy',
-    topics: ['aggregation', '$group'],
+    topics: ['$group'],
     title: 'Count by group',
     prompt: 'Count orders per `status`. Output `{ _id: <status>, count: <n> }`.',
     lesson: 'group-and-sum',
@@ -47,7 +47,7 @@ export default [
   {
     id: 'several-accumulators',
     difficulty: 'medium',
-    topics: ['aggregation', '$group', '$avg', '$min', '$max'],
+    topics: ['$group', '$avg', '$min', '$max'],
     title: 'Several accumulators at once',
     prompt:
       'For each `status`, return `count`, `avgDiscount` (average of `discount`), `maxDiscount` and `minDiscount`. Sort by `_id` ascending.',
@@ -62,7 +62,7 @@ export default [
   {
     id: 'revenue-per-product',
     difficulty: 'medium',
-    topics: ['aggregation', '$unwind', '$group'],
+    topics: ['$unwind', '$group'],
     title: '$unwind + $group - revenue per product',
     prompt:
       'Total revenue per product across COMPLETED orders only. Revenue for a line item is price x quantity. Output `{ _id: <product>, revenue: <n> }` sorted by revenue descending.\n\nThe notes call this the single most important aggregation pattern.',
@@ -77,7 +77,7 @@ export default [
   {
     id: 'distinct-products-per-status',
     difficulty: 'medium',
-    topics: ['aggregation', '$unwind', '$group', '$addToSet'],
+    topics: ['$unwind', '$group', '$addToSet'],
     title: '$push vs $addToSet inside $group',
     prompt:
       'For each `status`, return two numbers:\n\n- `lineItems`: how many item entries were ordered under that status in total (duplicates counted)\n- `distinctProducts`: how many DIFFERENT products appear under that status\n\nOutput { _id, lineItems, distinctProducts } sorted by `_id` ascending.\n\nIf your two numbers come out equal, you used the accumulator that keeps duplicates.',
@@ -92,7 +92,7 @@ export default [
   {
     id: 'top-customers-by-spend',
     difficulty: 'medium',
-    topics: ['aggregation', '$unwind', '$group', '$limit'],
+    topics: ['$unwind', '$group', '$limit'],
     title: 'Top N customers by spend',
     prompt:
       'Find the top 5 users by total spending across completed orders. Output `{ _id: <userId>, totalSpent: <n> }` sorted by totalSpent descending.',
@@ -107,7 +107,7 @@ export default [
   {
     id: 'compound-group-key',
     difficulty: 'medium',
-    topics: ['aggregation', '$group'],
+    topics: ['$group'],
     title: 'Group by multiple fields',
     prompt:
       'Count orders grouped by BOTH `userId` and `status`, for users 101, 102 and 103 only. The `_id` must be an object `{ userId, status }`, plus a `count`. Sort by `_id.userId` then `_id.status`, both ascending.',
@@ -122,7 +122,7 @@ export default [
   {
     id: 'latest-per-user',
     difficulty: 'hard',
-    topics: ['aggregation', '$group', '$first', '$sort'],
+    topics: ['$group', '$first', '$sort'],
     title: '$first after sorting - latest order per user',
     prompt:
       'Find the most recent order for each of users 101, 102 and 103. Output `{ _id: <userId>, latestOrderId: <n>, latestDate: <date> }` sorted by `_id` ascending.',
@@ -137,7 +137,7 @@ export default [
   {
     id: 'average-per-month',
     difficulty: 'hard',
-    topics: ['aggregation', '$group', 'dates', '$map'],
+    topics: ['$group', 'dates', '$map'],
     title: 'Average order value per month',
     prompt:
       'For completed orders placed in 2026, compute the average ORDER value per calendar month. An order value is the sum of price x quantity across all of its items.\n\nOutput `{ _id: <month number>, avgOrderValue: <n> }` sorted by month ascending.\n\nWatch the order of operations - you must total each order before averaging, or you will be averaging line items instead.',
