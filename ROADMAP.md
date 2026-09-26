@@ -7,6 +7,37 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
 
 ---
 
+## Start here
+
+**Done so far:** the app runs entirely in the browser (§1). 38 drills audited so
+starters show structure, never answer (§3). Content restructured into 3 tracks →
+12 modules → 54 lessons (§3). 74 static pages with full SEO plumbing, sitemap,
+JSON-LD and internal linking (§4). `npm run verify` builds and checks all of it.
+
+**Next, in the order I would do it — nothing here is blocked, pick up at the top:**
+
+1. **Runnable examples on lesson pages** (§4, the live-editor item). *The*
+   differentiator and the biggest remaining gap. A lesson currently links to its
+   drill; it does not let you run the example where you are standing. Every
+   page-one Google result for `$lookup` is a Medium post you cannot run a query
+   on — and so, right now, is ours. The engine is already browser-safe and the
+   dataset builder is pure, so this is a compact editor + results island, not a
+   second copy of the app.
+2. **Responsive layout** (§2). The 3-pane grid is unusable on a phone and search
+   traffic is majority phone. Paired with (1), this is what makes 54 pages worth
+   having.
+3. **Tag vocabulary cleanup, then chip filtering** (§2). See the measurements in
+   that item before starting — the clicking is not the hard part.
+4. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
+   legally open source however the README describes it.
+
+**Working agreement:** go step by step and pause after each step for review,
+rather than finishing everything and then reporting. Opinions and pushback are
+wanted over compliance. Commits: short, human, one subject line, batched — never
+one commit per file, and never any AI attribution trailer.
+
+---
+
 ## 0. Decisions already made (don't relitigate)
 
 | Decision | Why |
@@ -67,6 +98,25 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
       A coloured dot carries difficulty in the list (scannable down 38 rows
       without competing with the title); the word plus topic chips appear in the
       opened card. `content/legacy-ids.js` migrates existing localStorage.
+- [ ] **Make the tag chips do something.** They currently render in two places
+      and neither is clickable — on the practice card (`app.js`, difficulty +
+      topics) and on lesson pages (`learn/[slug].astro`, operators). A chip that
+      looks like a control and is not is worse than no chip.
+      **Fix the vocabulary first — clicking is not the hard part.** Measured
+      2026-09-26 across the 38 drills:
+      - 43 tags total, and **29 of them match exactly one exercise**. Clicking a
+        tag to be shown the one thing you were already looking at is worse than
+        it not clicking; as pages, that is 29 thin pages, which is the same
+        padding this project criticises MongoPractice for.
+      - `sort` and `$sort` both exist. Same concept, two spellings, a mistake in
+        the original tag table.
+      - `aggregation` is on **23 of 38** exercises — useless as a filter and a
+        duplicate of `/learn/` as a page.
+      Order of work: normalise the vocabulary (one spelling, drop `aggregation`
+      as noise, fold singletons into their parent concept) → chips filter the
+      practice list client-side → topic *pages* only for the ~12 tags with real
+      volume (`$group` 11, `find` 9, `arrays` 9, `update` 6, `$unwind` 5,
+      `$lookup` 4), which are also the long-tail keywords worth ranking for.
 - [ ] Copy-query and share-a-permalink button (query encoded in URL hash)
 - [ ] Progress indicator: X/38 solved, per-topic breakdown
 - [ ] Favicon, OG image, 404 page
