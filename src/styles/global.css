@@ -316,6 +316,36 @@ kbd {
 .ex-head { display: flex; align-items: baseline; justify-content: space-between; }
 .progress { font-size: 12px; color: var(--muted); font-family: var(--mono); }
 
+/* ---------- topic filters ---------- */
+
+.ex-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 11px 0 13px;
+}
+.fchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text-soft);
+  cursor: pointer;
+}
+.fchip:hover { border-color: var(--line-strong); color: var(--text); }
+.fchip[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.fcount { font-size: 10px; color: var(--muted-2); }
+.fchip[aria-pressed='true'] .fcount { color: var(--on-accent); opacity: .8; }
+
 /* The trademark line. Every reading page has it in the footer; this page has no
    footer, so it goes at the end of the drill list. */
 .app-fine {
@@ -403,17 +433,22 @@ kbd {
 .ex-body { padding: 0 10px 10px; border-top: 1px solid var(--line); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 9px 0 0; }
+
+/* A label, not a control. These used to be outlined pills, which is what a
+   button looks like - and they do nothing when clicked, because only 7 of the 56
+   tags are worth filtering by and those live in .ex-filters. Filled and
+   borderless reads as a tag; the outline is reserved for things you can press. */
 .chip {
   font-size: 10px;
   font-family: var(--mono);
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 9px;
-  border: 1px solid var(--line);
+  background: var(--panel-2);
   color: var(--muted);
 }
-.chip.easy { color: var(--accent); border-color: var(--accent-dim); }
-.chip.medium { color: var(--warn); border-color: var(--warn-border); }
-.chip.hard { color: var(--danger); border-color: var(--danger-border); }
+.chip.easy { color: var(--accent); }
+.chip.medium { color: var(--warn); }
+.chip.hard { color: var(--danger); }
 .ex-prompt { white-space: pre-wrap; font-size: 13px; margin: 10px 0; }
 .ex-prompt code {
   font-family: var(--mono);
@@ -495,6 +530,27 @@ kbd {
      shell exists to avoid. */
   .pane { display: none; }
   .pane.on { display: block; }
+
+  /* One swipeable row instead of a wrapping block. Eight chips at a thumb-sized
+     44px wrap to three rows on a 360px screen - 130-odd pixels of filters before
+     the first drill, on the screen with the least room to spare. Scrolling keeps
+     it to one row, and the chip clipped at the edge is the hint that there is
+     more. Sideways scroll inside its own container is contained, not overflow. */
+  .ex-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    /* Cancels the pane padding so the row bleeds to both edges - a chip flush
+       against the edge reads as scrollable; one inset by 14px reads as the end. */
+    margin-inline: -14px;
+    padding-inline: 14px;
+    padding-bottom: 2px;
+    scroll-padding-inline: 14px;
+  }
+  .fchip {
+    flex: 0 0 auto;
+    padding: 11px 14px;
+    font-size: 12px;
+  }
   .editor-pane.on { display: flex; }
   /* Room for the bar to float over, so the end of a list is still reachable. */
   .pane { padding-bottom: 86px; }

@@ -16,23 +16,24 @@ engine (§4). Light + dark themes with a toggle, contrast-tested
 show structure, never answer (§3). Content restructured into 3 tracks → 12
 modules → 54 lessons (§3). 74 static pages with full SEO plumbing, sitemap,
 JSON-LD and internal linking (§4). The tag vocabulary normalised into one closed
-list, 43 tags down to 7 that earn a clickable chip (§2). MIT licensed, with a
-CONTRIBUTING guide whose every instruction was tested by following it (§7).
+list, 43 tags down to 7 that earn a clickable chip (§2). The drill list filters by
+topic (§2). MIT licensed, with a CONTRIBUTING guide whose every instruction was
+tested by following it (§7).
 `npm run verify` builds and runs nine suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Chip filtering** (§2). The vocabulary half is done — 43 tags down to a
-   closed list with 7 earning a clickable chip. What is left is the filtering
-   itself on the practice list.
-2. **Rewrite problem descriptions** (§3). The last content job of any size, and
-   it pairs with the thinner starters — a starter that gives less means the
-   prompt has to carry more.
-3. **CodeMirror 6** (§2), replacing the `<textarea>` in the app and the one the
+1. **Rewrite problem descriptions** (§3). The last content job of any size, and
+   it pairs with the thinner starters — a starter that gives less away means the
+   prompt has to carry more. Nothing else on this list changes what a learner
+   actually reads.
+2. **CodeMirror 6** (§2), replacing the `<textarea>` in the app and the one the
    lesson examples swap in.
-4. **A real README for strangers** (§7) — the false parts are fixed, but it still
-   opens with prose instead of a screenshot, and there is no screenshot to use
-   until the landing page exists (§5).
+3. **A real README for strangers** (§7) — the false parts are fixed, but it still
+   opens with prose instead of a screenshot, and there is no screenshot worth
+   using until the landing page exists (§5).
+4. **Topic pages** for the 7 filter tags (§4) — the long-tail keywords, and the
+   filtering that just landed is the thing they would be built on.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -152,10 +153,16 @@ one commit per file, and never any AI attribution trailer.
       A coloured dot carries difficulty in the list (scannable down 38 rows
       without competing with the title); the word plus topic chips appear in the
       opened card. `content/legacy-ids.js` migrates existing localStorage.
-- [~] **Make the tag chips do something.** Vocabulary done 2026-09-27, filtering
-      still to come. Chips render in two places — the practice card (`app.js`)
-      and lesson pages (`learn/[slug].astro`) — and neither is clickable yet. A
-      chip that looks like a control and is not is worse than no chip.
+- [x] **Make the tag chips do something.** DONE 2026-09-27. Vocabulary first,
+      then the filtering. The complaint was that chips render in two places and
+      neither is clickable — a chip that looks like a control and is not is worse
+      than no chip. Resolved by splitting the two jobs rather than by making all
+      56 tags clickable: **filters are a row of their own** above the drill list,
+      styled as controls; **card chips stay labels**, and now look like labels
+      (filled, borderless — the outlined pill they used to be *is* what a button
+      looks like here). Only 7 tags are worth filtering by, so making every chip
+      clickable would have left 49 dead-looking controls, which is the same bug
+      in a new place.
       **The vocabulary had to go first**, and it is now `content/topics.js`: one
       closed list, checked at import for drills and by the collection schema for
       lessons, so a second spelling of an existing idea cannot appear again.
@@ -198,9 +205,32 @@ one commit per file, and never any AI attribution trailer.
         be rewritten — the filter-quality check imported the same constant it was
         validating, so lowering it passed while putting three 2-drill chips in the
         row. A test that imports its own threshold tests nothing.
-      Still to do: make the chips filter the practice list, then topic *pages* for
-      the tags with real volume — those are the long-tail keywords worth ranking
-      for.
+      How the filtering behaves, and why:
+      - **One topic at a time**, and clicking the active chip clears it, so All is
+        not the only way back out. Multi-select was rejected: with 7 tags of 3-11
+        drills, an AND is almost always empty and an OR is almost always the
+        whole list.
+      - **Not remembered between visits.** Returning to find two thirds of the
+        course missing, because of a chip clicked last week, is a bug that looks
+        like lost content.
+      - **Empty modules and empty tracks disappear** with their headings. A
+        heading with nothing under it reads as a module that lost its drills.
+      - **Overall progress still counts the whole course**, not the filtered view.
+      - **A filter that hides the open drill closes it** — but never touches the
+        editor. Losing a half-written query to a filter click would be far worse
+        than losing your place.
+      - On a phone the row **scrolls sideways instead of wrapping**: eight
+        thumb-sized chips wrap to three rows at 360px, which is 126px of filters
+        above the first drill (measured, not guessed). `test/mobile.mjs` fails if
+        it ever wraps, if it stops scrolling while clipping chips, or if a chip
+        drops below 40px.
+      - 12 checks in `test/dom-smoke.mjs`, all five deliberate breaks caught. One
+        of them was rewritten after the break *passed*: it asserted the open card
+        disappears, which happens anyway because a filtered-out drill is never
+        rendered. The real consequence of not clearing `openId` is that the drill
+        springs back open when the filter clears — so that is what it checks now.
+      Still to do: topic *pages* for the tags with real volume — those are the
+      long-tail keywords worth ranking for.
 - [ ] Copy-query and share-a-permalink button (query encoded in URL hash)
 - [ ] Progress indicator: X/38 solved, per-topic breakdown
 - [ ] Favicon, OG image, 404 page

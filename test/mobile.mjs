@@ -195,6 +195,40 @@ const NAV_PROBE = `(() => {
 const navRes = await send('Runtime.evaluate', { expression: NAV_PROBE, returnByValue: true });
 const nav = JSON.parse(navRes.result.result.value);
 
+/* ---------- the topic filters have to be reachable ---------- */
+
+// The filter row wraps on a desktop and scrolls sideways on a phone, because
+// eight thumb-sized chips wrap to three rows at 360px - 130-odd pixels of
+// filters above the first drill, on the screen with the least room. A single
+// scrolling row is only correct if it really scrolls: `nowrap` without an
+// overflow container silently clips the last chips and nothing can reach them.
+await send('Runtime.evaluate', {
+  expression: `[...document.querySelectorAll('#tabbar button')]
+    .find((b) => b.textContent.includes('Exercises'))?.click()`,
+});
+await new Promise((r) => setTimeout(r, 250));
+
+const FILTER_PROBE = `(() => {
+  const row = document.getElementById('exFilters');
+  if (!row) return JSON.stringify({ missing: true });
+  const chips = [...row.querySelectorAll('button')];
+  if (!chips.length) return JSON.stringify({ empty: true });
+  const style = getComputedStyle(row);
+  const tops = new Set(chips.map((c) => Math.round(c.getBoundingClientRect().top)));
+  return JSON.stringify({
+    rows: tops.size,
+    scrolls: row.scrollWidth > row.clientWidth + 1,
+    canScroll: ['auto', 'scroll'].includes(style.overflowX),
+    shortest: Math.min(...chips.map((c) => Math.round(c.getBoundingClientRect().height))),
+    count: chips.length,
+    widest: Math.max(...chips.map((c) => Math.round(c.getBoundingClientRect().right))),
+    viewport: document.documentElement.clientWidth,
+  });
+})()`;
+
+const filterRes = await send('Runtime.evaluate', { expression: FILTER_PROBE, returnByValue: true });
+const filters = JSON.parse(filterRes.result.result.value);
+
 ws.close();
 await server.stop();
 
@@ -228,6 +262,28 @@ if (nav.missing) {
   if (nav.count !== 3) navProblems.push(`expected 3 panes in the tab bar, found ${nav.count}`);
 }
 
+const filterProblems = [];
+if (filters.missing) {
+  filterProblems.push('there is no topic filter row on the practice page');
+} else if (filters.empty) {
+  filterProblems.push('the filter row rendered no chips');
+} else {
+  if (filters.rows > 1) {
+    filterProblems.push(
+      `the chips wrap to ${filters.rows} rows at ${WIDTH}px - that is ${filters.rows * filters.shortest}px ` +
+      'of filters above the first drill; they should be one scrolling row'
+    );
+  }
+  // Clipped and unreachable is the failure mode of `nowrap`, so if the row is
+  // wider than its box it has to be scrollable.
+  if (filters.scrolls && !filters.canScroll) {
+    filterProblems.push('the chips are wider than the row but it does not scroll - the last ones cannot be reached');
+  }
+  if (filters.shortest < 40) {
+    filterProblems.push(`the smallest filter chip is ${filters.shortest}px tall; too small to tap reliably`);
+  }
+}
+
 /* ---------- report ---------- */
 
 let failed = 0;
@@ -246,6 +302,17 @@ if (navProblems.length) {
   for (const n of navProblems) console.log(`        ${n}`);
 } else {
   console.log(`  ${GREEN}ok${OFF}    the pane switcher stands out from the page and is thumb-sized`);
+}
+
+if (filterProblems.length) {
+  failed++;
+  console.log(`  ${RED}FAIL${OFF}  the topic filters do not work at ${WIDTH}px`);
+  for (const f of filterProblems) console.log(`        ${f}`);
+} else {
+  console.log(
+    `  ${GREEN}ok${OFF}    the ${filters.count} topic filters sit in one` +
+    `${filters.scrolls ? ' scrollable' : ''} row and are thumb-sized`
+  );
 }
 
 console.log(failed ? `\n  ${RED}${failed} mobile check(s) failed${OFF}\n` : `\n  ${GREEN}mobile OK${OFF}\n`);

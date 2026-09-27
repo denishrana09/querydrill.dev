@@ -68,6 +68,13 @@ import ThemeToggle from '../../components/ThemeToggle.astro';
         <h2>Exercises</h2>
         <span id="progress" class="progress"></span>
       </div>
+      <!--
+        Built at runtime from the tags that earned a filter - see
+        content/topics.js for the rule, which is that a tag has to cross a module
+        and have three drills behind it. Empty in the markup rather than listed
+        here, so the row can never disagree with the drills.
+      -->
+      <div id="exFilters" class="ex-filters" role="group" aria-label="Filter drills by topic"></div>
       <div id="exerciseList" class="ex-list"></div>
       <!--
         The reading pages carry this in their footer, but this page is a fixed

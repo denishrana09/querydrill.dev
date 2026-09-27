@@ -10,7 +10,7 @@ import ecommerce from '../../server/datasets/ecommerce.js';
 import { inferSchema } from './schema.js';
 import { EXERCISES } from '../../server/exercises/index.js';
 import { MODULES, TRACKS, ALL_LESSONS } from '../../content/curriculum.js';
-import { labelOf } from '../../content/topics.js';
+import { labelOf, filtersFor } from '../../content/topics.js';
 import { migrateKeys } from '../../content/legacy-ids.js';
 
 const $ = (id) => document.getElementById(id);
@@ -31,6 +31,10 @@ const state = {
   db: null,
   current: null,
   openId: null,
+  // Which topic the drill list is narrowed to, '' for all of them. Deliberately
+  // not persisted: coming back to find two thirds of the course missing, because
+  // of a chip you clicked last week, is a bug that looks like lost content.
+  filter: '',
   collection: null,
   showRaw: false,
   dirty: false,
@@ -276,15 +280,69 @@ function renderProgress() {
   $('tabCount').textContent = `${done}/${EXERCISES.length}`;
 }
 
+/* ---------- topic filters ---------- */
+
+// Only the tags that earned a chip - see content/topics.js. Making all 56
+// clickable would put 29 chips in this row that return the single drill you were
+// already looking at, and a row nobody can scan is the thing being fixed.
+const FILTERS = filtersFor(EXERCISES);
+
+/** The drills the current filter admits. */
+const visible = () =>
+  state.filter ? EXERCISES.filter((e) => e.topics.includes(state.filter)) : EXERCISES;
+
+function renderFilters() {
+  const host = $('exFilters');
+
+  if (host.children.length) {
+    // Built once. Re-rendering the row on every click would throw away the
+    // scroll position, which on a phone is the row itself.
+    for (const b of host.querySelectorAll('button')) {
+      b.setAttribute('aria-pressed', String(b.dataset.tag === state.filter));
+    }
+    return;
+  }
+
+  const chip = (tag, label, count) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'fchip';
+    b.dataset.tag = tag;
+    b.setAttribute('aria-pressed', String(tag === state.filter));
+    b.innerHTML = `<span>${esc(label)}</span><span class="fcount">${count}</span>`;
+    return b;
+  };
+
+  host.appendChild(chip('', 'All', EXERCISES.length));
+  for (const f of FILTERS) host.appendChild(chip(f.slug, labelOf(f.slug), f.count));
+
+  host.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-tag]');
+    if (!b) return;
+    // Clicking the active chip clears it, so All is not the only way back out.
+    state.filter = b.dataset.tag === state.filter ? '' : b.dataset.tag;
+    renderExercises();
+  });
+}
+
 function renderExercises() {
   const host = $('exerciseList');
   host.innerHTML = '';
+
+  const shown = visible();
+  // A drill left open behind a filter that hides it keeps the Check button in a
+  // card nobody can see. The editor is deliberately left alone - throwing away
+  // someone's half-written query to apply a filter would be much worse.
+  if (state.openId && !shown.some((e) => e.id === state.openId)) state.openId = null;
+  renderFilters();
 
   // Modules, grouped under their track. The three 15-exercise "batches" were a
   // sitting nobody finishes; a module is four to six drills on one idea.
   for (const track of TRACKS) {
     const modules = MODULES.filter((m) => m.track === track.slug);
-    if (!modules.length) continue;
+    // A whole track can be empty under a filter, and an empty track heading
+    // reads as a module that lost its drills.
+    if (!modules.some((m) => shown.some((e) => e.module === m.slug))) continue;
 
     const trackHead = document.createElement('h3');
     trackHead.className = 'track-head';
@@ -292,7 +350,7 @@ function renderExercises() {
     host.appendChild(trackHead);
 
     for (const module of modules) {
-      const group = EXERCISES.filter((e) => e.module === module.slug);
+      const group = shown.filter((e) => e.module === module.slug);
       if (!group.length) continue;
 
       const wrap = document.createElement('section');

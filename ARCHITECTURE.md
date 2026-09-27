@@ -85,6 +85,14 @@ Two rules live in that file and are enforced by `test/topics.mjs`:
   content; the test prints which tags are one drill short, so growth is a prompt
   rather than a surprise.
 
+The practice list filters by those promoted tags. The row is built from
+`filtersFor(EXERCISES)` rather than listed in the markup, so it cannot disagree
+with the drills. Card chips are **not** clickable and are styled so they do not
+look it — filled and borderless, where the outlined pill is reserved for things
+you can press. Making all 56 clickable would have left 49 controls that return
+the one drill you were already looking at, which is the original complaint moved
+rather than fixed.
+
 What is deliberately *not* merged: `sort`/`$sort`, `projection`/`$project` and
 `.skip()/.limit()`/`$skip` are cursor methods versus pipeline stages. Same goal,
 different mechanism, and treating them as interchangeable is a mistake learners
@@ -142,7 +150,7 @@ breaks both.
 | `npm test` | nothing | curriculum, tags, examples, contrast, browser grading, DOM wiring |
 | `npm run test:links` | a `dist/` build | no dead links, unique titles, real descriptions |
 | `npm run test:island` | a `dist/` build | the runnable examples work on the real built markup |
-| `npm run test:mobile` | a `dist/` build, Chrome | no page scrolls sideways at 360px, and the pane switcher is visible |
+| `npm run test:mobile` | a `dist/` build, Chrome | no page scrolls sideways at 360px; the pane switcher and topic filters are visible and thumb-sized |
 | `npm run verify` | nothing | build, then all of the above |
 | `npm run conformance` | a local `mongod` | mingo agrees with real MongoDB |
 | `npm run selfcheck` | a local `mongod` | every solution passes on the driver |

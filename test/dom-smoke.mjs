@@ -12,8 +12,11 @@ import { JSDOM } from 'jsdom';
 // say 38, which quietly made "add an exercise" a change that broke the test
 // suite - found by following CONTRIBUTING.md and adding one.
 import { EXERCISES } from '../server/exercises/index.js';
+import { MODULES } from '../content/curriculum.js';
+import { filtersFor, labelOf } from '../content/topics.js';
 
 const TOTAL = EXERCISES.length;
+const FILTERS = filtersFor(EXERCISES);
 
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';
@@ -274,6 +277,101 @@ $('exerciseList').querySelector('.ex .ex-name').click();
 await tick();
 check('opening an exercise brings the editor back with it',
   $('paneEditor').classList.contains('on') && $('editor').value.length > 0);
+
+/* ---------- topic filters ---------- */
+
+const fchip = (label) => [...$('exFilters').querySelectorAll('button')]
+  .find((b) => b.querySelector('span')?.textContent === label);
+
+const shownTitles = () => [...$('exerciseList').querySelectorAll('.ex .ex-name')].map((n) => n.textContent);
+
+const filterTags = [...$('exFilters').querySelectorAll('button')].map((b) => b.dataset.tag);
+check('the filter row is built from the promoted tags',
+  filterTags.length === FILTERS.length + 1 && filterTags[0] === '',
+  `${filterTags.length} chips: ${filterTags.join(' ')}`);
+check('every filter chip carries its own count',
+  [...$('exFilters').querySelectorAll('button')].every((b) => /^\d+$/.test(b.querySelector('.fcount').textContent)));
+check('All starts pressed', fchip('All').getAttribute('aria-pressed') === 'true');
+check('an unfiltered list shows every drill', shownTitles().length === TOTAL, `${shownTitles().length}`);
+
+// $group is the biggest filter, so a wrong implementation that shows everything
+// or nothing is unambiguous rather than off by one.
+const groupCount = EXERCISES.filter((e) => e.topics.includes('$group')).length;
+fchip('$group').click();
+await tick();
+check('clicking a chip narrows the list to that topic',
+  shownTitles().length === groupCount && shownTitles().length < TOTAL,
+  `${shownTitles().length} shown, ${groupCount} tagged $group`);
+check('and the pressed state moves off All',
+  fchip('$group').getAttribute('aria-pressed') === 'true' &&
+  fchip('All').getAttribute('aria-pressed') === 'false');
+check('every drill still shown really carries the tag',
+  [...$('exerciseList').querySelectorAll('.ex .ex-name')].every((n) =>
+    EXERCISES.find((e) => e.title === n.textContent)?.topics.includes('$group')));
+
+// A module whose drills are all filtered out must take its heading with it, and
+// so must a track - an empty heading reads as a module that lost its content.
+const headings = [...$('exerciseList').querySelectorAll('.ex-module > h4 span:first-child')]
+  .map((h) => h.textContent);
+check('modules with nothing left are dropped entirely',
+  headings.every((title) => {
+    const mod = MODULES.find((m) => m.title === title);
+    return EXERCISES.some((e) => e.module === mod?.slug && e.topics.includes('$group'));
+  }), headings.join(' | '));
+check('a track with no matching drills is dropped too',
+  $('exerciseList').querySelectorAll('.track-head').length <
+    new Set(MODULES.map((m) => m.track)).size,
+  `${$('exerciseList').querySelectorAll('.track-head').length} track headings`);
+
+check('overall progress still counts the whole course, not the filtered view',
+  $('progress').textContent.includes(`/${TOTAL} passed`), $('progress').textContent);
+
+// Clicking the active chip is the other way out, so All is not the only one.
+fchip('$group').click();
+await tick();
+check('clicking the active chip clears the filter',
+  shownTitles().length === TOTAL && fchip('All').getAttribute('aria-pressed') === 'true',
+  `${shownTitles().length} shown`);
+
+// Filtering away an open drill must not leave its Check button in a hidden card,
+// and must not take the editor's contents with it.
+//
+// The state is set up explicitly rather than by clicking the first card, because
+// a click toggles: if a drill were already open, clicking would close it and the
+// rest of this block would read a null card and throw. That is exactly what
+// happened when the collapse was deliberately removed to check this test fails -
+// it did fail, by crashing, which is not a message anyone can act on.
+if (!$('exerciseList').querySelector('.ex.open')) {
+  $('exerciseList').querySelector('.ex .ex-name').click();
+  await tick();
+}
+const openName = $('exerciseList').querySelector('.ex.open .ex-name');
+check('a drill can be opened before filtering it away', openName !== null);
+
+if (openName) {
+  const openTitle = openName.textContent;
+  const openEx = EXERCISES.find((e) => e.title === openTitle);
+  const away = FILTERS.find((f) => !openEx.topics.includes(f.slug));
+  $('editor').value = 'db.users.find({ mine: true })';
+  fchip(labelOf(away.slug)).click();
+  await tick();
+  check('a filter that hides the open drill hides its card',
+    $('exerciseList').querySelector('.ex.open') === null,
+    `${openTitle} is still open under the ${labelOf(away.slug)} filter`);
+  check('and does not take the editor contents with it',
+    $('editor').value === 'db.users.find({ mine: true })', $('editor').value);
+
+  // The check that actually needs the collapse. The card disappearing above
+  // happens either way - a drill outside the filter is simply never rendered.
+  // What the collapse buys is that `openId` does not stay pointing at it: leave
+  // it set and the drill springs back open when the filter clears, and the next
+  // click on that card *closes* it, which reads as the list ignoring you.
+  fchip('All').click();
+  await tick();
+  check('and it stays closed once the filter is cleared',
+    $('exerciseList').querySelector('.ex.open') === null,
+    `${openTitle} reopened itself`);
+}
 
 if (failures.length) {
   console.log(`\n  ${RED}${failures.length} failure(s):${OFF}`);
