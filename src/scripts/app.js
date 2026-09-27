@@ -28,7 +28,20 @@ const $ = (id) => document.getElementById(id);
 const editor = attachEditor($('editor'), {
   onRun: () => run(),
   onFormat: () => formatQuery(),
+  fields: fieldsOf,
 });
+
+// The editor asks what fields a collection has; this is the only place that
+// knows. inferSchema walks every document, so it is cached - and the cache is
+// dropped whenever the data changes, because a write can add a field and an
+// autocomplete that is confidently out of date is worse than none.
+const schemaCache = new Map();
+function fieldsOf(name) {
+  const docs = state.store?.[name];
+  if (!docs?.length) return null;
+  if (!schemaCache.has(name)) schemaCache.set(name, inferSchema(docs));
+  return schemaCache.get(name);
+}
 
 const LESSON_BY_SLUG = new Map(ALL_LESSONS.map((l) => [l.slug, l]));
 const LS_PROGRESS = 'mp.progress';
@@ -65,10 +78,11 @@ save(LS_DRAFTS, state.drafts);
 function loadDataset() {
   state.store = ecommerce.build();
   state.dirty = false;
+  schemaCache.clear();
   // The engine reports the moment a query writes anything, which is the only
   // time offering to restore the data means something to the learner.
   state.db = makeMingoDb(state.store, 'practice', {
-    onMutate: () => { state.dirty = true; },
+    onMutate: () => { state.dirty = true; schemaCache.clear(); },
   });
 }
 loadDataset();

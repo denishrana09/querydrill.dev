@@ -157,9 +157,8 @@ function highlightStyle({ language, highlight }) {
  * an autocomplete that is confidently wrong is worse than none - people stop
  * reading it and it is still in the way.
  *
- * Field paths are the obvious other half of this and are deliberately not here:
- * they need the shape of the collection being queried, which this module has no
- * business knowing. See the roadmap.
+ * Field paths are the other half, and `fieldSource` below is where they live -
+ * the two sources are near-exact opposites about strings.
  */
 const NOT_AN_OPERATOR = new Set(['String', 'TemplateString', 'LineComment', 'BlockComment', 'Comment']);
 
@@ -205,6 +204,111 @@ function operatorSource({ language, operators }) {
     // as long as what has been typed still looks like an operator, CodeMirror
     // narrows the list it already has.
     return { from: word.from, options, validFor: /^\$[a-zA-Z]*$/ };
+  };
+}
+
+/**
+ * Field paths.
+ *
+ * This module has no idea what collections exist and should not: it loads on
+ * every page, including the 58 with no dataset anywhere near them. The caller
+ * passes `fields(collection)` and decides where the shape comes from - the
+ * practice page already holds the store, a lesson page gets a copy with the
+ * engine.
+ *
+ * Three places want a field, and they are not the same place:
+ *
+ *   db.users.find({ sta⎸ })                           a bare key
+ *   db.orders.aggregate([{ $sort: { "items.pri⎸ } }]) a quoted key
+ *   db.orders.aggregate([{ $unwind: "$it⎸ }])         a reference inside a string
+ *
+ * and one place very much does not: in `{ status: "com⎸ }` the string is a
+ * value out of the data, not a field, and offering field names there would be
+ * wrong on every filter anybody writes.
+ */
+
+/** The collection being queried: the last `db.<name>.` before this point. */
+function collectionAt(state, pos) {
+  const text = state.sliceDoc(0, pos);
+  const re = /\bdb\s*\.\s*([A-Za-z_]\w*)\s*\./g;
+  let name = null;
+  for (let m; (m = re.exec(text)); ) name = m[1];
+  return name;
+}
+
+/** Where the path being typed starts, or null if this is not a field position. */
+function fieldStart({ language }, context) {
+  const node = language.syntaxTree(context.state).resolveInner(context.pos, -1);
+
+  // Two names for the same place. With the closing brace present the parser
+  // reads `{ disc` as an object literal; with the brace still missing it guesses
+  // destructuring instead, and calls the identical position `PropertyName`
+  // inside a `PatternProperty`. The parent matters: a bare `PropertyName` is
+  // also what `db.orders.fi` is, and completing field names there would be
+  // nonsense. Auto-closing brackets hide this most of the time, which is why it
+  // took a query typed without them to notice.
+  const isBareKey = node.name === 'PropertyDefinition' ||
+    (node.name === 'PropertyName' && node.parent?.name === 'PatternProperty');
+
+  if (isBareKey) {
+    const word = context.matchBefore(/[\w.]*/);
+    const start = word ? word.from : context.pos;
+    // `{ $ma` is an operator being typed. That is the other source's job, and
+    // both offering at once would be two lists fighting over one word.
+    return context.state.sliceDoc(start - 1, start) === '$' ? null : start;
+  }
+
+  if (node.name !== 'String') return null;
+
+  // A quoted key starts exactly where its property does. A value starts later -
+  // which is the whole difference between `{ "status": 1 }` and `{ x: "status" }`.
+  const isKey = node.parent?.name === 'Property' && node.parent.from === node.from;
+  const afterQuote = node.from + 1;
+  const dollar = context.state.sliceDoc(afterQuote, afterQuote + 1) === '$';
+
+  if (isKey) return dollar ? null : afterQuote;   // `{ "$gt": 5 }` is an operator
+  return dollar ? afterQuote + 1 : null;          // `"$items.price"`, past the $
+}
+
+/** Fields on every document first, then shallower paths. */
+const fieldBoost = (f) => (f.presence >= 1 ? 2 : 0) - (f.path.split('.').length - 1);
+
+/**
+ * What the panel says. Presence is the part worth having: this dataset leaves
+ * `discount` off more than half its orders on purpose, and reading that while
+ * typing the field is how it stops being a surprise two drills later.
+ */
+function fieldInfo(field, collection) {
+  const bits = [];
+  if (field.presence < 1) bits.push(`on ${Math.round(field.presence * 100)}% of ${collection}`);
+  if (field.sample) bits.push(`e.g. ${field.sample}`);
+  return bits.join(' · ') || null;
+}
+
+function fieldSource(mod, fields) {
+  return (context) => {
+    const start = fieldStart(mod, context);
+    if (start === null || context.pos < start) return null;
+
+    const collection = collectionAt(context.state, start);
+    if (!collection) return null;
+
+    // Asked per completion rather than held here, because a write can add a
+    // field and the caller is the only one who knows when the data changed.
+    const shape = fields(collection);
+    if (!shape?.length) return null;
+
+    return {
+      from: start,
+      options: shape.map((f) => ({
+        label: f.path,
+        type: 'property',
+        detail: f.type,
+        info: fieldInfo(f, collection),
+        boost: fieldBoost(f),
+      })),
+      validFor: /^[\w.]*$/,
+    };
   };
 }
 
@@ -275,12 +379,15 @@ async function upgrade(textarea, keys) {
       syntaxHighlighting(highlightStyle(mod)),
       bracketMatching(),
       closeBrackets(),
-      // `override` rather than adding a source: the JavaScript language pack
+      // `override` rather than adding sources: the JavaScript language pack
       // offers completions from the surrounding scope, which in a five-line
       // query means the words you just typed. This editor completes operators
-      // and nothing else, which is the version people can trust.
+      // and the fields of the collection being queried, and nothing else, which
+      // is the version people can trust.
       autocompletion({
-        override: [operatorSource(mod)],
+        override: keys.fields
+          ? [operatorSource(mod), fieldSource(mod, keys.fields)]
+          : [operatorSource(mod)],
         icons: false,
         maxRenderedOptions: 12,
         // Its own keymap is installed at the highest precedence, above anything
@@ -332,8 +439,12 @@ async function upgrade(textarea, keys) {
  * Replaces `textarea` with CodeMirror when it can, and hands back one object
  * that behaves the same either way.
  *
+ * `fields` is optional, and without it the editor completes operators only -
+ * which is what an editor with no dataset behind it should do.
+ *
  * @param {HTMLTextAreaElement} textarea
- * @param {{ onRun?: () => void, onFormat?: () => void }} keys
+ * @param {{ onRun?: () => void, onFormat?: () => void,
+ *           fields?: (collection: string) => {path:string,type:string,presence:number,sample:string}[] }} keys
  * @returns {{ value: string, insert: (t: string) => void, focus: () => void,
  *            el: HTMLElement, upgraded: boolean, ready: Promise<boolean> }}
  */

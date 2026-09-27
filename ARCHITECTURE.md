@@ -302,6 +302,39 @@ gutter would spend a tenth of that on counting to five. Also no `drawSelection`:
 the browser's own caret and selection are correct, themeable from CSS, and one
 less thing to keep contrast-tested.
 
+### What it completes, and how it knows
+
+Two sources, and they are near-exact opposites about strings — because `$` means
+two unrelated things and which one is decided by whether you are inside one:
+
+```js
+{ $group: { _id: "$items.product" } }
+  ^ an operator        ^ a field path
+```
+
+**Operators** come from `content/operators.js`, a curated list held to what the
+engine can actually run (see CONTRIBUTING).
+
+**Field paths** come from the caller. `attachEditor` takes a
+`fields(collection)` function and `editor.js` never learns what a dataset is —
+it loads on all 58 reading pages, most of which have no data anywhere near them.
+The practice page answers from the store it already built; a lesson page answers
+from the copy that arrives with the engine chunk, and pressing **Edit** starts
+that load so the answer is there by the time anyone types. Both cache the
+`inferSchema` walk and both drop that cache on a write, because `$set` can add a
+field and a stale completion is worse than none.
+
+Which collection is decided by reading the query: the last `db.<name>.` before
+the cursor. That is the whole of "knowing what is being queried", and it is why
+`db.users.find({ sk` offers `skills` and `db.orders.find({ sk` offers nothing.
+
+Where a field is wanted is a question for the syntax tree, and the answer has
+four shapes — a bare key, a bare key whose `{` is not closed yet (the parser
+calls that destructuring and renames the node), a quoted key, and a reference
+inside a string that starts with `$`. A string that is a *value* is none of
+them: offering field names while someone types the status they are filtering for
+would be wrong on every filter anyone writes.
+
 ## Traps already hit — don't re-introduce these
 
 **A test must not import the threshold it is checking.** `test/topics.mjs`

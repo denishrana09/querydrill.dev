@@ -85,6 +85,18 @@ async function clearAndType(text) {
   await type(text);
 }
 
+/**
+ * Puts text in without going through the keyboard, so auto-closing brackets do
+ * not balance it. That is how a paste arrives, and the only deliberate way to
+ * reach a query with an unclosed `{` - which the parser reads as something else
+ * entirely.
+ */
+async function clearAndInsert(text) {
+  await focusEditor();
+  await press('a', CTRL);
+  await send('Input.insertText', { text });
+}
+
 /* ---------- 1. it actually mounts ---------- */
 
 await send('Page.navigate', { url: base + '/practice/' });
@@ -357,14 +369,6 @@ const rendered = await evaluate(`JSON.stringify((() => {
 check('backticks in a description become code, not backticks',
   rendered.code.includes('$unwind') && !rendered.hasBacktick, JSON.stringify(rendered));
 
-// A $ inside a string is a field path - "$items.price" - not an operator, and
-// this is the one place a wrong suggestion would appear on every single query.
-await clearAndType('db.orders.aggregate([{ $unwind: "');
-await type('$');
-const inString = await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`,
-  { tries: 8, gap: 40 });
-check('but not inside a string, where $ means a field path', !inString);
-
 // Escape has to close the popup without also blurring, or the editor's own
 // keyboard escape hatch eats the dismissal.
 await clearAndType('db.orders.aggregate([{ ');
@@ -390,11 +394,129 @@ const ranWithPopup = await until(evaluate,
 check('Ctrl+Enter still runs the query', ranWithPopup,
   await evaluate(`JSON.stringify(document.getElementById('resultMeta').textContent)`));
 
-/* ---------- 11. Escape is the way out ---------- */
+/* ---------- 11. completing field paths ---------- */
+
+// The other half of the `$`, and the two sources are opposites about strings:
+// inside one, `$` means a field. Every check here is really about whether the
+// editor knows which collection is being queried.
+
+const info = () => evaluate(`JSON.stringify(
+  document.querySelector('.cm-completionInfo')?.textContent ?? null)`);
+
+await clearAndType('db.orders.find({ ');
+await type('sta');
+const onKey = await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`);
+const keyList = await popup();
+check('typing a key offers the fields of that collection', onKey,
+  JSON.stringify(keyList?.labels?.slice(0, 4)));
+check('and says what type each one is', keyList?.detail === 'string',
+  JSON.stringify(keyList?.detail));
+
+// The check that proves the collection name is being read rather than one list
+// being offered everywhere: `skills` is on users and nothing on orders starts
+// with those letters.
+await clearAndType('db.users.find({ ');
+await type('sk');
+await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`);
+const userFields = await popup();
+check('a users query offers users fields', userFields?.labels?.some((l) => l.startsWith('skills')),
+  JSON.stringify(userFields?.labels));
+
+await clearAndType('db.orders.find({ ');
+await type('sk');
+const wrongCollection = await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`,
+  { tries: 8, gap: 40 });
+check('...and an orders query does not', !wrongCollection);
+
+// A `$` inside a string is a field path, not an operator. This is the one place
+// a wrong suggestion would appear on every single query.
+await clearAndType('db.orders.aggregate([{ $unwind: "');
+await type('$it');
+await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`);
+const inString = await popup();
+check('$ inside a string offers fields, not operators',
+  inString?.labels?.some((l) => l.startsWith('items')) &&
+  !inString?.labels?.some((l) => l.startsWith('$')),
+  JSON.stringify(inString?.labels));
+// Nested paths are the point of offering anything here: `items.price` is what
+// $unwind and dot notation are for, and it is the part nobody guesses.
+check('nested paths are offered whole',
+  inString?.labels?.some((l) => l.startsWith('items.price')),
+  JSON.stringify(inString?.labels));
+
+await new Promise((r) => setTimeout(r, 150));   // interactionDelay, as above
+await press('Enter');
+const acceptedField = await doc();
+check('Enter accepts it into the string',
+  acceptedField.includes('"$items'), JSON.stringify(acceptedField));
+
+// A string that is a value is not a field. Offering `status` while someone
+// types the status they are filtering for would be wrong on every filter.
+//
+// `sta`, not `com`: the letters have to be ones a field really starts with, or
+// the popup stays shut because nothing matched and the check passes without
+// ever testing the rule. Written with `com` first, and the break that should
+// have caught it sailed through.
+await clearAndType('db.orders.find({ status: "');
+await type('sta');
+const inValue = await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`,
+  { tries: 8, gap: 40 });
+check('but a plain value string offers nothing', !inValue);
+
+// A query whose `{` has no `}` yet is read by the parser as destructuring, and
+// the key position gets a different name there. Auto-closing brackets hide that
+// almost always - which is why it took a pasted query to find, and why it is
+// worth a check of its own rather than trusting that it cannot happen.
+await clearAndInsert('db.orders.find({ dis');
+await type('c');
+const unclosed = await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete li')`);
+check('an unclosed { still completes fields', unclosed,
+  await evaluate(`JSON.stringify(document.querySelector('.cm-content').innerText)`));
+
+// A quoted key is a field again - this is `{ "items.price": -1 }`.
+await clearAndType('db.orders.aggregate([{ $sort: { "');
+await type('items.pri');
+const quotedKey = await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`);
+check('a quoted key offers fields too', quotedKey,
+  JSON.stringify((await popup())?.labels));
+
+// How often a field is actually there is the fact this dataset is built around,
+// and the completion is the earliest place it can be said.
+await clearAndType('db.orders.find({ ');
+await type('disc');
+await until(evaluate, `document.querySelector('.cm-completionInfo')`, { tries: 40 });
+const optional = await info();
+check('an optional field says how much of the collection has it',
+  /on \d+% of orders/.test(optional || ''), JSON.stringify(optional));
+
+// The two sources must not both answer for one word. `$st` is chosen so a
+// missing guard is visible: `$set` and `$sort` are operators, and `status` is a
+// field of this very collection, so the two lists would merge into one.
+await clearAndType('db.orders.aggregate([{ ');
+await type('$st');
+await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`);
+const stillOperators = await popup();
+check('a bare $ word is still operators only',
+  stillOperators?.labels?.length > 0 && stillOperators.labels.every((l) => l.startsWith('$')),
+  JSON.stringify(stillOperators?.labels));
+
+/* ---------- 12. Escape is the way out ---------- */
 
 // Tab indents inside the editor, which makes it a focus trap - the documented
 // cost of that binding. Escape is what pays it off, and nothing else in the app
 // would notice if it stopped working.
+
+// Typed out to a state where a completion has run and its popup has closed by
+// itself, because that is exactly the state the bug lived in: CodeMirror goes on
+// reporting a completion "active" long after there is anything on screen. The
+// precondition is asserted rather than assumed - this check spends its single
+// Escape on whatever is open, so a popup left behind by the section above would
+// make it fail for a reason that has nothing to do with the trap.
+await clearAndType('db.products.find({ category: "Audio" })');
+const popupClosed = await until(evaluate,
+  `!document.querySelector('.cm-tooltip-autocomplete')`, { tries: 20, gap: 40 });
+check('no completion popup is open going into this', popupClosed);
+
 await focusEditor();
 // One Escape, deliberately. A completion source that has run leaves CodeMirror
 // reporting "active" long after the popup has gone, and its own Escape binding
@@ -406,7 +528,7 @@ const blurred = await evaluate(
     && document.activeElement !== document.querySelector('.cm-content'))`);
 check('Escape leaves the editor, so Tab-to-indent is not a keyboard trap', blurred);
 
-/* ---------- 12. the lesson pages get it too ---------- */
+/* ---------- 13. the lesson pages get it too ---------- */
 
 await send('Page.navigate', { url: base + '/learn/find-and-findone/' });
 await until(evaluate, `document.querySelector('.rx-btn')`);
@@ -457,6 +579,21 @@ if (lessonUp) {
   check('the static block is hidden while editing', lesson.blockHidden);
 
   await focusEditor('.rx-editor .cm-content');
+  await press('a', CTRL);
+  await press('Backspace');
+
+  // Field completions need the dataset, which a reading page has no reason to
+  // have built yet. Asked here, before anything on this page has been Run, so it
+  // is answering whether pressing Edit was enough to start that load - if it
+  // were not, the completions would arrive only after the first Run, which is
+  // after the moment anyone wants them.
+  await type('db.products.find({ cat');
+  const lessonFields = await until(evaluate,
+    `document.querySelector('.cm-tooltip-autocomplete li')?.textContent.startsWith('category')`,
+    { tries: 60 });
+  check('a lesson editor completes fields before anything has been run', lessonFields,
+    await evaluate(`JSON.stringify([...document.querySelectorAll('.cm-tooltip-autocomplete li')].map((l) => l.textContent))`));
+
   await press('a', CTRL);
   await press('Backspace');
   await type('db.products.find({ category: "Audio" })');

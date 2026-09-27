@@ -24,20 +24,19 @@ A real code editor in the app and on every lesson page, colours taken from the
 existing token set, and none of its 167 KB anywhere near first paint (§2).
 Seven topic hub pages for the tags that cross a module, each with its own prose
 and a runnable example (§4). 69 "what usually goes wrong" notes, one to three per
-drill, shown after a failed attempt and nowhere else (§3). The editor completes
-`$` operators, offering only ones the engine can actually run (§2). Graded
-feedback grouped so one mistake is one line, worst case six instead of ten (§3).
+drill, shown after a failed attempt and nowhere else (§3). An editor that
+completes `$` operators and the fields of the collection the query names (§2).
+Graded feedback grouped so one mistake is one line, six lines instead of ten (§3).
 `npm run verify` builds and runs twelve suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Autocomplete for field paths** (§2) — the other half of the `$`, now that
-   operators are done. Needs the shape of the collection being queried, which is
-   the reason it was not done at the same time.
-2. **A landing page that says why this exists** (§5) — the whole of §5 and §6 is
+1. **A landing page that says why this exists** (§5) — the whole of §5 and §6 is
    still at zero, and it is the last thing separating "a good tool" from "a site
    a stranger stays on". Left until now on purpose: it describes the site, and
-   the site kept changing.
+   the site kept changing. It roughly has now.
+2. **First-visit onboarding** (§6) — land someone *in* a drill rather than on a
+   menu. Same reason, and the landing page decides where it sends them.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -170,6 +169,36 @@ one commit per file, and never any AI attribution trailer.
         the popup, for the rounded corners; the panel is a *child* of the popup
         that sits outside it. Present in the DOM, right size, never painted. No
         assertion noticed — a screenshot did. There is now a hit test.
+- [x] **Autocomplete for field paths.** DONE 2026-09-27. The other half of the
+      `$`. Typing a key, or a `$` inside a string, offers the fields of the
+      collection the query names - with the type, and how much of the collection
+      actually has it.
+      - **No list anywhere.** The fields are read from the data with the same
+        `inferSchema` the sidebar and the dataset page use, so adding a field to
+        the seed makes it completable and there is nothing to keep in sync.
+        `editor.js` still has no idea what a dataset is: the caller passes a
+        `fields(collection)` function, which matters because that module loads
+        on all 58 reading pages.
+      - **Which collection comes from the query text** - the last `db.<name>.`
+        before the cursor. One check is worth more than the rest put together:
+        `db.users.find({ sk` offers `skills` and `db.orders.find({ sk` offers
+        nothing, which cannot pass unless the name is really being read.
+      - **The presence percentage is the part worth having.** `discount` is on
+        57% of orders on purpose, and the completion says so while the field is
+        being typed - the earliest possible moment, instead of two drills later
+        when `$ifNull` is suddenly the answer.
+      - **An unclosed `{` is a different parse.** With the brace closed the
+        parser calls a key `PropertyDefinition`; with it missing it guesses
+        destructuring and calls the same position `PropertyName`. Auto-closing
+        brackets hide that almost always, so it took a *pasted* query to find -
+        and the parent node had to be checked too, because `db.orders.fi` is a
+        `PropertyName` as well and completing field names there is nonsense.
+      - **A check that passed for the wrong reason, again.** "A plain value
+        string offers nothing" typed `com` into a status filter - and no field
+        starts with those letters, so the popup stayed shut whether the rule
+        worked or not. The break sailed through. It types `sta` now, which
+        `status` really does prefix. Same shape as the bundle guard that could
+        not fail: a check has to be able to *see* the thing it forbids.
 - [ ] Put the caret in a starter's **empty slot** rather than at the end of it.
       Neither end of a blank `aggregate([ … ])` is where you want to type, and
       that was true of the textarea too — so it is one fix for both hosts, not a

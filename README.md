@@ -131,9 +131,16 @@ return { total: n };
 
 It is a real code editor — syntax highlighting, bracket matching, auto-indent,
 `Shift`+`Alt`+`F` to format. Typing `$` completes from 90 operators, each with
-what kind of operator it is and a one-line meaning, and it stays quiet inside a
-string because `"$items.price"` is a field path rather than an operator. If none
-of that ever loads, the plain textarea underneath still works.
+what kind of operator it is and a one-line meaning.
+
+Field names complete too, from the collection the query is actually about — so
+`db.orders.find({ disc` offers `discount`, and `"$it` inside a string offers
+`items.price` and the rest of the nested paths. Each one says its type and, when
+it is not on every document, how much of the collection has it: `discount` is
+there on 57% of orders, which is the sort of thing you would otherwise find out
+from a wrong answer.
+
+If none of that ever loads, the plain textarea underneath still works.
 
 ## Running against a real MongoDB
 

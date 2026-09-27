@@ -221,6 +221,11 @@ This is deliberately **not** `content/topics.js`. That file is the tag
 vocabulary: closed, narrow, about what the course teaches. It has `$gte` and no
 `$gt`, which is right for tagging and would be a lie in an autocomplete.
 
+**Field names are not in this file and should never be.** They are read from the
+data itself, for whichever collection the query names, so adding a field to the
+dataset makes it completable with no list to update. If a field stops being
+offered, the dataset is what changed.
+
 ## The screenshots are generated, not pasted
 
 The three images the README leads with come from `npm run shots`, which builds

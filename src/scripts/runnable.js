@@ -34,12 +34,17 @@ function engine() {
     import('../../engine/run.js'),
     import('../../engine/format.js'),
     import('../../server/datasets/ecommerce.js'),
+    // In here rather than at the top of this file: this module is what every
+    // lesson page loads on first paint, and inferSchema is only ever wanted by
+    // an editor that has already been opened.
+    import('./schema.js'),
   ])
-    .then(([db, run, fmt, data]) => ({
+    .then(([db, run, fmt, data, schema]) => ({
       makeMingoDb: db.makeMingoDb,
       runCode: run.runCode,
       highlight: fmt.highlight,
       dataset: data.default,
+      inferSchema: schema.inferSchema,
     }))
     .catch((err) => {
       enginePromise = null;
@@ -56,11 +61,26 @@ function engine() {
 let data = null;
 
 function freshData(mod) {
-  const next = { dirty: false };
-  next.db = mod.makeMingoDb(mod.dataset.build(), 'practice', {
-    onMutate: () => { next.dirty = true; },
+  const next = { dirty: false, mod, schemas: new Map() };
+  next.store = mod.dataset.build();
+  next.db = mod.makeMingoDb(next.store, 'practice', {
+    // A write invalidates the shape as well as the data: `$set` can add a field.
+    onMutate: () => { next.dirty = true; next.schemas.clear(); },
   });
   return next;
+}
+
+/**
+ * What the editor's field completion asks. Null until the engine chunk has
+ * arrived, which is honest - the page genuinely does not know the shape of a
+ * collection it has not built yet - and `ensureEditor` starts that load, so the
+ * answer turns up within a keystroke or two of anyone pressing Edit.
+ */
+function fieldsOf(name) {
+  const docs = data?.store?.[name];
+  if (!docs?.length) return null;
+  if (!data.schemas.has(name)) data.schemas.set(name, data.mod.inferSchema(docs));
+  return data.schemas.get(name);
 }
 
 /* ---------- small DOM helpers ---------- */
@@ -146,7 +166,11 @@ function enhance(pre, index) {
       pre.after(area);
       // Ctrl+Enter is bound in there rather than here, because the element it
       // has to be bound to is about to be replaced by CodeMirror.
-      editor = attachEditor(area, { onRun: run });
+      editor = attachEditor(area, { onRun: run, fields: fieldsOf });
+      // Pressing Edit is as good a signal as there is that a Run is coming, and
+      // the field completions need the dataset that load brings. Not awaited:
+      // the editor has to appear now, whatever the network is doing.
+      engine().then((mod) => { data ??= freshData(mod); }).catch(() => {});
       // Only matters if CodeMirror never arrives: the textarea is then still the
       // editor, and still the thing that has to be told how tall it is.
       editor.ready.then(fit);
