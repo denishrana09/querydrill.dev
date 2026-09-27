@@ -9,6 +9,8 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { allPaths } from '../content/curriculum.js';
 import { fencesIn } from '../engine/runnable.js';
+import { inferSchema } from '../src/scripts/schema.js';
+import ecommerce from '../server/datasets/ecommerce.js';
 
 const DIST = fileURLToPath(new URL('../dist', import.meta.url));
 const green = (s) => `\x1b[32m${s}\x1b[0m`;
@@ -108,6 +110,39 @@ check('every page has a description', noDesc.length === 0,
 const titles = htmlFiles.map((f) => readFileSync(f, 'utf8').match(/<title>([^<]*)<\/title>/)?.[1]);
 const dupeTitles = [...new Set(titles.filter((t, i) => titles.indexOf(t) !== i))];
 check('no two pages share a title', dupeTitles.length === 0, dupeTitles.join(' | '));
+
+// The dataset page exists to show which fields are optional, and it was getting
+// that exactly wrong: inferSchema reports presence as a ratio (0-1) and the page
+// read it as a percentage, so every field tested as "< 100" and the whole table
+// rendered optional - 0 fields said "always", 31 said "1%", and the callout
+// announced that `discount` is "present on 1% of documents". Checked against the
+// real data rather than against a hardcoded string, so it cannot drift.
+{
+  const html = readFileSync(join(DIST, 'dataset', 'index.html'), 'utf8');
+  const built = ecommerce.build();
+  // All three collections: the optional fields - the whole reason this page
+  // exists - live on `orders`, so checking `users` alone passed while the page
+  // was broken. A check that cannot fail is not a check.
+  const fields = Object.values(built).flatMap((docs) => inferSchema(docs));
+  const always = fields.filter((f) => f.presence === 1).length;
+  const partial = fields.filter((f) => f.presence < 1);
+
+  check('the dataset actually has optional fields to report', partial.length > 0,
+    'nothing to check - this guard would pass vacuously');
+
+  check('the dataset page marks always-present fields as always',
+    always > 0 && html.includes('>always<'),
+    `${always} fields are always present; the page says "always" ${(html.match(/>always</g) || []).length} times`);
+
+  const wrong = partial
+    .map((f) => ({ f, want: `${Math.round(f.presence * 100)}%` }))
+    .filter(({ want }) => !html.includes(`>${want}<`));
+  check('and reports each optional field at its real percentage', wrong.length === 0,
+    wrong.map(({ f, want }) => `${f.path} should show ${want}`).join(', '));
+
+  check('no field is reported as a bare ratio', !/present on [01]% of documents/.test(html),
+    (html.match(/present on [\d.]+% of documents/g) || []).slice(0, 3).join(' | '));
+}
 
 // MongoDB Inc. is protective of the mark, so this line is not decoration. It
 // lived in the reading-page footer, which meant /practice/ - the app shell, with

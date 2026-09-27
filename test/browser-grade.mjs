@@ -69,6 +69,41 @@ if (barren.length) {
   console.log(`  ${GREEN}every reference solution returns something a learner can see${OFF}`);
 }
 
+// 1c. If row order is graded, the prompt has to say what the order is.
+//
+//     `unordered` tells engine/compare.js to ignore order. When it is not set,
+//     order counts - and a drill that returns 30 rows in a graded order while the
+//     prompt never mentions sorting is asking the learner to guess a hidden rule.
+//     Write drills are exempt: you return an update result, and their `verify`
+//     query fixes the order itself.
+// Word-bounded, and without a bare "order": the first version matched the word
+// "orders" in every prompt that names the collection, so it could never fail.
+const ORDER_WORDS = ['sort', 'sorts', 'sorted', 'sorting', 'ascending', 'descending', 'newest', 'oldest'];
+const saysOrder = (prompt) => {
+  const words = prompt.toLowerCase().match(/[a-z]+/g) ?? [];
+  return words.some((w) => ORDER_WORDS.includes(w)) || /top \d/i.test(prompt) || /page \d/i.test(prompt);
+};
+const hiddenOrder = [];
+for (const ex of EXERCISES) {
+  if (ex.unordered || ex.type === 'write') continue;
+  const db = makeMingoDb(ecommerce.build());
+  let rows;
+  try {
+    const value = await runOrThrow(db, ex.solution);
+    rows = Array.isArray(value) ? value.length : 1;
+  } catch {
+    continue;   // already reported by the checks above
+  }
+  if (rows > 1 && !saysOrder(ex.prompt)) {
+    hiddenOrder.push(`${ex.id}: returns ${rows} rows in a graded order, prompt never says which`);
+  }
+}
+if (hiddenOrder.length) {
+  failures.push(...hiddenOrder);
+} else {
+  console.log(`  ${GREEN}every drill whose row order is graded says so in the prompt${OFF}`);
+}
+
 // 2. A wrong answer must fail, and must say something specific about why.
 //    A grader that silently passes everything would look perfect above.
 const probe = EXERCISES.find((e) => e.type !== 'write');

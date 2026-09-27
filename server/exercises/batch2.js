@@ -11,7 +11,7 @@ export default [
     lesson: 'match-stage',
     starter: 'db.orders.aggregate([\n  \n])',
     scaffold: 'db.orders.aggregate([\n  { $match: { } },\n  { $sort: { } },\n  { $limit: 3 },\n  { $project: { userId: 1, status: 1, createdAt: 1 } }\n])',
-    hint: '$match first - filtering early is the whole performance rule in the notes.',
+    hint: '$match first - filtering before the expensive stages is the whole performance rule.',
     unordered: false,
     solution:
       'db.orders.aggregate([{ $match: { status: "completed" } }, { $sort: { createdAt: -1 } }, { $limit: 3 }, { $project: { userId: 1, status: 1, createdAt: 1 } }])',
@@ -65,7 +65,7 @@ export default [
     topics: ['$unwind', '$group'],
     title: '$unwind + $group - revenue per product',
     prompt:
-      'Total revenue per product across COMPLETED orders only. Revenue for a line item is price x quantity. Output `{ _id: <product>, revenue: <n> }` sorted by revenue descending.\n\nThe notes call this the single most important aggregation pattern.',
+      'Total revenue per product across COMPLETED orders only. Revenue for a line item is price x quantity. Output `{ _id: <product>, revenue: <n> }` sorted by revenue descending.\n\nThis shape - explode the array, then group what falls out - is the one most real aggregation work is built on.',
     lesson: 'revenue-per-product',
     starter: 'db.orders.aggregate([\n  \n])',
     scaffold: 'db.orders.aggregate([\n  { $match: { } },\n  { $unwind: "$items" },\n  { $group: { } },\n  { $sort: { revenue: -1 } }\n])',
@@ -80,11 +80,11 @@ export default [
     topics: ['$unwind', '$group', '$addToSet'],
     title: '$push vs $addToSet inside $group',
     prompt:
-      'For each `status`, return two numbers:\n\n- `lineItems`: how many item entries were ordered under that status in total (duplicates counted)\n- `distinctProducts`: how many DIFFERENT products appear under that status\n\nOutput { _id, lineItems, distinctProducts } sorted by `_id` ascending.\n\nIf your two numbers come out equal, you used the accumulator that keeps duplicates.',
+      'For each `status`, return two numbers:\n\n- `lineItems`: how many item entries were ordered under that status in total (duplicates counted)\n- `distinctProducts`: how many DIFFERENT products appear under that status\n\nOutput { _id, lineItems, distinctProducts } sorted by `_id` ascending.',
     lesson: 'push-vs-addtoset-in-group',
     starter: 'db.orders.aggregate([\n  \n])',
     scaffold: 'db.orders.aggregate([\n  { $unwind: "$items" },\n  { $group: {\n    _id: "$status",\n    lineItems: { $sum: 1 },\n    products: { }\n  } },\n  { $project: { lineItems: 1, distinctProducts: { $size: "$products" } } },\n  { $sort: { _id: 1 } }\n])',
-    hint: '$push keeps every value including repeats; $addToSet de-duplicates. Collect with one of them, then take the $size.',
+    hint: '$push keeps every value including repeats; $addToSet de-duplicates. Collect with one of them, then take the $size. If your two numbers come out equal, you used the one that keeps duplicates.',
     unordered: false,
     solution:
       'db.orders.aggregate([{ $unwind: "$items" }, { $group: { _id: "$status", lineItems: { $sum: 1 }, products: { $addToSet: "$items.product" } } }, { $project: { lineItems: 1, distinctProducts: { $size: "$products" } } }, { $sort: { _id: 1 } }])',
@@ -140,11 +140,11 @@ export default [
     topics: ['$group', 'dates', '$map'],
     title: 'Average order value per month',
     prompt:
-      'For completed orders placed in 2026, compute the average ORDER value per calendar month. An order value is the sum of price x quantity across all of its items.\n\nOutput `{ _id: <month number>, avgOrderValue: <n> }` sorted by month ascending.\n\nWatch the order of operations - you must total each order before averaging, or you will be averaging line items instead.',
+      'For completed orders placed in 2026, compute the average ORDER value per calendar month. An order value is the sum of price x quantity across all of its items.\n\nOutput `{ _id: <month number>, avgOrderValue: <n> }` sorted by month ascending.',
     lesson: 'date-aggregation',
     starter: 'db.orders.aggregate([\n  \n])',
     scaffold: 'db.orders.aggregate([\n  { $match: { } },\n  { $set: { orderTotal: { } } },\n  { $group: { } },\n  { $sort: { _id: 1 } }\n])',
-    hint: 'Compute a per-order total first ($sum over a $map of the items array), then group by { $month: "$createdAt" } and $avg that total.',
+    hint: 'Compute a per-order total first ($sum over a $map of the items array), then group by { $month: "$createdAt" } and $avg that total. Averaging the line items instead of the order totals is the classic slip.',
     unordered: false,
     solution:
       'db.orders.aggregate([{ $match: { status: "completed", createdAt: { $gte: ISODate("2026-01-01"), $lt: ISODate("2027-01-01") } } }, { $set: { orderTotal: { $sum: { $map: { input: "$items", as: "i", in: { $multiply: ["$$i.price", "$$i.quantity"] } } } } } }, { $group: { _id: { $month: "$createdAt" }, avgOrderValue: { $avg: "$orderTotal" } } }, { $sort: { _id: 1 } }])',

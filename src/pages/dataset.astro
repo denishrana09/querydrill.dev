@@ -17,10 +17,18 @@ const collections = Object.entries(store).map(([name, docs]) => ({
   sample: docs[0],
 }));
 
+// inferSchema reports presence as a ratio, 0 to 1. This page read it as a
+// percentage, so `f.presence < 100` was true of every field ever: the whole table
+// rendered as optional, every required field showed "1%" instead of "always", and
+// the callout below announced that `discount` is "present on 1% of documents".
+// The page whose entire job is showing which fields are optional was calling all
+// 31 of them optional. src/scripts/app.js had it right all along.
+const pct = (f) => Math.round(f.presence * 100);
+
 // Optional fields are the ones worth calling out: they are why $ifNull exists,
 // and a single sample document hides them completely.
 const optional = collections.flatMap((c) =>
-  c.fields.filter((f) => f.presence < 100).map((f) => ({ collection: c.name, ...f }))
+  c.fields.filter((f) => f.presence < 1).map((f) => ({ collection: c.name, ...f }))
 );
 
 const json = (v) =>
@@ -44,6 +52,26 @@ const json = (v) =>
     your tab when the page loads, and your queries never leave it.
   </blockquote>
 
+  <!--
+    The one thing people get wrong about this data, and it is not obvious from a
+    field table: "orders" names two unrelated things. Worth saying in prose
+    rather than leaving someone to discover it by getting an empty result.
+  -->
+  <blockquote class="note warn-note">
+    <strong>Two different things are called “orders”.</strong>
+    Each user carries a small embedded <code>orders</code> array — a couple of
+    entries with <code>product</code>, <code>price</code> and <code>status</code>,
+    used by the array-update drills.
+    The separate <code>orders</code> <em>collection</em> is the real one: 200
+    documents with <code>userId</code>, <code>createdAt</code> and a nested
+    <code>items</code> array, and it is what almost every aggregation drill uses.
+    They are not linked, and their ids do not match: user 101 has embedded orders
+    <code>1011</code> and <code>1012</code>, while its documents in the
+    <code>orders</code> collection have quite different ids.
+    Each drill says which one it means; when a query comes back empty, this is
+    usually why.
+  </blockquote>
+
   {collections.map((c) => (
     <section>
       <div class="section-head">
@@ -61,13 +89,13 @@ const json = (v) =>
         </thead>
         <tbody>
           {c.fields.map((f) => (
-            <tr class={f.presence < 100 ? 'optional' : ''}>
+            <tr class={f.presence < 1 ? 'optional' : ''}>
               <td>
                 <code style={`margin-left:${f.depth * 0.9}rem`}>{f.name}</code>
               </td>
               <td class="muted">{f.type}</td>
-              <td class={f.presence < 100 ? 'warn' : 'muted'}>
-                {f.presence === 100 ? 'always' : `${f.presence}%`}
+              <td class={f.presence < 1 ? 'warn' : 'muted'}>
+                {f.presence === 1 ? 'always' : `${pct(f)}%`}
               </td>
               <td class="muted"><code>{f.sample}</code></td>
             </tr>
@@ -96,7 +124,7 @@ const json = (v) =>
       <ul>
         {optional.map((f) => (
           <li>
-            <code>{f.collection}.{f.path}</code> — present on {f.presence}% of documents
+            <code>{f.collection}.{f.path}</code> — present on {pct(f)}% of documents
           </li>
         ))}
       </ul>
@@ -118,6 +146,9 @@ const json = (v) =>
     border-radius: 0 6px 6px 0;
     font-size: 13.5px;
   }
+  /* The trap note, marked out from the reassuring one above it. */
+  .warn-note { border-left-color: var(--warn); margin-bottom: 18px; }
+  .warn-note code { font-family: var(--mono); font-size: 12.5px; }
   h2 code { font-size: 1em; background: none; padding: 0; color: var(--accent); }
   .table-wrap { overflow-x: auto; margin-bottom: 10px; }
   .fields { width: 100%; border-collapse: collapse; font-size: 13px; }

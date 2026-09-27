@@ -137,6 +137,24 @@ for (const e of EXERCISES) spread[e.difficulty]++;
 check('difficulty is not all one value', Object.values(spread).every((n) => n > 0),
   JSON.stringify(spread));
 
+/* ---------- prompts have to stand on their own ---------- */
+
+// Everything a learner reads has to make sense to someone who arrived from a
+// search result. Three prompts pointed at "the notes" and "the end of Batch 3" -
+// the private markdown files the lessons were written from, which nobody outside
+// this repo has ever seen. They were invisible in review because whoever wrote
+// them had read the notes.
+const PRIVATE_SOURCE = /\bthe notes\b|\bbatch\s*\d|\bthe notes call\b/i;
+const strangerUnsafe = [];
+for (const e of EXERCISES) {
+  for (const [field, text] of [['prompt', e.prompt], ['hint', e.hint], ['title', e.title]]) {
+    const hit = PRIVATE_SOURCE.exec(text ?? '');
+    if (hit) strangerUnsafe.push(`${e.id} ${field}: "${hit[0]}"`);
+  }
+}
+check('no drill points at the private source notes', strangerUnsafe.length === 0,
+  strangerUnsafe.join('\n        '));
+
 /* ---------- legacy ids ---------- */
 
 check('every legacy id maps to a real exercise',

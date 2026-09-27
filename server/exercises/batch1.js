@@ -91,11 +91,11 @@ export default [
     topics: ['find', 'arrays', '$elemMatch'],
     title: 'The $elemMatch trap',
     prompt:
-      'Each user has an embedded `orders` array. Find users who have an order that is BOTH product "Laptop" AND status "completed" - in the SAME array element.\n\nThe naive version returns 20 users. The correct one returns 10. Getting 20 means two different array elements satisfied your two conditions.\n\nReturn `name` and `orders`, no `_id`.',
+      'Each user has an embedded `orders` array. Find users who have an order that is BOTH product "Laptop" AND status "completed" - in the SAME array element.\n\nReturn `name` and `orders`, no `_id`.',
     lesson: 'elemmatch',
     starter: 'db.users.find(\n  { },\n  { }\n)',
     scaffold: 'db.users.find(\n  { },\n  { _id: 0, name: 1, orders: 1 }\n)',
-    hint: 'Multiple conditions that must hold on the same array object -> $elemMatch.',
+    hint: 'Multiple conditions that must hold on the same array object -> $elemMatch. As a check: the naive version returns 20 users, the correct one 10.',
     unordered: true,
     solution:
       'db.users.find({ orders: { $elemMatch: { product: "Laptop", status: "completed" } } }, { _id: 0, name: 1, orders: 1 })',
@@ -138,11 +138,11 @@ export default [
     collections: ['users'],
     title: '$set without clobbering the nested object',
     prompt:
-      'Change user 101\'s city to "Bangalore" - and ONLY the city. `address.country` must survive.\n\nThis is the mistake the notes call dangerous: setting the whole `address` object replaces it.',
+      'Change user 101\'s city to "Bangalore" - and ONLY the city. `address.country` must still be there afterwards.',
     lesson: 'update-and-set',
     starter: 'db.users.updateOne(\n  { },\n  { }\n)',
     scaffold: 'db.users.updateOne(\n  { _id: 101 },\n  { $set: { } }\n)',
-    hint: 'Set "address.city", not `address`.',
+    hint: 'Set "address.city", not `address`. Setting the whole object replaces it, and takes `address.country` with it.',
     verify: 'db.users.findOne({ _id: 101 }, { _id: 0, name: 1, address: 1 })',
     solution: 'db.users.updateOne({ _id: 101 }, { $set: { "address.city": "Bangalore" } })',
   },
@@ -173,11 +173,11 @@ export default [
     collections: ['users'],
     title: '$addToSet vs $push',
     prompt:
-      'Add the skill "MongoDB" to users 101 and 104 - without creating a duplicate. User 101 does not have it yet; user 104 already does.\n\nUsing the wrong operator gives user 104 the skill twice.',
+      'Add the skill "MongoDB" to users 101 and 104 - without creating a duplicate. User 101 does not have it yet; user 104 already does.',
     lesson: 'array-update-operators',
     starter: 'db.users.updateMany(\n  { },\n  { }\n)',
     scaffold: 'db.users.updateMany(\n  { _id: { $in: [101, 104] } },\n  { }\n)',
-    hint: '$push always adds. You want the one that adds only when absent.',
+    hint: '$push always adds, so user 104 would end up with the skill twice. You want the one that adds only when absent.',
     unordered: false,
     verify:
       'db.users.find({ _id: { $in: [101, 104] } }, { _id: 1, name: 1, skills: 1 }).sort({ _id: 1 })',

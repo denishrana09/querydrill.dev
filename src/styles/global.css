@@ -449,6 +449,8 @@ kbd {
 .chip.easy { color: var(--accent); }
 .chip.medium { color: var(--warn); }
 .chip.hard { color: var(--danger); }
+/* Prose, not an operator name - so not the monospace the topic tags use. */
+.chip.order { font-family: inherit; color: var(--text-soft); }
 .ex-prompt { white-space: pre-wrap; font-size: 13px; margin: 10px 0; }
 .ex-prompt code {
   font-family: var(--mono);

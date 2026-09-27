@@ -147,7 +147,7 @@ breaks both.
 
 | command | needs | what it proves |
 |---|---|---|
-| `npm test` | nothing | curriculum, tags, examples, contrast, browser grading, DOM wiring |
+| `npm test` | nothing | curriculum, tags, prompts, examples, contrast, browser grading, DOM wiring |
 | `npm run test:links` | a `dist/` build | no dead links, unique titles, real descriptions |
 | `npm run test:island` | a `dist/` build | the runnable examples work on the real built markup |
 | `npm run test:mobile` | a `dist/` build, Chrome | no page scrolls sideways at 360px; the pane switcher and topic filters are visible and thumb-sized |
@@ -209,6 +209,24 @@ plus the dataset is 36 KB and loads on the first Run. Making that static would p
 the `find` below it should show the write — that is the truth about a database.
 Rebuilding per block would teach that updates do nothing. The cost is that a write
 persists across the page, so the result meta says so and offers to restore it.
+
+**A ratio is not a percentage.** `inferSchema` reports field presence as 0-1;
+`src/pages/dataset.astro` compared it against 100. Every field therefore tested as
+"< 100", so the page whose entire purpose is showing which fields are optional
+rendered all 31 of them optional, showed "1%" where it meant "always", and told
+readers `discount` is "present on 1% of documents". `src/scripts/app.js` had it
+right (`presence * 100`), which is exactly why nobody noticed - the sidebar looked
+fine. `test/links.mjs` now checks the built page against the real data.
+
+**A prompt must not out-give its own hint.** The help ladder is Hint -> scaffold
+-> solution, and several prompts handed over the method before the first rung:
+the capstone listed all six pipeline stages in order, which *is* what its scaffold
+shows. State the problem in the prompt; put the method in the hint.
+
+**Everything a learner reads has to survive arriving from a search result.** Four
+drills pointed at "the notes" and "the end of Batch 3" - the private markdown in
+`batch*.md` that the lessons were extracted from. Invisible to anyone who had read
+them. `test/curriculum.mjs` fails on any prompt, hint or title that does it again.
 
 ## Traps already hit — don't re-introduce these
 

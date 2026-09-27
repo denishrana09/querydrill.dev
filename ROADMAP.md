@@ -17,23 +17,24 @@ show structure, never answer (§3). Content restructured into 3 tracks → 12
 modules → 54 lessons (§3). 74 static pages with full SEO plumbing, sitemap,
 JSON-LD and internal linking (§4). The tag vocabulary normalised into one closed
 list, 43 tags down to 7 that earn a clickable chip (§2). The drill list filters by
-topic (§2). MIT licensed, with a CONTRIBUTING guide whose every instruction was
+topic (§2). Prompts audited and made safe for someone who has never seen the
+source notes (§3). MIT licensed, with a CONTRIBUTING guide whose every instruction was
 tested by following it (§7).
 `npm run verify` builds and runs nine suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Rewrite problem descriptions** (§3). The last content job of any size, and
-   it pairs with the thinner starters — a starter that gives less away means the
-   prompt has to carry more. Nothing else on this list changes what a learner
-   actually reads.
-2. **CodeMirror 6** (§2), replacing the `<textarea>` in the app and the one the
-   lesson examples swap in.
+1. **CodeMirror 6** (§2), replacing the `<textarea>` in the app and the one the
+   lesson examples swap in. The editor is where all the time is spent and it is
+   the least finished thing on the site.
+2. **Topic pages** for the 7 filter tags (§4) — the long-tail keywords, built on
+   the filtering that already landed.
 3. **A real README for strangers** (§7) — the false parts are fixed, but it still
    opens with prose instead of a screenshot, and there is no screenshot worth
    using until the landing page exists (§5).
-4. **Topic pages** for the 7 filter tags (§4) — the long-tail keywords, and the
-   filtering that just landed is the thing they would be built on.
+4. **"Common mistakes" after a failed attempt** (§3). The content for several of
+   these already exists — it came out of the prompts during the rewrite and is
+   sitting in hints, which is not quite the right moment to show it.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -292,10 +293,35 @@ and then comes back to practice.
       leave the lesson. The two pages without one are pure tables with no query
       on them to run, and `test/examples.mjs` names them rather than exempting
       reference pages as a class.
-- [ ] **Rewrite problem descriptions** for a worldwide audience:
-      - state the goal, the collection, and the exact expected shape
-      - no assumed context from having read the notes end to end
-      - say explicitly when order matters vs doesn't
+- [x] **Rewrite problem descriptions** for a worldwide audience. DONE
+      2026-09-27 — and much smaller than this item assumed, because measuring
+      first showed two of its three criteria were already met:
+      - *State the goal, the collection, the exact expected shape.* The starter
+        names the collection in **38 of 38**, so "the prompt never says the
+        collection" was a defect in my audit, not in the prompts. Shapes were
+        already precise.
+      - *Say when order matters.* Every drill whose row order is graded and which
+        returns more than one row already said so. Rather than add a sentence to
+        the nine `unordered` prompts — nine more places to drift — the card now
+        renders an **any order / order matters** chip from the same flag
+        `engine/compare.js` reads. Write drills claim nothing: you return an
+        update result, and their `verify` query fixes the order.
+      - *No assumed context.* This was the real defect. Four places pointed at
+        "the notes" and "the end of Batch 3" — the private markdown the lessons
+        were written from, which no reader has ever seen. Invisible in review
+        because whoever wrote them had read the notes.
+      The other real finding: **several prompts gave away more than their own
+      hint did**, which pre-climbs the first rung of the help ladder. The capstone
+      was the worst — it listed all six pipeline stages in order, and that list
+      *is* the scaffold sitting one click away. Six prompts had their method or
+      their diagnostic moved into the hint where it belongs. Only 2 of 38 prompts
+      name an operator from their solution, and both are specs (`pipeline-lookup`
+      must say which `$lookup` form is wanted), so no change there.
+      Guards added: `test/curriculum.mjs` fails if any prompt, hint or title
+      points at the private notes — which immediately found a fourth in a hint my
+      own audit had missed, because it only scanned prompts. `test/browser-grade.mjs`
+      fails if a drill returns multiple rows in a graded order without saying
+      which order.
 - [x] **Starter-code audit — starters show structure, never answer.**
       Measured 2026-09-03: starters give away an average **56%** of their own
       solution, and **24 of 38** give away over half. Worst offenders:

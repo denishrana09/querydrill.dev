@@ -112,6 +112,29 @@ const openCard = $('exerciseList').querySelector('.ex.open');
 check('opening an exercise expands it', Boolean(openCard));
 check('opening an exercise loads its starter code', $('editor').value.length > 0);
 
+// The order chip has to agree with the flag the grader reads, not just exist -
+// a card promising "any order" on an order-graded drill is worse than silence.
+const orderChip = openCard.querySelector('.chip.order');
+const first = EXERCISES[0];
+check('the card says whether row order is graded',
+  orderChip?.textContent === (first.unordered ? 'any order' : 'order matters'),
+  `${first.id} is ${first.unordered ? 'unordered' : 'ordered'}, chip says "${orderChip?.textContent}"`);
+
+// Write drills return an update result and their verify query fixes the order,
+// so claiming either way would be a guess dressed up as a fact.
+const writeEx = EXERCISES.find((e) => e.type === 'write');
+const writeCard = [...$('exerciseList').querySelectorAll('.ex .ex-name')]
+  .find((n) => n.textContent === writeEx.title);
+writeCard.click();
+await tick();
+check('write drills claim nothing about row order',
+  $('exerciseList').querySelector('.ex.open .chip.order') === null,
+  $('exerciseList').querySelector('.ex.open .chip.order')?.textContent);
+writeCard.click();
+await tick();
+firstCard.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+await tick();
+
 $('editor').value = EXERCISES[0].solution;
 openCard.querySelector('.ex-actions button.primary')
   .dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));

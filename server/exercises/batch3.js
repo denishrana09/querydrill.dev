@@ -127,7 +127,7 @@ export default [
     topics: ['$facet'],
     title: '$facet - dashboard in one query',
     prompt:
-      'Return ONE document with three independently computed fields:\n\n- `byStatus`: count per status as { _id, count }, sorted by `_id` ascending\n- `topProducts`: top 3 products by total quantity sold, as { _id, qty } sorted by qty descending\n- `totalOrders`: a single-element array like [{ n: 200 }]\n\nAll from `orders`, in a single pass.',
+      'Return ONE document with three independently computed fields:\n\n- `byStatus`: count per status as { _id, count }, sorted by `_id` ascending\n- `topProducts`: top 3 products by total quantity sold, as { _id, qty } sorted by qty descending\n- `totalOrders`: a single-element array like [{ n: <count> }]\n\nAll from `orders`, in a single pass.',
     lesson: 'facet-stage',
     starter: 'db.orders.aggregate([\n  { $facet: {} }\n])',
     scaffold: 'db.orders.aggregate([\n  { $facet: {\n    byStatus: [ ],\n    topProducts: [ ],\n    totalOrders: [ ]\n  } }\n])',
@@ -172,7 +172,7 @@ export default [
     topics: ['$filter', '$map', '$sum'],
     title: 'Filter an array, THEN calculate',
     prompt:
-      'For orders 1 to 10, return `_id` and `electronicsTotal`: the summed price x quantity of ONLY the items in category "Electronics". Orders with no electronics must still appear, with 0.\n\nDo not use $unwind - filter the array, then reduce it. Sort by `_id` ascending.',
+      'For orders 1 to 10, return `_id` and `electronicsTotal`: the summed price x quantity of ONLY the items in category "Electronics". Orders with no electronics must still appear, with 0.\n\nDo not use $unwind - work on the array in place. Sort by `_id` ascending.',
     lesson: 'filter-then-calculate',
     starter: 'db.orders.aggregate([\n  { $match: {} },\n  { $project: {} },\n  { $sort: {} }\n])',
     scaffold: 'db.orders.aggregate([\n  { $match: { _id: { $lte: 10 } } },\n  { $project: {\n    electronicsTotal: { }\n  } },\n  { $sort: { _id: 1 } }\n])',
@@ -187,7 +187,7 @@ export default [
     topics: ['$lookup', '$unwind', '$group'],
     title: 'Full coding-round problem',
     prompt:
-      'The interview question from the end of Batch 3.\n\nFind the top 5 users by total spending across COMPLETED orders, including their names. Output { _id: <userId>, name: <string>, totalSpent: <n> } sorted by totalSpent descending.\n\nThink about the order: filter, explode the items, total per user, rank, join the user, flatten.',
+      'A full coding-round question, of the kind that gets asked in an interview.\n\nFind the top 5 users by total spending across COMPLETED orders, including the name of each one. Output { _id: <userId>, name: <string>, totalSpent: <n> } sorted by totalSpent descending.\n\nThe spending is in `orders`; the names are in `users`.',
     lesson: 'coding-round-walkthrough',
     starter: 'db.orders.aggregate([\n  \n])',
     scaffold: 'db.orders.aggregate([\n  { $match: {} },\n  { $unwind: "" },\n  { $group: {} },\n  { $sort: {} },\n  { $limit: 5 },\n  { $lookup: {} },\n  { $unwind: "" },\n  { $project: {} },\n  { $sort: {} }\n])',

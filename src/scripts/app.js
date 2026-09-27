@@ -404,8 +404,17 @@ function renderExercise(ex) {
 
   const chips = document.createElement('div');
   chips.className = 'chips';
+  // Whether row order is graded comes from the same flag engine/compare.js reads,
+  // so the card and the grader cannot drift apart - which is why this is a chip
+  // rather than a sentence repeated in nine prompts. Write drills say nothing:
+  // you return an update result, and the verify query decides the order.
+  const order = ex.type === 'write'
+    ? ''
+    : `<span class="chip order">${ex.unordered ? 'any order' : 'order matters'}</span>`;
+
   chips.innerHTML =
     `<span class="chip ${ex.difficulty}">${ex.difficulty}</span>` +
+    order +
     ex.topics.map((t) => `<span class="chip">${esc(labelOf(t))}</span>`).join('');
   body.appendChild(chips);
 
