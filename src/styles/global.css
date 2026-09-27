@@ -407,6 +407,29 @@ textarea.query-box:focus,
 .result-meta .err { color: var(--danger); }
 .result-meta .ok { color: var(--accent); }
 
+/* The empty state, before anything has been run. It sits above the (empty)
+   results box and is removed by the first run, so it costs one element in the
+   markup and no JavaScript to show. */
+.result-hint {
+  flex: 0 0 auto;
+  max-width: 46rem;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--text-soft);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.result-hint p { margin: 0 0 7px; }
+.result-hint p:last-child { margin-bottom: 0; }
+/* While the note is up, the empty results box below it is a second empty
+   rectangle saying the same nothing. The first run removes the note, and this
+   selector stops matching in the same moment. */
+.result-hint ~ .result-body { display: none; }
+.result-hint strong { color: var(--text); }
+.result-hint a { color: var(--accent); }
+
 .result-body {
   flex: 1;
   min-height: 0;
@@ -605,6 +628,19 @@ textarea.query-box:focus,
   font-size: 11.5px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Shown when "Show solution" is pressed before anything has been checked. Kept
+   in the hint's shape rather than the feedback's: it is help, not a verdict. */
+.ex-gate {
+  margin-top: 9px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-soft);
+  background: var(--panel-2);
+  border-left: 2px solid var(--muted);
 }
 
 .ex-feedback { margin-top: 9px; font-size: 12.5px; }

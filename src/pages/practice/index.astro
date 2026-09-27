@@ -66,6 +66,24 @@ import ThemeToggle from '../../components/ThemeToggle.astro';
           <div id="resultMeta" class="result-meta muted">results appear here</div>
           <button id="copyResultBtn" class="ghost tiny" hidden title="Copy the results">Copy</button>
         </div>
+        <!--
+          The empty state, in the markup rather than written by JavaScript: it is
+          on screen at first paint, and the first run removes it. Three empty
+          panes and a list of 38 cards is a menu, and this is the pane with room
+          to say what the page is before anybody has pressed anything.
+        -->
+        <div id="resultHint" class="result-hint">
+          <p>
+            <strong>The data is already in this tab</strong> — 30 users, 200 orders and
+            11 products. Queries run here, nothing is uploaded, and there is no account.
+            Writes change only your copy, and a bar appears offering to put it back.
+          </p>
+          <p>
+            Press <strong>Run</strong> to execute what is in the editor, or answer the
+            drill on the right and press <strong>Check</strong>.
+          </p>
+          <p><a href="/dataset/">What is in the data →</a></p>
+        </div>
         <pre id="resultBody" class="result-body json-view"></pre>
       </div>
     </section>

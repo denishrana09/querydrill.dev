@@ -335,6 +335,31 @@ inside a string that starts with `$`. A string that is a *value* is none of
 them: offering field names while someone types the status they are filtering for
 would be wrong on every filter anyone writes.
 
+## Arriving for the first time
+
+`/practice/` opens the first drill and fills the field list with the collection
+that drill queries, so the editor holds a starter, the sidebar lists real fields
+and the prompt says what to do. Before that it was three empty panes and 38
+cards, which is a menu that asks a stranger to choose before they know what any
+of it is.
+
+It happens **only when there is nothing to preserve** — no progress, no saved
+draft, no `#hash`. That condition is the load-bearing part: getting it wrong
+means throwing away a returning learner's work to be helpful at them, so it has
+a test of its own, in a second jsdom with a second copy of the module.
+
+The empty results pane carries the orientation text — what the data is, that
+queries run in the tab, that nothing is uploaded — **in the markup**, not written
+by JavaScript. So it is on screen at first paint, it costs nothing to show, and
+the first run removes it. An empty state rather than a dismissible banner: there
+is nothing to remember, nothing to store, and nothing to close.
+
+The help ladder is one escalating button — hint, then the scaffold if the drill
+has one, then the solution — and its last rung needs an attempt behind it. Any
+attempt; a wrong one is the point. Before that it explains itself rather than
+sitting disabled, because a control that says no without saying how to get past
+it is worse than what it is guarding.
+
 ## Traps already hit — don't re-introduce these
 
 **A test must not import the threshold it is checking.** `test/topics.mjs`

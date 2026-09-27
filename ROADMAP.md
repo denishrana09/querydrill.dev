@@ -27,16 +27,22 @@ and a runnable example (§4). 69 "what usually goes wrong" notes, one to three p
 drill, shown after a failed attempt and nowhere else (§3). An editor that
 completes `$` operators and the fields of the collection the query names (§2).
 Graded feedback grouped so one mistake is one line, six lines instead of ten (§3).
+A landing page that runs a real query and shows the real grader's real answer to
+a real wrong one (§5). A first visit that lands in a drill instead of on a menu,
+with the dataset explained in the pane that used to be empty (§6).
 `npm run verify` builds and runs twelve suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **A landing page that says why this exists** (§5) — the whole of §5 and §6 is
-   still at zero, and it is the last thing separating "a good tool" from "a site
-   a stranger stays on". Left until now on purpose: it describes the site, and
-   the site kept changing. It roughly has now.
-2. **First-visit onboarding** (§6) — land someone *in* a drill rather than on a
-   menu. Same reason, and the landing page decides where it sends them.
+1. **The launch blockers in §8** — `site:` is still `https://example.com`, which
+   poisons every canonical URL, every OG tag and the whole sitemap; there is no
+   `404.astro`; `og-default.png` is referenced and does not exist. None of it
+   needs the domain to be bought, and all of it has to be right before anything
+   is deployed. This is the next thing worth doing.
+2. **`.gitattributes` with `* text=auto`** (§7) — the repo has mixed line
+   endings, which makes one-line edits produce whole-file diffs.
+3. Then the remaining §2/§3 polish: the caret in a starter's empty slot, a
+   results table view, the cheatsheet page.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -690,13 +696,37 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
 
 ## 6. Onboarding / how to use
 
-- [ ] First-visit guided path — land people *in* an exercise, not on a menu
-- [ ] Explain the dataset up front (users / orders / products, with schemas)
-- [ ] Make it obvious data is in-browser, resettable, and never uploaded
-- [ ] Hints are already per-exercise — surface them progressively, not all at once
-- [ ] "Show solution" stays gated behind an attempt (it already is server-side; keep
-      that intent client-side)
-- [ ] Empty editor should suggest something runnable, not sit blank
+- [x] **First-visit guided path.** DONE 2026-09-27. A first visit opens the first
+      drill and fills the field list with the collection that drill queries, so
+      the editor holds a starter, the sidebar lists real fields, and the prompt
+      says what to do. What it replaced: three empty panes and 38 cards, which is
+      a menu asking a stranger to choose before they know what any of it is.
+      - **Only when there is nothing to preserve** - any progress, any saved
+        draft or any hash and the person's own state wins. That branch is the
+        one that can do harm, so it has its own test: a second jsdom and a
+        second copy of the module, seeded with progress, asserting that nothing
+        opens and the editor is left alone.
+      - Which drill is not hardcoded, and the collection is read off the drill's
+        own starter rather than declared a second time.
+- [x] **The dataset, explained up front.** The empty results pane says what the
+      data is, that queries run in the tab, that nothing is uploaded and that
+      writes only affect your copy - in the markup, so it is there at first
+      paint, and removed by the first run. An empty state rather than a
+      dismissible banner: nothing to remember, nothing to store, nothing to
+      close.
+- [x] **Obvious that data is in-browser, resettable and never uploaded** - said
+      in that note, alongside the header pill and the restore bar that already
+      appear.
+- [x] Hints are already per-exercise, and already progressive: **one escalating
+      button** - Hint, then the scaffold if the drill has one, then the solution.
+      Three buttons let someone skip straight to the answer and crowded the card.
+- [x] **"Show solution" is behind an attempt.** Any attempt - a wrong one is the
+      point. Before that the rung explains itself rather than sitting disabled,
+      and stays available, because a button that says no without saying how to
+      get past it is worse than the thing it is guarding.
+- [x] **The editor suggests something runnable** rather than sitting blank: on a
+      first visit it holds the opened drill's starter. Cleared later, the
+      placeholder still shows a complete query to type.
 
 ---
 

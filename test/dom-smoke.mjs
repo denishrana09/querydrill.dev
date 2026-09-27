@@ -58,6 +58,38 @@ try {
 check('app module loads against the page markup', !loadError, loadError?.message);
 if (loadError) { console.log(''); process.exit(1); }
 
+/* ---------- what a first visit looks like ---------- */
+
+// Asserted here and nowhere else: this is the state the app is in the instant it
+// starts, with empty localStorage, and every check below this point changes it.
+const $$ = (id) => document.getElementById(id);
+const landed = $$('exerciseList').querySelector('.ex.open');
+check('a first visit lands in a drill rather than on a menu', Boolean(landed));
+check('...and it is the first drill in the list, which is the easiest one',
+  landed === $$('exerciseList').querySelector('.ex'),
+  landed?.querySelector('.ex-name')?.textContent);
+check('...with its starter in the editor',
+  $$('editor').value === EXERCISES[0].starter,
+  JSON.stringify($$('editor').value));
+
+// The other pane that would otherwise say "pick a collection". The drill is
+// about `users`, and the app reads that off the drill's own starter.
+const active = document.querySelector('.collections li.active');
+check('the field list is filled with the collection that drill queries',
+  active?.textContent?.startsWith('users'), active?.textContent);
+check('...and really lists its fields',
+  ($$('schema')?.textContent ?? '').includes('email'),
+  ($$('schema')?.textContent ?? '').slice(0, 40));
+
+// Not a dismissible banner: it is what the empty results pane says, it is in the
+// markup so it is there at first paint, and the first run removes it.
+check('the results pane explains itself before anything has run',
+  ($$('resultHint')?.textContent ?? '').includes('nothing is uploaded'));
+
+// Back to a closed list, which is the state every check below was written
+// against - they open a card themselves and would otherwise be closing this one.
+landed?.querySelector('.ex-title')?.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+
 const $ = (id) => document.getElementById(id);
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -104,6 +136,10 @@ for (let i = 0; i < 20; i++) await tick();
 check('running a query produces results', $('resultMeta').textContent.includes('ok'),
   $('resultMeta').textContent);
 check('results are rendered', $('resultBody').innerHTML.includes('status'));
+// The empty state has said its piece. Left behind, it sits above every result
+// from here on telling someone who has just run a query that nothing has run.
+check('and the note about the empty pane is gone once something has run',
+  $('resultHint') === null);
 
 // Open the first exercise and submit its own solution.
 const firstCard = $('exerciseList').querySelector('.ex .ex-title');
@@ -286,8 +322,27 @@ helpBtn.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
 check('second click loads the scaffold', $('editor').value === withScaffold.scaffold, $('editor').value);
 check('label advances to the solution', helpBtn.textContent === 'Show solution', helpBtn.textContent);
 
+// The last rung is behind an attempt. Reading the answer to a question you have
+// not tried teaches nothing, and without this the ladder is three clicks from an
+// unread prompt to the solution.
 helpBtn.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-check('third click reveals the solution',
+check('the solution is not given to someone who has not tried',
+  !helpCard.querySelector('.ex-solution'),
+  helpCard.querySelector('.ex-solution')?.textContent);
+check('...and it says so, rather than a button that just will not work',
+  (helpCard.querySelector('.ex-gate')?.textContent ?? '').includes('Press Check'),
+  helpCard.querySelector('.ex-gate')?.textContent);
+check('...and the rung is still there afterwards',
+  helpBtn.textContent === 'Show solution' && !helpBtn.disabled, helpBtn.textContent);
+
+// Any answer counts, including a wrong one - that is the whole point of it.
+$('editor').value = 'db.users.find({ _id: -1 })';
+helpCard.querySelector('.ex-actions button.primary')
+  .dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+for (let i = 0; i < 40; i++) await tick();
+
+helpBtn.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+check('after an attempt the solution is there',
   helpCard.querySelector('.ex-solution')?.textContent === withScaffold.solution);
 check('ladder ends disabled', helpBtn.disabled);
 
@@ -546,6 +601,48 @@ if (openName) {
   await tick();
   check('an unknown ?topic= shows the whole course rather than nothing',
     bogus.window.document.getElementById('exerciseList').querySelectorAll('.ex').length === TOTAL);
+}
+
+/* ---------- and what a second visit looks like ---------- */
+
+// The other half of landing in a drill, and the half that can do harm: someone
+// who has been here before must get back what they left, not whatever the app
+// thinks a beginner wants. A second DOM and a second copy of the module - the
+// query string is what makes Node evaluate it again rather than hand back the
+// instance already running above.
+{
+  const second = new JSDOM(`<!doctype html><html><body>${body}</body></html>`, {
+    url: 'https://example.com/practice/',
+  });
+  globalThis.window = second.window;
+  globalThis.document = second.window.document;
+  globalThis.localStorage = second.window.localStorage;
+  globalThis.getComputedStyle = second.window.getComputedStyle.bind(second.window);
+  globalThis.location = second.window.location;
+  globalThis.history = second.window.history;
+
+  const returning = EXERCISES[3];
+  localStorage.setItem('mp.progress', JSON.stringify({ [returning.id]: 'pass' }));
+  localStorage.setItem('mp.drafts', JSON.stringify({ [returning.id]: 'db.users.find({ mine: 1 })' }));
+
+  let err = null;
+  try {
+    await import('../src/scripts/app.js?visit=2');
+  } catch (e) {
+    err = e;
+  }
+  check('the app loads a second time against its own markup', !err, err?.message);
+
+  const doc = second.window.document;
+  check('a returning visit opens nothing by itself',
+    doc.querySelector('.ex.open') === null,
+    doc.querySelector('.ex.open .ex-name')?.textContent);
+  check('...and does not overwrite what was in the editor',
+    doc.getElementById('editor').value === '',
+    JSON.stringify(doc.getElementById('editor').value));
+  check('...while the progress it saved is still counted',
+    doc.getElementById('progress').textContent.startsWith('1/'),
+    doc.getElementById('progress').textContent);
 }
 
 if (failures.length) {

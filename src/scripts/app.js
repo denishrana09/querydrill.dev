@@ -210,6 +210,9 @@ async function run() {
     save(LS_DRAFTS, state.drafts);
   }
 
+  // The empty-state note has done its job the moment anything runs.
+  $('resultHint')?.remove();
+
   $('resultMeta').textContent = 'running…';
   renderResult(await runCode(state.db, code));
   renderCollections();     // a write query changes the counts
@@ -500,7 +503,11 @@ function renderExercise(ex) {
     // Starters give only the call and empty slots; this restores the heavier
     // scaffold, so a thin default never strands a beginner.
     ...(ex.scaffold ? [{ label: 'Show the shape', run: () => setEditor(ex.scaffold) }] : []),
-    { label: 'Show solution', run: () => revealSolution(ex, body) },
+    // The last rung needs an attempt behind it. Not to be strict - anything at
+    // all counts, and a wrong answer is the point - but because reading the
+    // solution to a question you have not tried teaches nothing, and the ladder
+    // is otherwise a three-click path straight to the answer.
+    { label: 'Show solution', run: () => (state.progress[ex.id] ? revealSolution(ex, body) : askForAnAttempt(body)) },
   ];
 
   let step = 0;
@@ -652,6 +659,26 @@ function showMistakes(ex, body) {
 }
 
 /** @returns false if the learner backed out, so the help ladder does not advance. */
+/**
+ * The answer to "Show solution" before anything has been checked. Returns false
+ * so the ladder does not advance - the rung is still there once they have tried.
+ *
+ * A disabled button would be worse: it says no without saying why, and the way
+ * past it is not obvious from looking at it.
+ */
+function askForAnAttempt(body) {
+  let note = body.querySelector('.ex-gate');
+  if (!note) {
+    note = document.createElement('div');
+    note.className = 'ex-gate';
+    note.textContent =
+      'Press Check on an answer first — any answer. Getting it wrong is what the ' +
+      'feedback is for, and the solution is here afterwards.';
+    body.appendChild(note);
+  }
+  return false;
+}
+
 function revealSolution(ex, body) {
   if (body.querySelector('.ex-solution')) return true;
   const ok = confirm(
@@ -774,7 +801,53 @@ function openFromHash({ scroll = true } = {}) {
   return true;
 }
 
-if (!openFromHash()) renderExercises();
+/** The drill the list shows first: first track, first module in it, first drill. */
+function firstDrill() {
+  for (const track of TRACKS) {
+    for (const module of MODULES.filter((m) => m.track === track.slug)) {
+      const first = EXERCISES.find((e) => e.module === module.slug);
+      if (first) return first;
+    }
+  }
+  return null;
+}
+
+/**
+ * A first visit opens a drill instead of presenting a menu.
+ *
+ * Three empty panes and a list of 38 cards asks a stranger to choose before they
+ * know what any of it is. This opens the first drill - which is the easiest one,
+ * because the course is ordered - and fills the field list with the collection
+ * that drill is about, so two of the three panes say something on arrival.
+ *
+ * Only when there is genuinely nothing to preserve. Any progress, any saved
+ * draft or any hash means this is not a first visit, and what the person left
+ * behind beats anything this would do for them.
+ */
+function landInADrill() {
+  if (Object.keys(state.progress).length || Object.keys(state.drafts).length) return false;
+
+  const ex = firstDrill();
+  if (!ex) return false;
+
+  // The collection the drill is about, read off its own starter rather than
+  // declared twice.
+  const name = /\bdb\.([A-Za-z_]\w*)\s*\./.exec(ex.starter || ex.solution || '')?.[1];
+  if (name && state.store[name]) {
+    const li = [...$('collections').children].find((n) => n.firstChild?.textContent === name);
+    selectCollection(name, li);    // sets the editor too, which the next line replaces
+  }
+
+  state.openId = ex.id;
+  selectExercise(ex);
+  renderExercises();
+  return true;
+}
+
+if (!openFromHash()) {
+  renderExercises();
+  landInADrill();
+}
 
 // Someone editing the hash, or following a second link from an open tab.
 window.addEventListener('hashchange', () => openFromHash());
