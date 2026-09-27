@@ -23,18 +23,16 @@ tested by following it (§7).
 A real code editor in the app and on every lesson page, colours taken from the
 existing token set, and none of its 167 KB anywhere near first paint (§2).
 Seven topic hub pages for the tags that cross a module, each with its own prose
-and a runnable example (§4). `npm run verify` builds and runs ten suites over
-all of it.
+and a runnable example (§4). 69 "what usually goes wrong" notes, one to three per
+drill, shown after a failed attempt and nowhere else (§3). `npm run verify`
+builds and runs ten suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **"Common mistakes" after a failed attempt** (§3). The content for several of
-   these already exists — it came out of the prompts during the rewrite and is
-   sitting in hints, which is not quite the right moment to show it.
-2. **A real README for strangers** (§7) — the false parts are fixed, but it still
+1. **A real README for strangers** (§7) — the false parts are fixed, but it still
    opens with prose instead of a screenshot, and there is now an editor worth
    screenshotting, though the landing page (§5) would make a better one.
-3. **Autocomplete for `$` operators** (§2) — the next thing the editor itself
+2. **Autocomplete for `$` operators** (§2) — the next thing the editor itself
    wants, and most of its cost is already paid.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
@@ -437,7 +435,39 @@ and then comes back to practice.
 - [ ] Grow past 38 exercises — but **never pad**. One concept = one exercise.
       MongoPractice claims "530 problems" that are `SKU-1021`…`SKU-1025` style
       generated duplicates; not matching that number is a feature, not a gap.
-- [ ] "Common mistakes" note per exercise, shown after a failed attempt
+- [x] **"Common mistakes" note per exercise, shown after a failed attempt.**
+      DONE 2026-09-27. A `mistakes` array on the drill, 1-3 entries, rendered
+      under the diff and cleared by a pass. 69 notes across all 38 drills.
+      - **The timing is the feature.** Seven hints were already carrying this
+        content in their tail - "summing price alone is the classic slip",
+        "the naive version returns 20 users, the correct one 10" - told to
+        someone who had not yet tried summing anything. Those tails moved here
+        and the hints went back to pointing at the mechanism.
+      - So it is deliberately **not** a step on the help ladder. A note is free
+        to say what the wrong answer is and what its output looks like precisely
+        because it cannot be read before failing.
+      - Required for `medium` and `hard`, optional for `easy`, enforced at import.
+        What makes a drill medium or hard is almost always a way of being wrong
+        that does not throw, and naming it is the whole point.
+      - A test fails if two drills share a note: a line generic enough to paste
+        twice is the padding failure mode for this field, and every per-drill
+        rule would pass it.
+      - **Known gap:** a learner who passes first time never sees them. The notes
+        are some of the best writing on the site and 38 drills' worth of it is
+        reachable only by getting something wrong. The per-exercise pages under
+        §4 would be the place to surface them properly; a "show them anyway"
+        button on a passed card would be the cheap version, and would also undo
+        the timing this item exists for.
+- [ ] **Cap the diff when the shape is wrong.** Found while looking at the new
+      mistake notes in a browser: submit the starter on `revenue-per-product` and
+      the feedback is ten lines of `row 0.createdAt: your result has an extra
+      field {"__date":"2025-11-05..."}`. The learner returned raw orders instead
+      of grouped totals, `compare()` hit `MAX_DIFFS`, and the one useful line -
+      "expected 11, got 200" - is buried, along with everything under it.
+      When the row count is wrong and the key sets barely overlap, say so and
+      stop, rather than enumerating ten fields of row 0. Same rule in
+      `engine/compare.js` and `server/grade.js`, so it needs the conformance
+      suite watching it.
 - [ ] Cheatsheet page (operator → one-line meaning → link to its lesson).
       Four **reference pages** are already mapped in `content/curriculum.js`,
       built from the appendices the lessons did not absorb: the operator

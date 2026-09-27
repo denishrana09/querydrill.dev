@@ -13,6 +13,11 @@ npm run dev          # http://localhost:4321
 
 Needs **Node 22 or newer** — the tests use the WebSocket client built into Node.
 
+New markdown files and new pages appear without a restart. A change to
+`src/content.config.mjs` does not: collections are registered when the dev server
+starts, so adding one and then opening its route gives a 404 until you restart.
+Nothing warns you, because from Astro's side the collection simply has no entries.
+
 Nothing else. No MongoDB, no environment variables, no accounts. Queries run in
 your browser through [mingo](https://github.com/kofrasa/mingo), so the site is a
 pile of static files and the whole thing works offline.
@@ -58,6 +63,9 @@ is decided in step 2, so put it in whichever file its topic already lives in.
   lesson: 'comparison-operators',  // a slug in content/lessons/
   starter: 'db.orders.find(\n  { },\n  { }\n)',
   hint: '$gte is "greater than or equal to".',
+  mistakes: [                      // shown only after a failed attempt
+    'Using `$gt` drops every order rated exactly 4, and 4 or more includes 4.',
+  ],
   unordered: true,                 // set when the order of results should not matter
   solution: 'db.orders.find({ rating: { $gte: 4 } }, { _id: 1, rating: 1 })',
 }
@@ -91,6 +99,9 @@ Other messages you may see, and what they mean:
 | `has a "scaffold" identical to its starter` | drop the `scaffold`, or make it genuinely more helpful |
 | `no visible result - …: returned [] - the filter matches nothing in the dataset` | see below |
 | `names a lesson in its own or an earlier module` | your drill needs something the course has not taught yet |
+| `is medium and has no "mistakes" - say what usually goes wrong here` | see below |
+| `repeats its hint as a mistake` | the note has to add something the hint does not |
+| `gives away its whole solution in a "mistakes" entry` | quote the fragment that goes wrong, not the answer |
 
 **That empty-result one is the trap worth knowing about.** A drill whose solution
 returns nothing still *passes* grading — the grader compares your answer against
@@ -99,6 +110,31 @@ finds nothing passes too. The learner types the right query, sees no output, and
 cannot tell whether they got it right. So it is checked separately, and it is the
 mistake to expect: write a filter against a field the collection does not
 actually have and everything looks fine until this fires.
+
+### `hint` and `mistakes` are shown at different moments
+
+This is the distinction worth getting right, because it is easy to write the
+wrong one.
+
+- **`hint` is read before trying.** It points at the mechanism — which operator,
+  which shape. It must not say what the wrong answer looks like, because at that
+  point the reader has not written one, and telling them ahead of time is just
+  the answer in a quieter voice.
+- **`mistakes` is only ever shown after a failed attempt.** So it is free to say
+  the thing a hint cannot: what the wrong query is, what its output looks like,
+  and why that output seems fine. It appears under the diff, and a pass clears it.
+
+The feedback above it already says *what* is wrong — `row _id=Laptop: revenue
+expected 2000, got 50`. A note earns its place by saying *why* that happens:
+summing a unit price without its quantity. One to three entries, and each one
+should be about this drill rather than about MongoDB in general — a test fails if
+two drills share a note, because a line generic enough to paste twice was not
+worth showing once.
+
+Required for `medium` and `hard`, optional for `easy`. What usually makes a drill
+medium or hard is that it has a way of being wrong that does not throw, and
+naming that way is the entire point of the field. An easy drill can genuinely
+have nothing to say, and demanding one there would buy padding.
 
 ### What makes a good exercise
 

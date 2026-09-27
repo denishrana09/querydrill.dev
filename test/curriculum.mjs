@@ -147,13 +147,42 @@ check('difficulty is not all one value', Object.values(spread).every((n) => n > 
 const PRIVATE_SOURCE = /\bthe notes\b|\bbatch\s*\d|\bthe notes call\b/i;
 const strangerUnsafe = [];
 for (const e of EXERCISES) {
-  for (const [field, text] of [['prompt', e.prompt], ['hint', e.hint], ['title', e.title]]) {
+  const fields = [
+    ['prompt', e.prompt],
+    ['hint', e.hint],
+    ['title', e.title],
+    // The mistake notes are the largest block of prose a drill carries, and the
+    // one written last - so it is the one most likely to lean on something only
+    // the author can see.
+    ...(e.mistakes ?? []).map((m, i) => [`mistakes[${i}]`, m]),
+  ];
+  for (const [field, text] of fields) {
     const hit = PRIVATE_SOURCE.exec(text ?? '');
     if (hit) strangerUnsafe.push(`${e.id} ${field}: "${hit[0]}"`);
   }
 }
 check('no drill points at the private source notes', strangerUnsafe.length === 0,
   strangerUnsafe.join('\n        '));
+
+// Import-time validation already refuses a medium or hard drill with no
+// `mistakes`, a repeat of its own hint, and more than three entries. What it
+// cannot see is the whole set at once: the same generic line pasted onto twenty
+// drills satisfies every per-drill rule and is worth nothing. A note is only
+// useful if it is about *that* drill, and the cheap proxy for that is that no
+// two drills say the same thing.
+const noteOwners = new Map();
+for (const e of EXERCISES) {
+  for (const m of e.mistakes ?? []) {
+    noteOwners.set(m, [...(noteOwners.get(m) ?? []), e.id]);
+  }
+}
+const shared = [...noteOwners.entries()].filter(([, ids]) => ids.length > 1);
+check('no mistake note is shared between drills', shared.length === 0,
+  shared.map(([m, ids]) => `${ids.join(' + ')}: "${m.slice(0, 60)}..."`).join('\n        '));
+
+const withNotes = EXERCISES.filter((e) => e.mistakes?.length);
+console.log(`        ${withNotes.length}/${EXERCISES.length} drills say what usually goes wrong ` +
+  `(${withNotes.reduce((n, e) => n + e.mistakes.length, 0)} notes)`);
 
 /* ---------- legacy ids ---------- */
 

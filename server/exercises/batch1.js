@@ -12,6 +12,10 @@ export default [
     lesson: 'projection',
     starter: 'db.users.find(\n  { },\n  { }\n)',
     hint: 'Second argument to find() is the projection. `_id` is included unless you set it to 0.',
+    mistakes: [
+      '`{ name: 1, email: 1 }` still returns `_id`. It is the one field that comes back unless you exclude it by name.',
+      'Mixing includes and excludes in one projection is an error. `_id` is the only field allowed on both sides.',
+    ],
     unordered: true,
     solution: 'db.users.find({ status: "active" }, { _id: 0, name: 1, email: 1 })',
   },
@@ -25,6 +29,10 @@ export default [
     starter: 'db.users.find({\n  \n})',
     scaffold: 'db.users.find({\n  age: { }\n})',
     hint: 'Two operators on the same field go in the same object: { $gte: ..., $lt: ... }',
+    mistakes: [
+      'Two separate `age` keys in the same object are not two conditions. The second replaces the first, so `{ age: { $gte: 25 }, age: { $lt: 40 } }` quietly means only "under 40".',
+      '`$gt` is not `$gte`. "25 or over" includes 25, and the difference here is a row.',
+    ],
     unordered: true,
     solution: 'db.users.find({ age: { $gte: 25, $lt: 40 } })',
   },
@@ -38,6 +46,9 @@ export default [
     starter: 'db.users.find(\n  { },\n  { }\n)',
     scaffold: 'db.users.find(\n  { },\n  { _id: 0, name: 1, status: 1 }\n)',
     hint: '$in takes an array of acceptable values.',
+    mistakes: [
+      '`$in` always takes an array, even for a single value. `{ $in: "active" }` errors.',
+    ],
     unordered: true,
     solution:
       'db.users.find({ status: { $in: ["active", "pending"] } }, { _id: 0, name: 1, status: 1 })',
@@ -52,6 +63,9 @@ export default [
     starter: 'db.users.find(\n  { },\n  { }\n)',
     scaffold: 'db.users.find(\n  { },\n  { _id: 0, name: 1, address: 1 }\n)',
     hint: 'Quote the path: "address.city".',
+    mistakes: [
+      '`{ address: { city: "Bangalore" } }` is not a path match. It asks for an address object with exactly one field, so here it matches nothing at all.',
+    ],
     unordered: true,
     solution:
       'db.users.find({ "address.city": "Bangalore" }, { _id: 0, name: 1, address: 1 })',
@@ -67,6 +81,9 @@ export default [
     starter: 'db.users.find(\n  { },\n  { }\n)',
     scaffold: 'db.users.find(\n  { },\n  { _id: 0, name: 1, skills: 1 }\n)',
     hint: 'No operator needed. Matching an array field against a scalar checks every element.',
+    mistakes: [
+      '`{ skills: ["MongoDB"] }` asks for an array equal to `["MongoDB"]`, not one that contains it. Anyone with a second skill drops out.',
+    ],
     unordered: true,
     solution: 'db.users.find({ skills: "MongoDB" }, { _id: 0, name: 1, skills: 1 })',
   },
@@ -81,6 +98,9 @@ export default [
     starter: 'db.users.find(\n  { },\n  { }\n)',
     scaffold: 'db.users.find(\n  { skills: { } },\n  { _id: 0, name: 1, skills: 1 }\n)',
     hint: '$in means "any of". You want "all of".',
+    mistakes: [
+      '`$in` matches either skill, so it returns more users and no error. Nothing on screen says the extra rows are the wrong ones.',
+    ],
     unordered: true,
     solution:
       'db.users.find({ skills: { $all: ["Node.js", "Kafka"] } }, { _id: 0, name: 1, skills: 1 })',
@@ -95,7 +115,11 @@ export default [
     lesson: 'elemmatch',
     starter: 'db.users.find(\n  { },\n  { }\n)',
     scaffold: 'db.users.find(\n  { },\n  { _id: 0, name: 1, orders: 1 }\n)',
-    hint: 'Multiple conditions that must hold on the same array object -> $elemMatch. As a check: the naive version returns 20 users, the correct one 10.',
+    hint: 'Multiple conditions that must all hold on the same array element -> $elemMatch.',
+    mistakes: [
+      '`{ "orders.product": "Laptop", "orders.status": "completed" }` matches a user with some Laptop order and some completed order, not necessarily the same one. It returns 20 users; the answer is 10.',
+      '`$elemMatch` wraps the array field, not the path inside it: `{ orders: { $elemMatch: { ... } } }`.',
+    ],
     unordered: true,
     solution:
       'db.users.find({ orders: { $elemMatch: { product: "Laptop", status: "completed" } } }, { _id: 0, name: 1, orders: 1 })',
@@ -111,6 +135,10 @@ export default [
     starter: 'db.users.find(\n  { },\n  { }\n)',
     scaffold: 'db.users.find(\n  {\n    status: "active",\n    $or: [ ]\n  },\n  { _id: 0, name: 1, age: 1, role: 1, status: 1 }\n)',
     hint: 'Top-level fields are ANDed together. Put only the OR branches inside $or.',
+    mistakes: [
+      'Putting `status` inside the `$or` turns the AND into an OR, and inactive admins start appearing.',
+      'Two `$or` keys in one object is one `$or`: the second overwrites the first. Two of them have to be wrapped in `$and`.',
+    ],
     unordered: true,
     solution:
       'db.users.find({ status: "active", $or: [{ age: { $lt: 25 } }, { role: "admin" }] }, { _id: 0, name: 1, age: 1, role: 1, status: 1 })',
@@ -126,6 +154,10 @@ export default [
     starter: 'db.users.find(\n  { },\n  { }\n)',
     scaffold: 'db.users\n  .find({}, { _id: 0, name: 1, age: 1 })\n  .sort({ })\n',
     hint: 'skip = (page - 1) * limit. Order matters: .sort().skip().limit().',
+    mistakes: [
+      'Sorting by `age` alone leaves people of the same age in an arbitrary order, so a page can repeat or drop a user between two calls. That is what the tie-breaker is for.',
+      '`skip(10)` is page 3. The formula is `(page - 1) * limit`.',
+    ],
     unordered: false,
     solution:
       'db.users.find({}, { _id: 0, name: 1, age: 1 }).sort({ age: -1, name: 1 }).skip(5).limit(5)',
@@ -142,7 +174,11 @@ export default [
     lesson: 'update-and-set',
     starter: 'db.users.updateOne(\n  { },\n  { }\n)',
     scaffold: 'db.users.updateOne(\n  { _id: 101 },\n  { $set: { } }\n)',
-    hint: 'Set "address.city", not `address`. Setting the whole object replaces it, and takes `address.country` with it.',
+    hint: 'Set the path "address.city" rather than the field `address`.',
+    mistakes: [
+      '`$set: { address: { city: "Bangalore" } }` replaces the whole `address` object and takes `address.country` with it. The city is right and the document is damaged.',
+      'The `_id` here is the number `101`. Quoting it matches nothing, and `updateOne` reports zero modified rather than failing.',
+    ],
     verify: 'db.users.findOne({ _id: 101 }, { _id: 0, name: 1, address: 1 })',
     solution: 'db.users.updateOne({ _id: 101 }, { $set: { "address.city": "Bangalore" } })',
   },
@@ -159,6 +195,10 @@ export default [
     starter: 'db.products.updateMany(\n  { },\n  { }\n)',
     scaffold: 'db.products.updateMany(\n  { _id: { $in: [1, 4] } },\n  { }\n)',
     hint: 'Put the stock condition in the FILTER, not in application code. Then $inc by a negative number.',
+    mistakes: [
+      '`$inc: { inStock: 5 }` adds. Taking stock away means a negative number.',
+      'Reading the stock first and updating after is two operations, and something else can take the last unit in between. The condition has to be in the filter, which is what leaves Laptop at 0 untouched.',
+    ],
     unordered: false,
     verify:
       'db.products.find({ _id: { $in: [1, 4] } }, { _id: 1, product: 1, inStock: 1 }).sort({ _id: 1 })',
@@ -177,7 +217,11 @@ export default [
     lesson: 'array-update-operators',
     starter: 'db.users.updateMany(\n  { },\n  { }\n)',
     scaffold: 'db.users.updateMany(\n  { _id: { $in: [101, 104] } },\n  { }\n)',
-    hint: '$push always adds, so user 104 would end up with the skill twice. You want the one that adds only when absent.',
+    hint: 'One of the array operators adds a value only when it is not already there.',
+    mistakes: [
+      '`$push` always appends, so user 104 ends up with `"MongoDB"` twice. Both users are reported as modified and nothing looks wrong.',
+      '`$set: { skills: ["MongoDB"] }` replaces the array and throws away every other skill.',
+    ],
     unordered: false,
     verify:
       'db.users.find({ _id: { $in: [101, 104] } }, { _id: 1, name: 1, skills: 1 }).sort({ _id: 1 })',
@@ -197,6 +241,10 @@ export default [
     starter: 'db.users.updateOne(\n  { },\n  { }\n)',
     scaffold: 'db.users.updateOne(\n  { _id: 101 },\n  { $set: { } }\n)',
     hint: 'Match the array element in the filter, then use "orders.$.status". The $ refers to the matched element.',
+    mistakes: [
+      '`"orders.0.status"` hardcodes a position. It works here and breaks the first time the array is in a different order.',
+      'The `$` needs the element matched in the filter. Without `"orders._id": 1012` there it has nothing to point at, and the update errors.',
+    ],
     verify: 'db.users.findOne({ _id: 101 }, { _id: 0, orders: 1 })',
     solution:
       'db.users.updateOne({ _id: 101, "orders._id": 1012 }, { $set: { "orders.$.status": "completed" } })',
@@ -214,6 +262,10 @@ export default [
     starter: 'db.users.updateOne(\n  { },\n  { }\n)',
     scaffold: 'db.users.updateOne(\n  { email: "newperson@example.com" },\n  { $set: { } }\n)',
     hint: 'Third argument: { upsert: true }.',
+    mistakes: [
+      'Without `upsert`, `updateOne` matches nothing and reports success: zero modified, no error, no document.',
+      'The filter is carried into the document it creates, so the new user gets its `email` from `{ email: ... }` without you setting it.',
+    ],
     verify:
       'db.users.findOne({ email: "newperson@example.com" }, { _id: 0, name: 1, email: 1, status: 1 })',
     solution:
@@ -230,6 +282,10 @@ export default [
     lesson: 'array-update-operators',
     starter: 'db.users.updateMany(\n  { },\n  { }\n)',
     hint: '$pull removes matching values from an array. An empty filter {} matches everything.',
+    mistakes: [
+      '`updateOne` stops at the first match. "Every user that has it" means `updateMany`.',
+      '`$pop` removes from an end and `$unset` removes the field. `$pull` is the one that removes by value.',
+    ],
     unordered: false,
     verify:
       'db.users.find({ _id: { $in: [101, 103] } }, { _id: 1, name: 1, skills: 1 }).sort({ _id: 1 })',

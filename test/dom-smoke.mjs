@@ -112,6 +112,15 @@ const openCard = $('exerciseList').querySelector('.ex.open');
 check('opening an exercise expands it', Boolean(openCard));
 check('opening an exercise loads its starter code', $('editor').value.length > 0);
 
+// The whole point of the mistake notes is when they appear, so this has to be
+// asserted on a card that has been opened and never answered - here, and not
+// down with the rest of them. Written there first, it was vacuous: the passing
+// check that comes before it clears `.ex-mistakes` itself, so it went on passing
+// with the notes rendered eagerly into every card. The second half of the
+// condition stops it passing because the drill has nothing to show.
+check('nothing about mistakes before an attempt fails',
+  openCard.querySelector('.ex-mistakes') === null && EXERCISES[0].mistakes?.length > 0);
+
 // The order chip has to agree with the flag the grader reads, not just exist -
 // a card promising "any order" on an order-graded drill is worse than silence.
 const orderChip = openCard.querySelector('.chip.order');
@@ -145,6 +154,54 @@ check('checking a correct answer gives passing feedback',
   Boolean(feedback) && feedback.classList.contains('pass'), feedback?.textContent);
 check('progress is written to localStorage',
   JSON.parse(localStorage.getItem('mp.progress') || '{}')[EXERCISES[0].id] === 'pass');
+
+// --- what usually goes wrong: after a failed attempt, and only then ---
+
+// "Nothing before a failure" is asserted further up, on a card that has not been
+// answered yet. It cannot be asserted here: the passing check just above removes
+// `.ex-mistakes` on its way in, so at this point the absence proves nothing.
+
+const pressCheck = () => {
+  openCard.querySelector('.ex-actions button.primary')
+    .dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+};
+
+// Runs fine, returns rows, wrong answer - the failure the notes exist for.
+$('editor').value = 'db.users.find({})';
+pressCheck();
+for (let i = 0; i < 40; i++) await tick();
+
+const mistakes = openCard.querySelector('.ex-mistakes');
+check('a wrong answer shows what usually goes wrong', Boolean(mistakes));
+check('it lists every note the drill has',
+  mistakes?.querySelectorAll('li').length === EXERCISES[0].mistakes?.length,
+  `${mistakes?.querySelectorAll('li').length} of ${EXERCISES[0].mistakes?.length}`);
+// Below the diff, never above it. The diff is what gets read first; this
+// explains it. Both are re-appended on every failed check to keep that order,
+// so a retry cannot silently flip them.
+check('it sits after the feedback, not before',
+  openCard.querySelector('.ex-feedback')
+    ?.compareDocumentPosition(mistakes) === dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
+check('the notes render markdown backticks as code',
+  mistakes?.querySelector('code') !== null);
+
+// A query that throws is a failed attempt too - a separate branch in the app,
+// and one where the learner has even less to go on than a diff.
+$('editor').value = 'db.users.find({';
+pressCheck();
+for (let i = 0; i < 40; i++) await tick();
+check('a query that errors shows them as well',
+  Boolean(openCard.querySelector('.ex-mistakes')) &&
+  openCard.querySelector('.ex-feedback .head').textContent === 'Your query errored:');
+
+// And getting it right takes them away again, rather than leaving a list of
+// things to worry about under a green tick.
+$('editor').value = EXERCISES[0].solution;
+pressCheck();
+for (let i = 0; i < 40; i++) await tick();
+check('passing clears them again', openCard.querySelector('.ex-mistakes') === null);
+check('passing still gives passing feedback',
+  openCard.querySelector('.ex-feedback')?.classList.contains('pass'));
 
 // The restore affordance stays hidden until a query has actually written
 // something - a permanently visible one implies a problem that rarely exists.

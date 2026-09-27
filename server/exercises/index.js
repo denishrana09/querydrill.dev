@@ -65,6 +65,48 @@ for (const e of RAW) {
   if (e.starter.replace(/\s/g, '') === e.solution.replace(/\s/g, '')) {
     throw new Error(`Exercise ${e.id} ships its own solution as the starter.`);
   }
+
+  // `mistakes` is what the learner is shown after a failed attempt, and only
+  // then - it is not a step on the help ladder. So it may say things a hint
+  // must not: what the wrong answer looks like, and what its output is.
+  //
+  // Required for medium and hard, optional for easy. The reason a drill is
+  // medium or hard is almost always that it has a way of being wrong that does
+  // not error, and naming that way is the whole point of the field. An easy
+  // drill can genuinely have nothing to say, so demanding one there would buy
+  // padding rather than content.
+  if (e.difficulty !== 'easy' && !e.mistakes?.length) {
+    throw new Error(
+      `Exercise ${e.id} is ${e.difficulty} and has no "mistakes" - say what usually goes wrong here.`
+    );
+  }
+  if (e.mistakes !== undefined) {
+    if (!Array.isArray(e.mistakes) || !e.mistakes.length) {
+      throw new Error(`Exercise ${e.id} has a "mistakes" that is not a non-empty array.`);
+    }
+    // Three is the ceiling because this appears at the worst possible moment to
+    // be handed a wall of text: the learner has just got it wrong and is looking
+    // for the one line that explains why.
+    if (e.mistakes.length > 3) {
+      throw new Error(`Exercise ${e.id} lists ${e.mistakes.length} mistakes - three is the most that gets read.`);
+    }
+    for (const m of e.mistakes) {
+      if (typeof m !== 'string' || m.trim().length < 20) {
+        throw new Error(`Exercise ${e.id} has a mistake that is not a sentence: ${JSON.stringify(m)}`);
+      }
+      if (m.trim() === (e.hint || '').trim()) {
+        throw new Error(`Exercise ${e.id} repeats its hint as a mistake.`);
+      }
+      // Quoting a fragment of the answer is exactly how these are written -
+      // handing over the whole thing is not, since this shows up unasked.
+      if (m.replace(/\s/g, '').includes(e.solution.replace(/\s/g, ''))) {
+        throw new Error(`Exercise ${e.id} gives away its whole solution in a "mistakes" entry.`);
+      }
+    }
+    if (new Set(e.mistakes).size !== e.mistakes.length) {
+      throw new Error(`Exercise ${e.id} lists the same mistake twice.`);
+    }
+  }
 }
 
 // The curriculum promising a drill that does not exist is the failure that

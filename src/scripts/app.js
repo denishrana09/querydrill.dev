@@ -545,7 +545,7 @@ function selectExercise(ex) {
 }
 
 async function checkAnswer(ex, body, button) {
-  body.querySelectorAll('.ex-feedback').forEach((n) => n.remove());
+  body.querySelectorAll('.ex-feedback, .ex-mistakes').forEach((n) => n.remove());
   button.disabled = true;
   button.textContent = 'Checking…';
 
@@ -554,10 +554,18 @@ async function checkAnswer(ex, body, button) {
 
   const result = await gradeExercise(ecommerce, ex, editor.value);
 
+  // A broken exercise is our fault, so it is not a failed attempt: nothing the
+  // learner could read would help, and telling them what they usually get wrong
+  // when the reference solution is the thing that threw would be a lie.
+  let attemptFailed = false;
+
   if (!result.ok) {
     const head = result.internal ? 'This exercise is broken — please report it:' : 'Your query errored:';
     feedback.innerHTML = `<span class="head">${head}</span><ul><li>${esc(result.error)}</li></ul>`;
-    if (!result.internal) state.progress[ex.id] = 'fail';
+    if (!result.internal) {
+      state.progress[ex.id] = 'fail';
+      attemptFailed = true;
+    }
   } else if (result.pass) {
     feedback.classList.add('pass');
     feedback.textContent = result.isWrite
@@ -570,9 +578,11 @@ async function checkAnswer(ex, body, button) {
       result.diffs.map((d) => `<li>${esc(d)}</li>`).join('') +
       '</ul>';
     state.progress[ex.id] = 'fail';
+    attemptFailed = true;
   }
 
   body.appendChild(feedback);
+  if (attemptFailed) showMistakes(ex, body);
   state.drafts[ex.id] = editor.value;
   save(LS_PROGRESS, state.progress);
   save(LS_DRAFTS, state.drafts);
@@ -595,6 +605,32 @@ function showHint(ex, body) {
   const el = document.createElement('div');
   el.className = 'ex-hint';
   el.innerHTML = markdownish(ex.hint || 'No hint for this one.');
+  body.appendChild(el);
+}
+
+/**
+ * What usually goes wrong on this drill - shown after a failed attempt, and only
+ * then.
+ *
+ * Deliberately NOT a step on the help ladder. Read before trying, these are
+ * hints with half the answer in them, which is exactly what several of them were:
+ * the tail end of a hint, saying that summing price alone is the classic slip,
+ * to someone who had not yet tried summing anything.
+ *
+ * Read straight after getting it wrong, they are the one thing the diff cannot
+ * say. The diff reports that revenue came out 50 instead of 2000; this says why
+ * adding a unit price without its quantity does that. Appended below the
+ * feedback, and re-appended on every failed attempt, so the two always arrive in
+ * the same order and a pass clears both.
+ */
+function showMistakes(ex, body) {
+  if (!ex.mistakes?.length) return;
+  const el = document.createElement('div');
+  el.className = 'ex-mistakes';
+  el.innerHTML =
+    '<span class="head">What usually goes wrong here</span><ul>' +
+    ex.mistakes.map((m) => `<li>${markdownish(m)}</li>`).join('') +
+    '</ul>';
   body.appendChild(el);
 }
 
