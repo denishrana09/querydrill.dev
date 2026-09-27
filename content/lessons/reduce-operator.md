@@ -3,7 +3,7 @@ title: '$reduce'
 module: 'expression-operators'
 track: 'advanced-aggregation'
 description: 'MongoDB $reduce collapses an array to a single value using an accumulator, with $value and $this.'
-operators: ['$add', '$multiply', '$project', '$reduce', '$set', '$unwind']
+topics: ['arrays', '$add', '$multiply', '$project', '$reduce', '$set', '$unwind']
 source: 'batch3.md:685-846'
 ---
 

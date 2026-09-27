@@ -3,7 +3,7 @@ title: 'Why $group cannot see inside arrays'
 module: 'unwind-arrays'
 track: 'aggregation'
 description: 'Why MongoDB $group cannot reach values inside an array, and the shape of the problem $unwind exists to solve.'
-operators: ['$group', '$sum', '$unwind']
+topics: ['$group', '$sum', '$unwind']
 source: 'batch2.md:779-838'
 ---
 

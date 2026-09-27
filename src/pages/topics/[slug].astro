@@ -1,0 +1,267 @@
+---
+import { getCollection, render } from 'astro:content';
+import RunnableExamples from '../../components/RunnableExamples.astro';
+import Doc from '../../layouts/Doc.astro';
+import { hasRunnable } from '../../../engine/runnable.js';
+import { labelOf } from '../../../content/topics.js';
+import {
+  MODULES,
+  REFERENCES,
+  TOPIC_PAGES,
+  TOPIC_PAGE_OF,
+  moduleBySlug,
+  trackBySlug,
+} from '../../../content/curriculum.js';
+import { EXERCISES } from '../../../server/exercises/index.js';
+
+/**
+ * A topic hub. The module pages are the course's own structure — read these
+ * four lessons, then drill them — and they are the right page for someone who
+ * is working through it. This is the other question: *everything on this site
+ * about `$lookup`*, which no module page can answer, because the seven tags
+ * that earned a page are exactly the ones that cross module boundaries.
+ *
+ * Nothing here is written twice. The prose and the runnable example come from
+ * `content/topic-pages/<slug>.md`; every list below is gathered from the tag,
+ * so adding a `$lookup` lesson adds it to this page and nothing has to remember.
+ */
+export async function getStaticPaths() {
+  const pages = await getCollection('topicPages');
+  const lessons = await getCollection('lessons');
+  const references = await getCollection('reference');
+  return pages.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry, lessons, references },
+  }));
+}
+
+const { entry, lessons, references } = Astro.props;
+const { Content } = await render(entry);
+const topic = entry.data.topic;
+const label = labelOf(topic);
+
+/* ---------- what carries this tag ---------- */
+
+const taught = lessons.filter((l) => l.data.topics?.includes(topic));
+const drills = EXERCISES.filter((e) => e.topics.includes(topic));
+
+// Grouped by module and kept in curriculum order, so the page reads in the same
+// direction as the course rather than in whatever order the glob returned.
+const groups = MODULES.map((m) => ({
+  module: m,
+  track: trackBySlug(m.track),
+  lessons: m.lessons
+    .map((l) => taught.find((t) => t.id === l.slug))
+    .filter(Boolean),
+  drills: drills.filter((d) => d.module === m.slug),
+})).filter((g) => g.lessons.length || g.drills.length);
+
+const spread = ['easy', 'medium', 'hard']
+  .map((d) => ({ d, n: drills.filter((x) => x.difficulty === d).length }))
+  .filter((x) => x.n);
+
+// A reference page earns a link only if it actually names the operator, read out
+// of the page itself rather than from a list someone has to remember to update.
+// The concept tags (`find`, `arrays`, `update`) are not things a cheatsheet
+// indexes, so those pages get no reference row at all rather than a row of
+// guesses — an empty section is better than a wrong one.
+const refs = topic.startsWith('$')
+  ? references
+    .filter((r) => r.body.includes(topic))
+    .map((r) => ({ slug: r.id, title: REFERENCES.find((x) => x.slug === r.id)?.title ?? r.data.title }))
+  : [];
+
+/* ---------- the other hubs ---------- */
+
+// Related by co-occurrence, not by a hand-written list: two topics are related
+// when the same drill carries both, which is the site's own evidence for it.
+const together = new Map();
+for (const d of drills) {
+  for (const t of d.topics) {
+    if (t === topic || !TOPIC_PAGE_OF[t]) continue;
+    together.set(t, (together.get(t) ?? 0) + 1);
+  }
+}
+const related = [...together.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 3)
+  .map(([t]) => TOPIC_PAGES.find((p) => p.topic === t));
+
+const first = drills[0];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: entry.data.title,
+  description: entry.data.description,
+  inLanguage: 'en',
+  about: { '@type': 'Thing', name: label },
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: taught.length,
+    itemListElement: taught.map((l, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: l.data.title,
+      url: new URL(`/learn/${l.id}/`, Astro.site).href,
+    })),
+  },
+};
+---
+<Doc
+  nav="learn"
+  title={`${entry.data.title} — lessons, examples and ${drills.length} exercises`}
+  description={entry.data.description}
+  jsonLd={jsonLd}
+>
+  <p class="crumbs"><a href="/learn/">Learn</a> › <span>Topics</span></p>
+
+  <article class="prose">
+    <h1>{entry.data.title}</h1>
+    <p class="lede">{entry.data.lede}</p>
+    <p class="counts">
+      <span>{taught.length} lesson{taught.length === 1 ? '' : 's'}</span>
+      <span>{drills.length} exercise{drills.length === 1 ? '' : 's'}</span>
+      <span>{spread.map((s) => `${s.n} ${s.d}`).join(' · ')}</span>
+    </p>
+    <Content />
+  </article>
+
+  <div class="section-head">
+    <h2>Everything here that uses {label}</h2>
+    <span class="meta">{groups.length} module{groups.length === 1 ? '' : 's'}</span>
+  </div>
+
+  {groups.map((g) => (
+    <section class="grp">
+      <h3>
+        <a href={`/modules/${g.module.slug}/`}>{g.module.title}</a>
+        <small>{g.track?.title}</small>
+      </h3>
+      {g.lessons.length > 0 && (
+        <ul class="lesson-list">
+          {g.lessons.map((l) => (
+            <li>
+              <div>
+                <a href={`/learn/${l.id}/`}>{l.data.title}</a>
+                <p class="sub">{l.data.description}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <!--
+        Said only where both kinds are present. A module group that is all
+        drills needs no caption, and one that is all lessons is obviously
+        lessons - but run together, the dotted rows read as more lessons.
+      -->
+      {g.lessons.length > 0 && g.drills.length > 0 && (
+        <p class="grp-label">Exercises</p>
+      )}
+      {g.drills.length > 0 && (
+        <ul class="drill-list">
+          {g.drills.map((d) => (
+            <li>
+              <span class={`diff ${d.difficulty}`} title={d.difficulty}></span>
+              <a href={`/practice/#${d.id}`}>{d.title}</a>
+              {d.type === 'write' && <span class="tag">write</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  ))}
+
+  {refs.length > 0 && (
+    <>
+      <div class="section-head"><h2>Reference</h2></div>
+      <ul class="drill-list">
+        {refs.map((r) => (
+          <li><a href={`/reference/${r.slug}/`}>{r.title}</a></li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  <div class="cta-row">
+    <!--
+      Opens the app with this topic already selected. The drill list filter is
+      deliberately not remembered between visits, but a link that says which
+      topic it means is not the same thing as a filter that was left on.
+    -->
+    <a class="btn primary" href={`/practice/?topic=${encodeURIComponent(topic)}`}>
+      Practise {label} →
+    </a>
+    {first && <a class="btn" href={`/practice/#${first.id}`}>Start with one exercise</a>}
+  </div>
+
+  {related.length > 0 && (
+    <>
+      <div class="section-head"><h2>Comes up alongside</h2></div>
+      {related.map((r) => (
+        <a class="card" href={`/topics/${r.slug}/`}>
+          <div class="card-row"><h3>{r.title}</h3></div>
+        </a>
+      ))}
+    </>
+  )}
+
+  {hasRunnable(entry.body) && <RunnableExamples />}
+</Doc>
+
+<style>
+  .counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: -4px 0 18px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--muted);
+  }
+  .grp { margin-bottom: 18px; }
+  .grp h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin: 0 0 2px;
+    font-size: 14px;
+  }
+  /* The module name is a link, but it is a heading first. Left to the default it
+     came out as a bright underlined blue - the only thing on the page louder
+     than the H1, and it is a row label. */
+  .grp h3 a { color: var(--text); text-decoration: none; }
+  .grp h3 a:hover, .grp h3 a:focus-visible {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .grp h3 small { font-size: 11px; color: var(--muted-2); font-weight: 400; }
+  .grp-label {
+    margin: 10px 0 0;
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+  }
+  .lesson-list .sub { margin: 2px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .lesson-list li { align-items: flex-start; padding: 8px 0; }
+  .drill-list .diff {
+    flex: 0 0 auto;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .drill-list .diff.easy { background: var(--accent); }
+  .drill-list .diff.medium { background: var(--warn); }
+  .drill-list .diff.hard { background: var(--danger); }
+  .drill-list .tag {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--warn-soft);
+    color: var(--warn);
+  }
+</style>

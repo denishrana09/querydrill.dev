@@ -3,7 +3,7 @@ title: 'Upsert: insert or update'
 module: 'updating-documents'
 track: 'fundamentals'
 description: 'MongoDB upsert: update a document if it exists, insert it if it does not, in a single atomic operation.'
-operators: ['$set']
+topics: ['update', 'upsert', '$set']
 source: 'batch1.md:1064-1100'
 ---
 

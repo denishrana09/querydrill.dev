@@ -3,7 +3,7 @@ title: '$cond: if / else in a pipeline'
 module: 'expression-operators'
 track: 'advanced-aggregation'
 description: 'MongoDB $cond is if/else inside an aggregation pipeline, and the basis of the conditional counting pattern.'
-operators: ['$cond', '$eq', '$group', '$gte', '$project', '$sum']
+topics: ['$cond', '$eq', '$group', '$gte', '$project', '$sum']
 source: 'batch3.md:847-945'
 ---
 

@@ -3,6 +3,7 @@ title: 'updateOne vs updateMany'
 module: 'updating-documents'
 track: 'fundamentals'
 description: 'updateOne vs updateMany in MongoDB: which documents each one touches, and why updateOne is the safer default.'
+topics: ['update']
 source: 'batch1.md:992-1009'
 ---
 

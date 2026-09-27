@@ -3,7 +3,7 @@ title: '$sort, $limit, $skip — order matters'
 module: 'aggregation-pipeline'
 track: 'aggregation'
 description: 'MongoDB $sort, $limit and $skip as pipeline stages, and why swapping their order changes the answer, not just the speed.'
-operators: ['$limit', '$match', '$skip', '$sort']
+topics: ['$limit', '$match', '$skip', '$sort']
 source: 'batch2.md:434-531'
 ---
 

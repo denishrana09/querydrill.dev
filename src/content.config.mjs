@@ -22,7 +22,7 @@ const lessons = defineCollection({
     // listed here for months on the arrays lesson, whose own prose says the
     // operator does not exist - so the page told Google it taught something
     // imaginary. A free-form array of strings could not have caught that.
-    operators: z.array(z.string().refine(isTopic, {
+    topics: z.array(z.string().refine(isTopic, {
       message: 'not in content/topics.js - add it there, or fix the spelling',
     })).optional(),
     // Line range in the original notes. Provenance, not a live pointer.
@@ -40,4 +40,24 @@ const reference = defineCollection({
   }),
 });
 
-export const collections = { lessons, reference };
+// One page per topic that earned a filter chip — see `content/topics.js` for the
+// rule, which is that a tag has to cross a module and have three drills behind
+// it. These are hub pages: their own framing and a runnable example, then the
+// lessons and drills carrying that tag gathered from across the modules that
+// hold them. `topic` is the tag slug; the file name is the URL, because a `$` in
+// a path is legal and horrible.
+const topicPages = defineCollection({
+  loader: glob({ pattern: '*.md', base: './content/topic-pages' }),
+  schema: z.object({
+    title: z.string(),
+    topic: z.string().refine(isTopic, {
+      message: 'not in content/topics.js - a topic page needs a tag that exists',
+    }),
+    description: z.string().min(40).max(165),
+    // Shown under the H1. The prose is the page; this is the one sentence that
+    // has to stand on its own above a list of links.
+    lede: z.string().min(40),
+  }),
+});
+
+export const collections = { lessons, reference, topicPages };

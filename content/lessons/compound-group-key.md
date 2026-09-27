@@ -3,7 +3,7 @@ title: 'Grouping by more than one field'
 module: 'grouping'
 track: 'aggregation'
 description: 'Group by more than one field in MongoDB by making $group _id an object, and how that changes the shape of your results.'
-operators: ['$group', '$sum']
+topics: ['$group', '$sum']
 source: 'batch2.md:1159-1273'
 ---
 

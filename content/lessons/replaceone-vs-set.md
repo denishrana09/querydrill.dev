@@ -3,7 +3,7 @@ title: 'replaceOne vs $set'
 module: 'updating-documents'
 track: 'fundamentals'
 description: 'replaceOne vs $set in MongoDB: one swaps the whole document, the other edits fields. Knowing which you called matters.'
-operators: ['$set']
+topics: ['update', '$set']
 source: 'batch1.md:1010-1063'
 ---
 

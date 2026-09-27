@@ -3,6 +3,7 @@ title: 'Dot notation into nested objects'
 module: 'nested-and-arrays'
 track: 'fundamentals'
 description: 'Query fields inside nested MongoDB objects with dot notation: { "address.city": "Bangalore" }, and why the path needs quotes.'
+topics: ['find', 'nested']
 source: 'batch1.md:225-253'
 ---
 

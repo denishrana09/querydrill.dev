@@ -232,6 +232,29 @@ export const REFERENCES = [
   },
 ];
 
+/**
+ * The topic hub pages. `topic` is the tag in `content/topics.js`; `slug` is the
+ * URL, with the `$` dropped.
+ *
+ * Written out here for the same reason REFERENCES is: this file has no imports,
+ * so the sitemap and the link checker can read every URL the site publishes
+ * without loading the exercise set or the content collections. The list is
+ * therefore capable of drifting from the tags that actually earned a page, so
+ * `test/topics.mjs` fails if it ever disagrees with `filtersFor(EXERCISES)` or
+ * with the markdown files on disk.
+ */
+export const TOPIC_PAGES = [
+  { slug: 'find', topic: 'find', title: 'MongoDB find()' },
+  { slug: 'arrays', topic: 'arrays', title: 'MongoDB array queries' },
+  { slug: 'update', topic: 'update', title: 'MongoDB updates' },
+  { slug: 'group', topic: '$group', title: 'MongoDB $group' },
+  { slug: 'unwind', topic: '$unwind', title: 'MongoDB $unwind' },
+  { slug: 'lookup', topic: '$lookup', title: 'MongoDB $lookup' },
+  { slug: 'map', topic: '$map', title: 'MongoDB $map' },
+];
+
+export const TOPIC_PAGE_OF = Object.fromEntries(TOPIC_PAGES.map((t) => [t.topic, t.slug]));
+
 export const TRACK_OF_MODULE = Object.fromEntries(MODULES.map((m) => [m.slug, m.track]));
 
 export const MODULE_OF_EXERCISE = Object.fromEntries(
@@ -280,5 +303,6 @@ export function allPaths() {
     ...MODULES.map((m) => `/modules/${m.slug}/`),
     ...ALL_LESSONS.map((l) => `/learn/${l.slug}/`),
     ...REFERENCES.map((r) => `/reference/${r.slug}/`),
+    ...TOPIC_PAGES.map((t) => `/topics/${t.slug}/`),
   ];
 }

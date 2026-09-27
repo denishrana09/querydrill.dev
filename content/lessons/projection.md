@@ -3,6 +3,7 @@ title: 'Projection: choosing fields'
 module: 'documents-and-find'
 track: 'fundamentals'
 description: 'MongoDB projection: return only the fields you need with find({}, { name: 1 }), and why _id keeps showing up uninvited.'
+topics: ['find', 'projection']
 source: 'batch1.md:433-503'
 ---
 

@@ -11,7 +11,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import process from 'node:process';
 import { EXERCISES } from '../server/exercises/index.js';
-import { TRACKS } from '../content/curriculum.js';
+import { TRACKS, TOPIC_PAGES } from '../content/curriculum.js';
 import { TOPICS, TOPIC_SLUGS, MIN_FILTER_DRILLS, filtersFor, reachOf, labelOf } from '../content/topics.js';
 
 const green = (s) => `\x1b[32m${s}\x1b[0m`;
@@ -32,29 +32,29 @@ const filters = filtersFor(EXERCISES);
 // server/exercises/index.js; this is the other direction, which nothing else
 // covers. A tag no drill and no lesson uses is a filter that renders an empty
 // list, or a topic page with nothing on it.
-const lessonOps = new Set();
+const lessonTopics = new Set();
 for (const dir of ['lessons', 'reference']) {
   const base = new URL(`../content/${dir}/`, import.meta.url);
   for (const file of readdirSync(base)) {
     const src = readFileSync(new URL(file, base), 'utf8');
-    const m = /^operators:\s*\[(.*)\]/m.exec(src);
+    const m = /^topics:\s*\[(.*)\]/m.exec(src);
     if (!m) continue;
     for (const raw of m[1].split(',')) {
       const t = raw.trim().replace(/^'|'$/g, '');
-      if (t) lessonOps.add(t);
+      if (t) lessonTopics.add(t);
     }
   }
 }
 
-const dead = TOPIC_SLUGS.filter((s) => !reach.has(s) && !lessonOps.has(s));
+const dead = TOPIC_SLUGS.filter((s) => !reach.has(s) && !lessonTopics.has(s));
 check('every tag in the vocabulary is used by a drill or a lesson', dead.length === 0,
   `unused: ${dead.join(' ')}`);
 
 // The same closed-vocabulary rule the zod schema applies at build time, checked
 // here so it fails in a second rather than after a full build.
-const strayOps = [...lessonOps].filter((op) => !TOPIC_SLUGS.includes(op));
-check('every operator a lesson declares is in the vocabulary', strayOps.length === 0,
-  `${strayOps.join(' ')} - add to content/topics.js, or fix the spelling`);
+const strayTopics = [...lessonTopics].filter((op) => !TOPIC_SLUGS.includes(op));
+check('every topic a lesson declares is in the vocabulary', strayTopics.length === 0,
+  `${strayTopics.join(' ')} - add to content/topics.js, or fix the spelling`);
 
 /* ---------- one idea, one spelling ---------- */
 
@@ -158,6 +158,75 @@ check('the filter row stays scannable', filters.length >= 4 && filters.length <=
   `${filters.length} filters`);
 
 check('every filter is a tag that exists', filters.every((f) => TOPIC_SLUGS.includes(f.slug)));
+
+/* ---------- the topic hub pages ---------- */
+
+// TOPIC_PAGES is written out by hand in content/curriculum.js, because that file
+// has no imports - the sitemap and the link checker have to read every URL the
+// site publishes without loading the exercise set. The cost of that is a list
+// capable of drifting from the tags that actually earned a page and from the
+// files on disk, so all three are compared here.
+{
+  const pageTopics = TOPIC_PAGES.map((t) => t.topic).sort();
+  const filterTopics = filters.map((f) => f.slug).sort();
+  check('there is a topic page for exactly the tags that earned a filter',
+    pageTopics.join() === filterTopics.join(),
+    `pages: ${pageTopics.join(' ')}\n        filters: ${filterTopics.join(' ')}`);
+
+  // A `$` in a URL path is legal and horrible, so the slug drops it - and
+  // nothing else is allowed to differ, or the URL stops being guessable from
+  // the tag.
+  const misnamed = TOPIC_PAGES.filter((t) => t.slug !== t.topic.replace(/^\$/, ''));
+  check('every topic page URL is its tag without the $', misnamed.length === 0,
+    misnamed.map((t) => `${t.topic} -> /topics/${t.slug}/`).join(', '));
+
+  const dir = new URL('../content/topic-pages/', import.meta.url);
+  const files = readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => f.replace(/\.md$/, ''));
+  const listed = TOPIC_PAGES.map((t) => t.slug);
+  check('every listed topic page has a markdown file, and vice versa',
+    [...files].sort().join() === [...listed].sort().join(),
+    `files: ${files.sort().join(' ')}\n        listed: ${listed.sort().join(' ')}`);
+
+  const wrongTag = [];
+  for (const t of TOPIC_PAGES) {
+    if (!files.includes(t.slug)) continue;
+    const src = readFileSync(new URL(`${t.slug}.md`, dir), 'utf8');
+    const declared = /^topic:\s*'([^']+)'/m.exec(src)?.[1];
+    if (declared !== t.topic) wrongTag.push(`${t.slug}.md says ${declared}, list says ${t.topic}`);
+  }
+  check('each page declares the tag the list says it covers', wrongTag.length === 0,
+    wrongTag.join('\n        '));
+
+  // The anti-thin rule, and the reason the lessons were retagged before these
+  // pages were built. A hub with nothing under it is a doorway page: it ranks
+  // for a while, helps nobody, and is the exact thing this project decided not
+  // to do when it refused to compete on generated problem count. Written out
+  // rather than imported, for the same reason as FLOOR above.
+  const MIN_LESSONS = 1;
+  const MIN_DRILLS = 3;
+  const lessonsFor = new Map(TOPIC_PAGES.map((t) => [t.topic, 0]));
+  for (const dirName of ['lessons']) {
+    const base = new URL(`../content/${dirName}/`, import.meta.url);
+    for (const file of readdirSync(base)) {
+      const m = /^topics:\s*\[(.*)\]/m.exec(readFileSync(new URL(file, base), 'utf8'));
+      if (!m) continue;
+      for (const raw of m[1].split(',')) {
+        const t = raw.trim().replace(/^'|'$/g, '');
+        if (lessonsFor.has(t)) lessonsFor.set(t, lessonsFor.get(t) + 1);
+      }
+    }
+  }
+  const thin = TOPIC_PAGES
+    .map((t) => ({
+      t,
+      lessons: lessonsFor.get(t.topic) ?? 0,
+      drills: EXERCISES.filter((e) => e.topics.includes(t.topic)).length,
+    }))
+    .filter((x) => x.lessons < MIN_LESSONS || x.drills < MIN_DRILLS);
+  check(`every topic page has ${MIN_LESSONS}+ lesson and ${MIN_DRILLS}+ drills behind it`,
+    thin.length === 0,
+    thin.map((x) => `/topics/${x.t.slug}/ has ${x.lessons} lesson(s), ${x.drills} drill(s)`).join('\n        '));
+}
 
 /* ---------- report, including what is close to earning a chip ---------- */
 

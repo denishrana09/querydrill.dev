@@ -3,7 +3,7 @@ title: '$unwind + $group'
 module: 'unwind-arrays'
 track: 'aggregation'
 description: 'The $unwind then $group pattern: flatten an array, then aggregate its elements. The most reusable pipeline in MongoDB.'
-operators: ['$group', '$match', '$sum', '$unwind']
+topics: ['$group', '$match', '$sum', '$unwind']
 source: 'batch2.md:923-1071'
 ---
 

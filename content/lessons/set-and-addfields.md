@@ -3,7 +3,7 @@ title: '$set and $addFields'
 module: 'aggregation-pipeline'
 track: 'aggregation'
 description: 'MongoDB $set and $addFields add computed fields while keeping everything else. The same stage under two names.'
-operators: ['$multiply', '$project', '$set']
+topics: ['$multiply', '$project', '$set']
 source: 'batch2.md:380-433'
 ---
 

@@ -3,7 +3,7 @@ title: 'Grouping by date'
 module: 'facets-and-dates'
 track: 'advanced-aggregation'
 description: 'Group MongoDB documents by date: $year, $month, $dayOfMonth and $dateToString for readable month labels.'
-operators: ['$dateToString', '$group', '$month', '$sort', '$sum', '$year']
+topics: ['dates', '$dateToString', '$group', '$month', '$sort', '$sum', '$year']
 source: 'batch3.md:1262-1355'
 ---
 

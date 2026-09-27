@@ -3,6 +3,7 @@ title: 'Sorting results'
 module: 'sorting-and-paging'
 track: 'fundamentals'
 description: 'Sort MongoDB results with sort({ field: 1 }) for ascending and -1 for descending, including multi-field sorts.'
+topics: ['find', 'sort']
 source: 'batch1.md:504-536'
 ---
 

@@ -3,7 +3,7 @@ title: 'The accumulator operators'
 module: 'grouping'
 track: 'aggregation'
 description: 'The MongoDB $group accumulators: $sum, $avg, $min, $max, $count, $push, $addToSet, $first and $last.'
-operators: ['$avg', '$group', '$max', '$min', '$sum']
+topics: ['$avg', '$group', '$max', '$min', '$sum']
 source: 'batch2.md:675-717'
 ---
 

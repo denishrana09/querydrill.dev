@@ -3,7 +3,7 @@ title: '$inc and counters'
 module: 'updating-documents'
 track: 'fundamentals'
 description: 'MongoDB $inc for atomic counters: increment and decrement a numeric field without reading it first.'
-operators: ['$inc']
+topics: ['update', '$inc']
 source: 'batch1.md:682-718'
 ---
 

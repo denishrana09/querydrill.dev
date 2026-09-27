@@ -3,7 +3,7 @@ title: '$push vs $addToSet inside $group'
 module: 'grouping'
 track: 'aggregation'
 description: 'MongoDB $push vs $addToSet inside $group: collect every value, or collect the distinct ones. Pair $addToSet with $size to count them.'
-operators: ['$addToSet', '$push']
+topics: ['$addToSet', '$push']
 source: 'batch2.md:718-778'
 ---
 

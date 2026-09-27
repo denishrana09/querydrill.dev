@@ -3,7 +3,7 @@ title: 'Worked example: revenue per product'
 module: 'unwind-arrays'
 track: 'aggregation'
 description: 'A worked MongoDB aggregation: revenue per product from order line items, using $match, $unwind, $group and $multiply.'
-operators: ['$group', '$match', '$multiply', '$set', '$sum', '$unwind']
+topics: ['$group', '$match', '$multiply', '$set', '$sum', '$unwind']
 source: 'batch2.md:1072-1158'
 ---
 

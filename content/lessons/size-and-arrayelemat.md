@@ -3,7 +3,7 @@ title: '$size and $arrayElemAt'
 module: 'expression-operators'
 track: 'advanced-aggregation'
 description: 'MongoDB $size counts array elements and $arrayElemAt picks one out by index, including negative indexes from the end.'
-operators: ['$arrayElemAt', '$project', '$size']
+topics: ['arrays', '$arrayElemAt', '$project', '$size']
 source: 'batch3.md:991-1070'
 ---
 

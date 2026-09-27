@@ -3,7 +3,7 @@ title: 'Logical operators and implicit AND'
 module: 'query-operators'
 track: 'fundamentals'
 description: 'MongoDB $and, $or and $not, plus the implicit AND that makes an explicit $and unnecessary most of the time.'
-operators: ['$and', '$gte', '$lt', '$or']
+topics: ['find', 'logical', '$and', '$gte', '$lt', '$or']
 source: 'batch1.md:148-224'
 ---
 

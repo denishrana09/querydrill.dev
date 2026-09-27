@@ -1,6 +1,6 @@
 ---
 import Doc from '../../layouts/Doc.astro';
-import { TRACKS, MODULES, REFERENCES, ALL_LESSONS } from '../../../content/curriculum.js';
+import { TRACKS, MODULES, REFERENCES, TOPIC_PAGES, ALL_LESSONS } from '../../../content/curriculum.js';
 import { EXERCISES } from '../../../server/exercises/index.js';
 
 const jsonLd = {
@@ -54,6 +54,23 @@ const jsonLd = {
       </div>
     </section>
   ))}
+
+  <!--
+    The other way in. A module is a step in a course; a topic is everything on
+    the site about one idea, gathered from wherever it fell - which is why only
+    the tags that cross a module boundary get a page.
+  -->
+  <div class="section-head">
+    <h2>By topic</h2>
+    <span class="meta">across modules</span>
+  </div>
+  <div class="grid">
+    {TOPIC_PAGES.map((t) => (
+      <a class="card" href={`/topics/${t.slug}/`}>
+        <div class="card-row"><h3>{t.title}</h3></div>
+      </a>
+    ))}
+  </div>
 
   <div class="section-head">
     <h2>Reference</h2>

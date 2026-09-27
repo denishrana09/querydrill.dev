@@ -3,7 +3,7 @@ title: '$unwind'
 module: 'unwind-arrays'
 track: 'aggregation'
 description: 'MongoDB $unwind turns one document with an N-element array into N documents, so later stages can work on each element.'
-operators: ['$unwind']
+topics: ['$unwind']
 source: 'batch2.md:839-922'
 ---
 

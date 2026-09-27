@@ -3,7 +3,7 @@ title: 'Filter an array, then calculate'
 module: 'expression-operators'
 track: 'advanced-aggregation'
 description: 'A common MongoDB pattern: $filter an array down to the elements you care about, then $map and $sum over just those.'
-operators: ['$add', '$eq', '$filter', '$multiply', '$reduce', '$set']
+topics: ['arrays', '$add', '$eq', '$filter', '$multiply', '$reduce', '$set']
 source: 'batch3.md:1608-1707'
 ---
 

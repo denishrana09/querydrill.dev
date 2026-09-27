@@ -56,6 +56,14 @@ The `batch1.js` / `batch2.js` / `batch3.js` filenames are storage only. Nothing
 reads them for order any more — `server/exercises/index.js` sorts by the
 curriculum and stamps each exercise with its `module` and `track`.
 
+Cutting across that tree is the tag vocabulary in `content/topics.js`, which
+both drills and lessons declare — drills in `topics`, lessons in the `topics`
+frontmatter field. That field was called `operators` until the topic pages
+needed it, which is why `find`, `arrays` and `update` were on no lesson at all:
+the name had quietly become the schema. It carries what a lesson *teaches*, it
+becomes the JSON-LD `teaches` property, and for the seven tags with a hub page
+it decides what appears there.
+
 **An exercise id is three things at once**: its URL slug, its localStorage
 progress key, and its name in the curriculum. That is why the rename from
 `b1-01` happened in one pass together with the module structure, and why
@@ -120,6 +128,7 @@ justify and no content without a route.
 | `/learn/` | `TRACKS` + `MODULES` | no |
 | `/learn/<lesson>/` | `content/lessons/*.md` | no |
 | `/modules/<module>/` | `MODULES` | no |
+| `/topics/<tag>/` | `content/topic-pages/*.md` + the tag | no |
 | `/reference/<page>/` | `content/reference/*.md` | no |
 | `/dataset/` | the seed itself, via `inferSchema` | no |
 | `/practice/` | the app | yes, all of it |
@@ -132,12 +141,24 @@ here, and it is what keeps Core Web Vitals free. Keep it that way.
 The original notes described the data in prose, and prose goes stale the moment
 the generator changes.
 
+**Two ways in, on purpose.** A module page is a step in the course: read these
+four lessons, then drill them. A topic page is the other question - *everything
+on this site about `$lookup`* - which no module page can answer, because the
+seven tags that earn a page are exactly the ones that cross a module boundary.
+Only the prose and the runnable example are written; every list on a topic page
+is gathered from the tag, so adding a `$lookup` lesson adds it to that page and
+nothing has to remember to.
+
 **The deep-link seam.** Lesson and module pages link to `/practice/#<exercise-id>`,
 and `app.js` opens that drill on load and on `hashchange`. This is the one join
 between the static pages and the app, and it fails *silently* — the page still
 renders, the link still resolves, the drill just does not open. `test/links.mjs`
 checks every such hash names a real exercise; `test/dom-smoke.mjs` checks the app
-end honours it.
+end honours it. Topic pages use the other half of the seam,
+`/practice/?topic=<tag>`, which opens the drill list already narrowed. That is
+not the same decision as remembering a filter between visits, which stays
+rejected: a link that says in its own URL which topic it means is not a chip
+somebody left on last week.
 
 Body class decides layout: `app` is the fixed three-pane shell that must not
 scroll, `doc` is a normal document that must. One inheriting the other's rules
@@ -361,6 +382,13 @@ bare global the app touches has to be added to `test/dom-smoke.mjs`, or the test
 fails for a reason that has nothing to do with the code being wrong. Related:
 jsdom has no `scrollIntoView`, so that call is optional (`?.()`) — it is
 cosmetic and must never be why a link fails to open.
+
+**A hand-written list next to a derived one will drift.** `TOPIC_PAGES` in
+`content/curriculum.js` is written out, because that file has no imports - the
+sitemap and the link checker have to read every URL the site publishes without
+loading the exercise set or a content collection. The cost is a list that can
+disagree with `filtersFor(EXERCISES)` and with the markdown on disk, so
+`test/topics.mjs` compares all three. The same reasoning applies to `REFERENCES`.
 
 **The shipped site's runtime dependencies are `mingo`, `prettier` and CodeMirror.**
 `mongodb` and `jsdom` are dev-only, and all three runtime ones are behind dynamic

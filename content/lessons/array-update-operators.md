@@ -3,7 +3,7 @@ title: '$push, $addToSet and $pull'
 module: 'updating-arrays'
 track: 'fundamentals'
 description: 'MongoDB array updates: $push to append, $addToSet to append only if absent, $pull to remove matching elements.'
-operators: ['$addToSet', '$pull', '$push']
+topics: ['arrays', 'update', '$addToSet', '$pull', '$push']
 source: 'batch1.md:719-779'
 ---
 

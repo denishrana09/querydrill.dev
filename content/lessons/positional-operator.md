@@ -3,7 +3,7 @@ title: 'The positional $ operator'
 module: 'updating-arrays'
 track: 'fundamentals'
 description: 'Update an object inside a MongoDB array with the positional $ operator, which targets the element your filter matched.'
-operators: ['$set']
+topics: ['arrays', 'positional', 'update', '$set']
 source: 'batch1.md:780-849'
 ---
 

@@ -396,6 +396,59 @@ if (openName) {
     `${openTitle} reopened itself`);
 }
 
+/* ---------- arriving from a topic page ---------- */
+
+// `/practice/?topic=$lookup` is what the topic hubs link to, and the app reads
+// it once at startup - so it cannot be tested by poking the running instance.
+// A second document with the query string on it, and a second import, is the
+// only way to exercise the same path the link takes. The cache-busting suffix
+// is what makes the module body run again; without it Node hands back the
+// instance already bound to the first document and the check passes on nothing.
+{
+  const target = FILTERS[FILTERS.length - 1];   // the smallest chip, so a wrong filter is obvious
+  const fresh = new JSDOM(`<!doctype html><html><body>${body}</body></html>`, {
+    url: `https://example.com/practice/?topic=${encodeURIComponent(target.slug)}`,
+  });
+  globalThis.window = fresh.window;
+  globalThis.document = fresh.window.document;
+  globalThis.localStorage = fresh.window.localStorage;
+  globalThis.getComputedStyle = fresh.window.getComputedStyle.bind(fresh.window);
+  globalThis.location = fresh.window.location;
+  globalThis.history = fresh.window.history;
+
+  await import('../src/scripts/app.js?from-a-topic-page');
+  await tick();
+
+  const $$ = (id) => fresh.window.document.getElementById(id);
+  const shown = [...$$('exerciseList').querySelectorAll('.ex')];
+  const want = EXERCISES.filter((e) => e.topics.includes(target.slug));
+  check(`?topic=${target.slug} opens the list already narrowed to it`,
+    shown.length === want.length && shown.length < TOTAL,
+    `${shown.length} drills shown, ${want.length} carry the tag, ${TOTAL} in total`);
+
+  const pressed = [...$$('exFilters').querySelectorAll('button')]
+    .find((b) => b.getAttribute('aria-pressed') === 'true');
+  check('and the chip for that topic is the pressed one',
+    pressed?.dataset.tag === target.slug, `pressed: ${pressed?.dataset.tag ?? '(none)'}`);
+
+  // A tag that is real but has no chip, or one somebody invented, must not leave
+  // the visitor staring at an empty course.
+  const bogus = new JSDOM(`<!doctype html><html><body>${body}</body></html>`, {
+    url: 'https://example.com/practice/?topic=$nonsense',
+  });
+  globalThis.window = bogus.window;
+  globalThis.document = bogus.window.document;
+  globalThis.localStorage = bogus.window.localStorage;
+  globalThis.getComputedStyle = bogus.window.getComputedStyle.bind(bogus.window);
+  globalThis.location = bogus.window.location;
+  globalThis.history = bogus.window.history;
+
+  await import('../src/scripts/app.js?with-a-bogus-topic');
+  await tick();
+  check('an unknown ?topic= shows the whole course rather than nothing',
+    bogus.window.document.getElementById('exerciseList').querySelectorAll('.ex').length === TOTAL);
+}
+
 if (failures.length) {
   console.log(`\n  ${RED}${failures.length} failure(s):${OFF}`);
   for (const f of failures) console.log(`    ${f}`);

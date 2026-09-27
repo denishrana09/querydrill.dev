@@ -3,7 +3,7 @@ title: 'When you do not need $unwind'
 module: 'expression-operators'
 track: 'advanced-aggregation'
 description: 'When you do not need $unwind in MongoDB: compute inside the document with $map, $filter and $sum instead of flattening it.'
-operators: ['$add', '$multiply', '$reduce', '$set', '$unwind']
+topics: ['arrays', '$add', '$multiply', '$reduce', '$set', '$unwind']
 source: 'batch3.md:1528-1607'
 ---
 

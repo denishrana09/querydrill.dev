@@ -3,7 +3,7 @@ title: 'find() vs aggregate()'
 module: 'aggregation-pipeline'
 track: 'aggregation'
 description: 'find() vs aggregate() in MongoDB: what find can and cannot do, and the point at which you need a pipeline.'
-operators: ['$group', '$gte', '$match', '$sum']
+topics: ['find', '$group', '$gte', '$match', '$sum']
 source: 'batch1.md:850-943'
 ---
 

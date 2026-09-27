@@ -6,6 +6,7 @@ import {
   moduleBySlug,
   trackBySlug,
   lessonNeighbours,
+  TOPIC_PAGE_OF,
 } from '../../../content/curriculum.js';
 import { EXERCISES } from '../../../server/exercises/index.js';
 import { hasRunnable } from '../../../engine/runnable.js';
@@ -38,7 +39,7 @@ const jsonLd = {
   description: entry.data.description,
   learningResourceType: 'lesson',
   educationalLevel: 'beginner to intermediate',
-  teaches: entry.data.operators ?? undefined,
+  teaches: entry.data.topics ?? undefined,
   isPartOf: { '@type': 'Course', name: module?.title, description: module?.summary },
   inLanguage: 'en',
 };
@@ -57,9 +58,17 @@ const jsonLd = {
 
   <article class="prose">
     <h1>{entry.data.title}</h1>
-    {entry.data.operators?.length ? (
+    {entry.data.topics?.length ? (
       <div class="tagrow">
-        {entry.data.operators.map((op) => <span class="chip">{labelOf(op)}</span>)}
+        {/*
+          A chip becomes a link when that topic has a hub page - which is the
+          seven that cross a module boundary. The other 49 stay labels, because
+          a chip that looks clickable and is not is worse than no chip: that was
+          the whole complaint that produced content/topics.js in the first place.
+        */}
+        {entry.data.topics.map((t) => (TOPIC_PAGE_OF[t]
+          ? <a class="chip hub" href={`/topics/${TOPIC_PAGE_OF[t]}/`}>{labelOf(t)}</a>
+          : <span class="chip">{labelOf(t)}</span>))}
       </div>
     ) : null}
     <Content />

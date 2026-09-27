@@ -3,7 +3,7 @@ title: '$project and computed fields'
 module: 'aggregation-pipeline'
 track: 'aggregation'
 description: 'MongoDB $project reshapes documents: include and exclude fields, rename them, and build new computed fields.'
-operators: ['$multiply', '$project']
+topics: ['$multiply', '$project']
 source: 'batch2.md:255-379'
 ---
 

@@ -3,7 +3,7 @@ title: 'What $lookup costs'
 module: 'lookup-joins'
 track: 'advanced-aggregation'
 description: 'What $lookup actually costs in MongoDB, why it runs per document, and when embedding beats joining.'
-operators: ['$lookup']
+topics: ['$lookup']
 source: 'batch3.md:364-405'
 ---
 

@@ -3,7 +3,7 @@ title: 'limit(), skip(), and why big skips hurt'
 module: 'sorting-and-paging'
 track: 'fundamentals'
 description: 'Paginate MongoDB results with limit() and skip(), and why skip() gets slower the deeper into the results you go.'
-operators: ['$lt']
+topics: ['find', 'pagination', '$lt']
 source: 'batch1.md:537-597'
 ---
 

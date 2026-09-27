@@ -3,7 +3,7 @@ title: 'update() and $set'
 module: 'updating-documents'
 track: 'fundamentals'
 description: 'MongoDB $set, and the update that silently deletes every other field in your document. The most expensive beginner mistake.'
-operators: ['$set']
+topics: ['update', '$set']
 source: 'batch1.md:598-681'
 ---
 

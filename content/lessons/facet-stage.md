@@ -3,7 +3,7 @@ title: '$facet: several pipelines at once'
 module: 'facets-and-dates'
 track: 'advanced-aggregation'
 description: 'MongoDB $facet runs several independent pipelines over the same input, returning all their results in one document.'
-operators: ['$facet', '$group', '$limit', '$match', '$multiply', '$sort', '$sum', '$unwind']
+topics: ['$facet', '$group', '$limit', '$match', '$multiply', '$sort', '$sum', '$unwind']
 source: 'batch3.md:1071-1194'
 ---
 

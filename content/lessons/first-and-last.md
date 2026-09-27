@@ -3,7 +3,7 @@ title: '$first and $last'
 module: 'grouping'
 track: 'aggregation'
 description: 'MongoDB $first and $last pick a value from each group, and both depend entirely on the $sort you ran beforehand.'
-operators: ['$first', '$group', '$last', '$sort']
+topics: ['$first', '$group', '$last', '$sort']
 source: 'batch2.md:1274-1319'
 ---
 

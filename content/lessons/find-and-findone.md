@@ -3,6 +3,7 @@ title: 'find() and findOne()'
 module: 'documents-and-find'
 track: 'fundamentals'
 description: 'How to read documents out of a MongoDB collection with find() and findOne(), and how each one differs from a SQL SELECT.'
+topics: ['find']
 source: 'batch1.md:50-82'
 ---
 

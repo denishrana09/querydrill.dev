@@ -3,7 +3,7 @@ title: 'Paging and total count in one query'
 module: 'facets-and-dates'
 track: 'advanced-aggregation'
 description: 'Get a page of MongoDB results and the total count in one query, using $facet with $skip/$limit and $count.'
-operators: ['$count', '$facet', '$limit', '$match', '$skip', '$sort']
+topics: ['$count', '$facet', '$limit', '$match', '$skip', '$sort']
 source: 'batch3.md:1195-1261'
 ---
 

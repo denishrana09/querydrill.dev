@@ -3,7 +3,7 @@ title: '$ifNull and missing fields'
 module: 'expression-operators'
 track: 'advanced-aggregation'
 description: 'MongoDB $ifNull supplies a default when a field is missing or null, so arithmetic on optional fields does not break.'
-operators: ['$ifNull', '$project']
+topics: ['$ifNull', '$project']
 source: 'batch3.md:946-990'
 ---
 

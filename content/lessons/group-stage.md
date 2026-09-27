@@ -3,7 +3,7 @@ title: '$group: the heart of aggregation'
 module: 'grouping'
 track: 'aggregation'
 description: 'MongoDB $group explained: _id is the grouping key, everything else is an accumulator. The stage most people stall on.'
-operators: ['$group']
+topics: ['$group']
 source: 'batch2.md:532-582'
 ---
 

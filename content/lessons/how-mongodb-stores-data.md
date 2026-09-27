@@ -3,6 +3,7 @@ title: 'How MongoDB stores data'
 module: 'documents-and-find'
 track: 'fundamentals'
 description: 'MongoDB stores documents in collections, not rows in tables. What that changes about how you model, nest and query your data.'
+topics: ['arrays', 'nested']
 source: 'batch1.md:7-49'
 ---
 

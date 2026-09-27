@@ -131,9 +131,17 @@ title: 'Comparison operators'
 module: 'query-operators'
 track: 'fundamentals'
 description: 'One sentence, 40-165 characters. This becomes the Google snippet.'
-operators: ['$gte', '$lt']   # must exist in content/topics.js
+topics: ['find', 'comparison', '$gte', '$lt']   # must exist in content/topics.js
 ---
 ```
+
+`topics` is what the lesson **teaches**, not every operator it happens to
+mention. It becomes the JSON-LD `teaches` property, it renders as the chip row
+under the title, and — for the seven tags that have one — it is what puts the
+lesson on a topic hub page. Concepts first, then operators. Tagging generously
+is not a favour to anybody: a lesson that claims `$group` because the word
+appears once will show up on `/topics/group/` above lessons that are actually
+about it.
 
 **Any fenced `js` block that starts with `db.<collection>.` becomes runnable on
 the page** — a Run / Edit / Copy toolbar appears automatically, and readers can

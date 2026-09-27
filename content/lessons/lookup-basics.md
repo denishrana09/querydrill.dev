@@ -3,7 +3,7 @@ title: '$lookup, and why it returns an array'
 module: 'lookup-joins'
 track: 'advanced-aggregation'
 description: 'MongoDB $lookup is the join: pull matching documents from another collection. It always returns an array, even for one match.'
-operators: ['$lookup']
+topics: ['$lookup']
 source: 'batch3.md:24-130'
 ---
 

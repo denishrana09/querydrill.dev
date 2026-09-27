@@ -10,11 +10,11 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done · `[>]` deliberately 
 ## Start here
 
 **Done so far:** a layout that works on a phone, checked in a real browser (§2).
-Runnable examples on every lesson - 73 of them, Run/Edit/Copy against the real
-engine (§4). Light + dark themes with a toggle, contrast-tested
+Runnable examples on every lesson and topic page - 80 of them, Run/Edit/Copy
+against the real engine (§4). Light + dark themes with a toggle, contrast-tested
 (§2). The app runs entirely in the browser (§1). 38 drills audited so starters
 show structure, never answer (§3). Content restructured into 3 tracks → 12
-modules → 54 lessons (§3). 74 static pages with full SEO plumbing, sitemap,
+modules → 54 lessons (§3). 81 static pages with full SEO plumbing, sitemap,
 JSON-LD and internal linking (§4). The tag vocabulary normalised into one closed
 list, 43 tags down to 7 that earn a clickable chip (§2). The drill list filters by
 topic (§2). Prompts audited and made safe for someone who has never seen the
@@ -22,19 +22,19 @@ source notes (§3). MIT licensed, with a CONTRIBUTING guide whose every instruct
 tested by following it (§7).
 A real code editor in the app and on every lesson page, colours taken from the
 existing token set, and none of its 167 KB anywhere near first paint (§2).
-`npm run verify` builds and runs ten suites over all of it.
+Seven topic hub pages for the tags that cross a module, each with its own prose
+and a runnable example (§4). `npm run verify` builds and runs ten suites over
+all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Topic pages** for the 7 filter tags (§4) — the long-tail keywords, built on
-   the filtering that already landed.
-2. **"Common mistakes" after a failed attempt** (§3). The content for several of
+1. **"Common mistakes" after a failed attempt** (§3). The content for several of
    these already exists — it came out of the prompts during the rewrite and is
    sitting in hints, which is not quite the right moment to show it.
-3. **A real README for strangers** (§7) — the false parts are fixed, but it still
+2. **A real README for strangers** (§7) — the false parts are fixed, but it still
    opens with prose instead of a screenshot, and there is now an editor worth
    screenshotting, though the landing page (§5) would make a better one.
-4. **Autocomplete for `$` operators** (§2) — the next thing the editor itself
+3. **Autocomplete for `$` operators** (§2) — the next thing the editor itself
    wants, and most of its cost is already paid.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
@@ -291,8 +291,7 @@ one commit per file, and never any AI attribution trailer.
         disappears, which happens anyway because a filtered-out drill is never
         rendered. The real consequence of not clearing `openId` is that the drill
         springs back open when the filter clears — so that is what it checks now.
-      Still to do: topic *pages* for the tags with real volume — those are the
-      long-tail keywords worth ranking for.
+      Topic *pages* for those seven tags landed 2026-09-27 — see §4.
 - [ ] Copy-query and share-a-permalink button (query encoded in URL hash)
 - [ ] Progress indicator: X/38 solved, per-topic breakdown
 - [ ] Favicon, OG image, 404 page
@@ -413,7 +412,8 @@ and then comes back to practice.
 - [x] Topic tags per exercise (`find`, `$group`, `$lookup`, `update`, …).
       Vocabulary normalised 2026-09-27 into `content/topics.js`, a closed list
       shared with lesson frontmatter — see the §2 item for what the measurements
-      found. Not yet wired to a filter UI; that is the remaining half.
+      found. Now carries three jobs: the drill filter row, the chip rows on
+      lessons and cards, and which seven tags get a hub page (§4).
 - [x] A defined **learning track**: tracks -> modules -> ordered drills, and the
       practice list now renders in that order instead of by batch file.
 - [ ] **Thin modules, to fill honestly.** The structure exposed where coverage is
@@ -454,12 +454,41 @@ and then comes back to practice.
 The brand name will bring almost nothing. Lesson pages bring the traffic.
 
 - [x] **One prerendered URL per lesson** — 54 of them, fully server-rendered.
-      Plus 12 module hubs and 4 reference pages. 74 pages total.
+      Plus 12 module hubs, 7 topic hubs and 4 reference pages. 81 pages total.
 - [>] One URL per exercise. Deferred, not skipped: drills are deep-linked as
       `/practice/#<slug>` today, which is one page, not 38. A real per-exercise
       page is worth doing once there is a reason for it to rank on its own.
-- [ ] Target **long-tail operator keywords**: "mongodb $unwind example",
-      "mongodb $lookup tutorial", "mongodb aggregation practice"
+- [x] **Topic hub pages** — `/topics/<tag>/`, one for each of the 7 tags that
+      earned a filter chip. DONE 2026-09-27. These are the long-tail operator
+      keywords: "mongodb $unwind example", "mongodb $lookup tutorial", "mongodb
+      query array of objects".
+      - **Measured before building.** All seven cross a module boundary, so none
+        of them duplicates a module page — that is the same rule that promoted
+        them to filter chips, and it turns out to be exactly the rule for "does
+        this deserve a page of its own". A module page is a step in the course;
+        a topic page is everything on the site about one idea.
+      - **The lessons had to be retagged first, and that exposed a real bug.**
+        Lesson frontmatter had a field called `operators`, so lessons only ever
+        declared operators — `find`, `arrays` and `update` were on **zero** of
+        54 lessons despite a dozen teaching each. The name had quietly become
+        the schema. Renamed to `topics`, and 28 lessons gained the concept tags
+        they always taught. That field is the JSON-LD `teaches` property, so
+        until now the site told Google those lessons taught no concepts at all.
+      - **Only the prose is written; every list is derived** from the tag. Adding
+        a `$lookup` lesson adds it to `/topics/lookup/` with nothing to remember.
+        Related topics come from co-occurrence — two topics are related when the
+        same drill carries both — rather than from a hand-written list.
+      - Each page carries **its own framing and a runnable example**, which is
+        the whole claim over the Medium posts on the same keywords. A hub that
+        is only a list of links is a doorway page, and `test/examples.mjs` fails
+        if one appears.
+      - `/practice/?topic=$lookup` opens the drill list already narrowed, so the
+        "Practise $lookup" button lands somewhere that makes sense. Not the same
+        as remembering a filter between visits, which stays rejected.
+      - Internal linking both ways: the chip row on a lesson page links to the
+        hub for the 7 tags that have one and stays a plain label for the other
+        49, and `/learn/` grew a "By topic" section.
+      - 12 new checks across 4 suites, 7 deliberate breaks, all caught.
 - [ ] Do **not** fight head terms — W3Schools/GeeksforGeeks own "mongodb exercises"
 - [x] **The differentiator: a live editor on the lesson page itself.** DONE
       2026-09-26. Page-one results for `$lookup`/`$unwind` are Medium posts,

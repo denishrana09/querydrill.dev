@@ -3,7 +3,7 @@ title: 'Counting and summing'
 module: 'grouping'
 track: 'aggregation'
 description: 'Count documents and sum fields per group in MongoDB with $group and $sum, including the $sum: 1 counting idiom.'
-operators: ['$group', '$sum']
+topics: ['$group', '$sum']
 source: 'batch2.md:583-674'
 ---
 

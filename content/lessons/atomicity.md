@@ -3,7 +3,7 @@ title: 'Atomicity: why $inc beats read-modify-write'
 module: 'updating-documents'
 track: 'fundamentals'
 description: 'Single-document writes in MongoDB are atomic. What that guarantee covers, what it does not, and how to use it correctly.'
-operators: ['$gte', '$inc']
+topics: ['atomicity', 'update', '$gte', '$inc']
 source: 'batch1.md:944-991'
 ---
 

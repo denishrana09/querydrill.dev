@@ -3,6 +3,7 @@ title: 'Arrays of objects'
 module: 'nested-and-arrays'
 track: 'fundamentals'
 description: 'Querying arrays of sub-documents in MongoDB with dot notation, and what a match on "orders.status" actually tests.'
+topics: ['arrays', 'find', 'nested']
 source: 'batch1.md:321-355'
 ---
 

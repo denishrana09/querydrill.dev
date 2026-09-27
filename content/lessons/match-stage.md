@@ -3,7 +3,7 @@ title: '$match, and why it goes first'
 module: 'aggregation-pipeline'
 track: 'aggregation'
 description: 'MongoDB $match filters documents inside an aggregation pipeline, using the same operators as find(). Put it first.'
-operators: ['$gte', '$lt', '$match']
+topics: ['$gte', '$lt', '$match']
 source: 'batch2.md:150-254'
 ---
 

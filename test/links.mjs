@@ -8,7 +8,7 @@ import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { allPaths } from '../content/curriculum.js';
+import { allPaths, TOPIC_PAGES } from '../content/curriculum.js';
 import { fencesIn } from '../engine/runnable.js';
 import { inferSchema } from '../src/scripts/schema.js';
 import ecommerce from '../server/datasets/ecommerce.js';
@@ -162,7 +162,7 @@ check('every page carries the trademark disclaimer', noDisclaimer.length === 0,
 // like a clean build and ships 6 marked pages instead of 26. Comparing the built
 // HTML against the rule is the only way to notice.
 const runnableInContent = [];
-for (const dir of ['content/lessons', 'content/reference']) {
+for (const dir of ['content/lessons', 'content/reference', 'content/topic-pages']) {
   for (const file of readdirSync(new URL(`../${dir}`, import.meta.url))) {
     const source = readFileSync(new URL(`../${dir}/${file}`, import.meta.url), 'utf8');
     const n = fencesIn(source).filter((f) => f.runnable).length;
@@ -186,6 +186,33 @@ check('every page with a runnable block ships the script', noScript.length === 0
   noScript.map((f) => relative(DIST, f)).join(', '));
 check('no page ships the script without a runnable block', noBlocks.length === 0,
   noBlocks.map((f) => relative(DIST, f)).join(', '));
+
+/* ---------- the topic hubs gathered something ---------- */
+
+// Everything on a topic page except its prose is derived from the tag, which
+// means the whole page can come out empty from one wrong field name and still
+// build, still validate, and still look deliberate. test/topics.mjs proves the
+// material exists; this proves it reached the HTML.
+{
+  const thin = [];
+  for (const t of TOPIC_PAGES) {
+    const file = join(DIST, 'topics', t.slug, 'index.html');
+    if (!existsSync(file)) { thin.push(`/topics/${t.slug}/ was not built`); continue; }
+    const html = readFileSync(file, 'utf8');
+    const lessons = new Set([...html.matchAll(/href="\/learn\/([^"/]+)\//g)].map((m) => m[1]));
+    const drills = new Set([...html.matchAll(/href="\/practice\/#([^"]+)"/g)].map((m) => m[1]));
+    const want = EXERCISES.filter((e) => e.topics.includes(t.topic)).length;
+    if (!lessons.size) thin.push(`/topics/${t.slug}/ links to no lessons`);
+    if (drills.size < want) {
+      thin.push(`/topics/${t.slug}/ links to ${drills.size} drills, ${want} carry the tag`);
+    }
+    if (!html.includes(`/practice/?topic=${encodeURIComponent(t.topic)}`)) {
+      thin.push(`/topics/${t.slug}/ has no filtered practice link`);
+    }
+  }
+  check('every topic hub lists the lessons and drills that carry its tag',
+    thin.length === 0, thin.join('\n        '));
+}
 
 /* ---------- what each page weighs before anyone clicks anything ---------- */
 

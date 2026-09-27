@@ -397,3 +397,18 @@ textarea.rx-editor:focus,
      button row. */
   .rx-note { margin-left: 0; flex-basis: 100%; }
 }
+
+/* A topic chip that leads somewhere. It stays a label in shape - the other 49
+   tags on these pages are not clickable and must not look as though they are -
+   and earns an underline on hover rather than a border, so the difference reads
+   as "this one is a link" rather than "this one is a button". */
+.tagrow .chip.hub {
+  color: var(--text-soft);
+  text-decoration: none;
+}
+.tagrow .chip.hub:hover,
+.tagrow .chip.hub:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

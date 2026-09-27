@@ -3,7 +3,7 @@ title: '$map, and how it differs from $unwind'
 module: 'expression-operators'
 track: 'advanced-aggregation'
 description: 'MongoDB $map transforms every element of an array in place, keeping the document intact. The $unwind you often do not need.'
-operators: ['$map', '$multiply', '$project', '$unwind']
+topics: ['arrays', '$map', '$multiply', '$project', '$unwind']
 source: 'batch3.md:531-684'
 ---
 

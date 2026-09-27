@@ -3,7 +3,7 @@ title: '$in and $nin'
 module: 'query-operators'
 track: 'fundamentals'
 description: 'MongoDB $in and $nin: match a field against a list of acceptable values, and the trap $nin sets with missing fields.'
-operators: ['$in', '$nin']
+topics: ['find', '$in', '$nin']
 source: 'batch1.md:116-147'
 ---
 

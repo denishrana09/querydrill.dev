@@ -30,7 +30,7 @@ function check(label, ok, detail = '') {
 /* ---------- collect ---------- */
 
 const pages = [];
-for (const dir of ['content/lessons', 'content/reference']) {
+for (const dir of ['content/lessons', 'content/reference', 'content/topic-pages']) {
   for (const file of readdirSync(new URL(`../${dir}`, import.meta.url))) {
     const source = readFileSync(new URL(`../${dir}/${file}`, import.meta.url), 'utf8');
     pages.push({ id: `${dir.split('/')[1]}/${file}`, fences: fencesIn(source) });
@@ -85,6 +85,16 @@ check(`every \`${NO_RUN}\` marker is on a block that would otherwise run`, stale
 const lessonsWithout = pages
   .filter((p) => p.id.startsWith('lessons/') && !p.fences.some((f) => f.runnable))
   .map((p) => p.id);
+// The topic hubs have the same rule, and a harder reason for it. Their whole
+// claim over the Medium posts and vendor blogs on the same keywords is that the
+// example on the page runs. A topic page that is only a list of links is the
+// doorway page this project decided not to build.
+const hubsWithout = pages
+  .filter((p) => p.id.startsWith('topic-pages/') && !p.fences.some((f) => f.runnable))
+  .map((p) => p.id);
+check('every topic page has a runnable example', hubsWithout.length === 0,
+  hubsWithout.join(', '));
+
 check('every lesson has at least one runnable example', lessonsWithout.length === 0,
   lessonsWithout.join(', '));
 

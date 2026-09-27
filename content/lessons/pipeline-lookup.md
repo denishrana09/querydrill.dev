@@ -3,7 +3,7 @@ title: 'Pipeline $lookup with let and $expr'
 module: 'lookup-joins'
 track: 'advanced-aggregation'
 description: 'MongoDB pipeline $lookup with let and $expr: filter the joined collection during the join, not after it.'
-operators: ['$and', '$eq', '$expr', '$lookup', '$match']
+topics: ['$and', '$eq', '$expr', '$lookup', '$match']
 source: 'batch3.md:234-363'
 ---
 

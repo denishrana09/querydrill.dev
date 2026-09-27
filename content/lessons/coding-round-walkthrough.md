@@ -3,7 +3,7 @@ title: 'A full coding-round problem, worked'
 module: 'facets-and-dates'
 track: 'advanced-aggregation'
 description: 'A full MongoDB aggregation interview problem worked end to end: top customers by spend, joined to their user records.'
-operators: ['$group', '$limit', '$lookup', '$match', '$multiply', '$project', '$sort', '$sum', '$unwind']
+topics: ['$group', '$limit', '$lookup', '$match', '$multiply', '$project', '$sort', '$sum', '$unwind']
 source: 'batch3.md:1356-1527'
 ---
 

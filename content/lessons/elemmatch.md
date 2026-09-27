@@ -3,7 +3,7 @@ title: '$elemMatch and the multi-condition trap'
 module: 'nested-and-arrays'
 track: 'fundamentals'
 description: 'The classic MongoDB array trap: two conditions on an array of objects can match different elements. $elemMatch is the fix.'
-operators: ['$elemMatch']
+topics: ['arrays', 'find', '$elemMatch']
 source: 'batch1.md:356-432'
 ---
 

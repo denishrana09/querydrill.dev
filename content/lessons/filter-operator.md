@@ -3,7 +3,7 @@ title: '$filter, and how it differs from $match'
 module: 'expression-operators'
 track: 'advanced-aggregation'
 description: 'MongoDB $filter keeps some elements of an array without splitting the document apart, unlike $match or $unwind.'
-operators: ['$eq', '$filter', '$match', '$project']
+topics: ['arrays', '$eq', '$filter', '$match', '$project']
 source: 'batch3.md:406-530'
 ---
 

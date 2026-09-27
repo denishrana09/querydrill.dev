@@ -3,7 +3,7 @@ title: 'Trimming the joined document'
 module: 'lookup-joins'
 track: 'advanced-aggregation'
 description: 'Trim a MongoDB $lookup result with $project so you return two or three joined fields instead of a whole document.'
-operators: ['$lookup', '$match', '$project', '$unwind']
+topics: ['$lookup', '$match', '$project', '$unwind']
 source: 'batch3.md:183-233'
 ---
 

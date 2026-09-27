@@ -3,7 +3,7 @@ title: '$unwind after $lookup'
 module: 'lookup-joins'
 track: 'advanced-aggregation'
 description: 'Pairing $unwind with $lookup in MongoDB to turn the joined one-element array into a plain embedded object.'
-operators: ['$lookup', '$unwind']
+topics: ['$lookup', '$unwind']
 source: 'batch3.md:131-182'
 ---
 

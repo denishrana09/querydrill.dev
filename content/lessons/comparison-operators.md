@@ -3,7 +3,7 @@ title: 'Comparison operators'
 module: 'query-operators'
 track: 'fundamentals'
 description: 'MongoDB comparison operators: $gt, $gte, $lt, $lte, $ne and how to combine two of them on a single field.'
-operators: ['$gte', '$lt']
+topics: ['comparison', 'find', '$gte', '$lt']
 source: 'batch1.md:83-115'
 ---
 

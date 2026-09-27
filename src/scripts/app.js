@@ -296,6 +296,29 @@ function renderProgress() {
 // already looking at, and a row nobody can scan is the thing being fixed.
 const FILTERS = filtersFor(EXERCISES);
 
+/**
+ * `/practice/?topic=$lookup` opens the list already narrowed to that topic. The
+ * topic hub pages link in this way, so the button that says "Practise $lookup"
+ * lands on the four $lookup drills rather than on all 38 with no explanation.
+ *
+ * This is not the same decision as remembering the filter between visits, which
+ * stays rejected: arriving to find two thirds of the course missing, because of
+ * a chip clicked last week, is a bug that looks like lost content. A link that
+ * says in its own URL which topic it means is not that.
+ *
+ * Ignored unless it names a topic that really has a chip, so a stale or
+ * hand-edited URL shows the whole course instead of an empty list.
+ */
+function filterFromQuery() {
+  try {
+    const want = new URLSearchParams(location.search).get('topic');
+    return want && FILTERS.some((f) => f.slug === want) ? want : '';
+  } catch {
+    return '';
+  }
+}
+state.filter = filterFromQuery();
+
 /** The drills the current filter admits. */
 const visible = () =>
   state.filter ? EXERCISES.filter((e) => e.topics.includes(state.filter)) : EXERCISES;

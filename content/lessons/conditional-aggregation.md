@@ -3,7 +3,7 @@ title: 'The conditional aggregation pattern'
 module: 'expression-operators'
 track: 'advanced-aggregation'
 description: 'The MongoDB conditional aggregation pattern: $sum with $cond to count several categories in a single pass.'
-operators: ['$cond', '$eq', '$group', '$sum']
+topics: ['$cond', '$eq', '$group', '$sum']
 source: 'batch3.md:1708-1794'
 ---
 
