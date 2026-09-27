@@ -2,8 +2,12 @@
   "name": "mongodb-practice",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
-  "description": "Local MongoDB practice playground: seed note-matching data, run queries, grade exercises.",
+  "description": "Learn MongoDB by running queries: 54 lessons with runnable examples and 38 auto-graded exercises, all in the browser.",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",

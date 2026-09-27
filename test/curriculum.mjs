@@ -143,9 +143,19 @@ check('every legacy id maps to a real exercise',
   Object.values(LEGACY_IDS).every((slug) => EXERCISES.some((e) => e.id === slug)),
   Object.values(LEGACY_IDS).filter((s) => !EXERCISES.some((e) => e.id === s)).join(', '));
 
-check('every exercise is reachable from an old id',
-  EXERCISES.every((e) => Object.values(LEGACY_IDS).includes(e.id)),
-  EXERCISES.filter((e) => !Object.values(LEGACY_IDS).includes(e.id)).map((e) => e.id).join(', '));
+// This used to assert the opposite direction too - that every exercise is
+// reachable from an old id. That was true of the 38 that existed at the rename
+// and false of every exercise added since, which made it a standing "no new
+// drills" rule in a project whose whole §3 plan is to grow past 38. It failed on
+// the first exercise added by following CONTRIBUTING.md, which is how it was
+// found. A new drill has no old id because it never had one; that is not a bug.
+//
+// What is worth guarding is the map not shrinking. Dropping entries from it
+// costs early users their progress silently, with nothing else to notice.
+const MIGRATED_AT_RENAME = 38;
+check(`the legacy map still covers all ${MIGRATED_AT_RENAME} pre-rename drills`,
+  Object.keys(LEGACY_IDS).length >= MIGRATED_AT_RENAME,
+  `${Object.keys(LEGACY_IDS).length} entries - removing them loses progress for anyone who practised before the rename`);
 
 const migrated = migrateKeys({ 'b1-01': 'pass', 'b2-03': 'fail' });
 check('migration rewrites old keys',

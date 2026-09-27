@@ -16,19 +16,23 @@ engine (§4). Light + dark themes with a toggle, contrast-tested
 show structure, never answer (§3). Content restructured into 3 tracks → 12
 modules → 54 lessons (§3). 74 static pages with full SEO plumbing, sitemap,
 JSON-LD and internal linking (§4). The tag vocabulary normalised into one closed
-list, 43 tags down to 7 that earn a clickable chip (§2). `npm run verify` builds
-and runs nine suites over all of it.
+list, 43 tags down to 7 that earn a clickable chip (§2). MIT licensed, with a
+CONTRIBUTING guide whose every instruction was tested by following it (§7).
+`npm run verify` builds and runs nine suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
 1. **Chip filtering** (§2). The vocabulary half is done — 43 tags down to a
    closed list with 7 earning a clickable chip. What is left is the filtering
    itself on the practice list.
-2. **LICENSE + CONTRIBUTING** (§7). Small, and without a LICENSE the repo is not
-   legally open source however the README describes it.
-3. **Rewrite problem descriptions** (§3). The last content job of any size.
-4. **CodeMirror 6** (§2), replacing the `<textarea>` in the app and the one the
+2. **Rewrite problem descriptions** (§3). The last content job of any size, and
+   it pairs with the thinner starters — a starter that gives less means the
+   prompt has to carry more.
+3. **CodeMirror 6** (§2), replacing the `<textarea>` in the app and the one the
    lesson examples swap in.
+4. **A real README for strangers** (§7) — the false parts are fixed, but it still
+   opens with prose instead of a screenshot, and there is no screenshot to use
+   until the landing page exists (§5).
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -411,12 +415,41 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
 
 ## 7. Repo / OSS hygiene
 
-- [ ] `LICENSE` — MIT (without it, "open source" isn't legally true)
-- [ ] `CONTRIBUTING.md` — how to add an exercise, run conformance, submit a lesson
-- [ ] Rewrite `README.md` for a public audience: screenshot/GIF first, then what it
-      is, then local dev
-- [ ] **"Not affiliated with MongoDB, Inc."** disclaimer in README + site footer
-      (MongoDB Inc. is protective of the "Mongo" mark; don't use their leaf logo or green)
+- [x] `LICENSE` — MIT, 2026-09-27. The repo is now legally open source; before
+      this, "open source" in the README was a claim with nothing behind it.
+- [x] **`CONTRIBUTING.md`** — done 2026-09-27, and writing it was worth more than
+      the page itself. Every instruction on it was tested by following it, which
+      turned up three things the guide would otherwise have walked people into:
+      - **Two tests made "add an exercise" a failing change.** `test/curriculum.mjs`
+        asserted every exercise is reachable from an old `b1-NN` id — true of the
+        38 that existed at the rename, false of every one added since. And
+        `test/dom-smoke.mjs` hardcoded `38` in three assertions. So the single
+        most-wanted contribution broke the suite, in the repo whose §3 plan is to
+        grow past 38. Both now derive from the data; the legacy-id check kept the
+        half that matters (the map must not *shrink*, or early users lose
+        progress).
+      - **A drill whose solution returns nothing used to pass.** Grading compares
+        the learner's result against the reference solution's, so `[]` equals `[]`
+        — and any wrong answer that also finds nothing passes too. The learner
+        types the right query, sees no output, and cannot tell. `test/examples.mjs`
+        had checked this for *lesson* examples since the runnable-examples work;
+        nothing checked it for drills. The rule now lives in
+        `test/result-value.mjs` and both suites import it, so they cannot drift.
+      - The documented example itself was wrong three ways — it filtered on an
+        `orders.total` field that does not exist, tagged `$gte` while using `$gt`,
+        and `$gt` was not in the vocabulary. A guide written without running it
+        would have shipped all three.
+- [~] Rewrite `README.md` for a public audience. The **false** half is fixed
+      2026-09-27: it documented `npm start`, which does not exist, and a local
+      `mongod` requirement the site dropped when queries moved to the browser —
+      so the first thing a contributor tried would fail. Still to do is the
+      *public* half: screenshot or GIF first, then what it is, then local dev.
+      That needs a screenshot worth showing, which needs the landing page (§5).
+- [x] **"Not affiliated with MongoDB, Inc."** disclaimer. It was already in the
+      reading-page footer — and `/practice/` is a fixed app shell with no footer,
+      so it was the one page of 74 without it, and the page people spend longest
+      on and are likeliest to screenshot. `test/links.mjs` now fails if any built
+      page lacks the line. (Still don't use their leaf logo or green.)
 - [ ] Issue templates: bug, new exercise, wrong grading
 - [ ] `good first issue` labels — exercise contributions are ideal for this
 - [ ] CI badge + conformance badge

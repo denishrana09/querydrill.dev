@@ -109,6 +109,16 @@ const titles = htmlFiles.map((f) => readFileSync(f, 'utf8').match(/<title>([^<]*
 const dupeTitles = [...new Set(titles.filter((t, i) => titles.indexOf(t) !== i))];
 check('no two pages share a title', dupeTitles.length === 0, dupeTitles.join(' | '));
 
+// MongoDB Inc. is protective of the mark, so this line is not decoration. It
+// lived in the reading-page footer, which meant /practice/ - the app shell, with
+// no footer, and the page people spend the longest on - was the one page of 74
+// without it. Nothing noticed for weeks.
+const noDisclaimer = htmlFiles
+  .filter((f) => !readFileSync(f, 'utf8').includes('Not affiliated with MongoDB, Inc.'))
+  .map((f) => '/' + relative(DIST, f).replace(/\\/g, '/'));
+check('every page carries the trademark disclaimer', noDisclaimer.length === 0,
+  noDisclaimer.join(', '));
+
 /* ---------- runnable examples ---------- */
 
 // Astro caches rendered markdown between builds, so a change to the rule in

@@ -12,6 +12,9 @@ import process from 'node:process';
 import ecommerce from '../server/datasets/ecommerce.js';
 import { EXERCISES } from '../server/exercises/index.js';
 import { gradeExercise } from '../engine/grade.js';
+import { makeMingoDb } from '../engine/mingo-db.js';
+import { runOrThrow } from '../engine/run.js';
+import { whyUseless } from './result-value.mjs';
 
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';
@@ -33,6 +36,38 @@ console.log(
   `  ${failures.length ? RED : GREEN}${EXERCISES.length - failures.length}/${EXERCISES.length}` +
   ` reference solutions pass in browser mode${OFF}`
 );
+
+// 1b. Every reference solution must also *return something*.
+//
+//     Passing is not enough, because the grader compares the learner's result
+//     against this solution's result: if the reference returns [], then an empty
+//     answer passes and so does a wrong one that happens to match nothing. The
+//     drill looks fine in review and is unusable - you type the right query and
+//     see no output. Found by following CONTRIBUTING.md and adding a drill that
+//     filtered on a field the collection does not have; it passed.
+const barren = [];
+for (const ex of EXERCISES) {
+  const db = makeMingoDb(ecommerce.build());
+  try {
+    const why = whyUseless(await runOrThrow(db, ex.solution));
+    if (why) barren.push(`${ex.id}: ${why}`);
+    // A write drill's `verify` is a read that confirms the write, so it only
+    // means anything once the solution has run - on the same db, in that order.
+    // Checking it against fresh data reports `null` for every upsert, which is
+    // what the first version of this did.
+    if (ex.verify) {
+      const whyVerify = whyUseless(await runOrThrow(db, ex.verify));
+      if (whyVerify) barren.push(`${ex.id} (verify query): ${whyVerify}`);
+    }
+  } catch (err) {
+    barren.push(`${ex.id}: ${String(err.message).slice(0, 120)}`);
+  }
+}
+if (barren.length) {
+  failures.push(...barren.map((b) => `no visible result - ${b}`));
+} else {
+  console.log(`  ${GREEN}every reference solution returns something a learner can see${OFF}`);
+}
 
 // 2. A wrong answer must fail, and must say something specific about why.
 //    A grader that silently passes everything would look perfect above.

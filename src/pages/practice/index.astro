@@ -69,6 +69,16 @@ import ThemeToggle from '../../components/ThemeToggle.astro';
         <span id="progress" class="progress"></span>
       </div>
       <div id="exerciseList" class="ex-list"></div>
+      <!--
+        The reading pages carry this in their footer, but this page is a fixed
+        shell with no footer - so it was the one page of 74 without it, and the
+        one people spend the longest on and are most likely to screenshot. It
+        sits inside the scrolling list rather than below it, so it costs the
+        layout no height.
+      -->
+      <p class="app-fine">
+        Not affiliated with MongoDB, Inc. MongoDB is a trademark of MongoDB, Inc.
+      </p>
     </aside>
   </main>
 

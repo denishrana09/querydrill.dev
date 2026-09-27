@@ -8,6 +8,12 @@
 import { readFile } from 'node:fs/promises';
 import process from 'node:process';
 import { JSDOM } from 'jsdom';
+// The count comes from the data, not a literal. These three assertions used to
+// say 38, which quietly made "add an exercise" a change that broke the test
+// suite - found by following CONTRIBUTING.md and adding one.
+import { EXERCISES } from '../server/exercises/index.js';
+
+const TOTAL = EXERCISES.length;
 
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';
@@ -54,9 +60,9 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 
 check('collections render', $('collections').children.length === 3,
   `got ${$('collections').children.length}`);
-check('exercise list renders', $('exerciseList').querySelectorAll('.ex').length === 38,
-  `got ${$('exerciseList').querySelectorAll('.ex').length}`);
-check('progress shows a total', /\/38 passed/.test($('progress').textContent),
+check('exercise list renders', $('exerciseList').querySelectorAll('.ex').length === TOTAL,
+  `got ${$('exerciseList').querySelectorAll('.ex').length} of ${TOTAL}`);
+check('progress shows a total', $('progress').textContent.includes(`/${TOTAL} passed`),
   $('progress').textContent);
 
 // Clicking a collection should load a starter query and a sample document.
@@ -103,7 +109,6 @@ const openCard = $('exerciseList').querySelector('.ex.open');
 check('opening an exercise expands it', Boolean(openCard));
 check('opening an exercise loads its starter code', $('editor').value.length > 0);
 
-const { EXERCISES } = await import('../server/exercises/index.js');
 $('editor').value = EXERCISES[0].solution;
 openCard.querySelector('.ex-actions button.primary')
   .dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
@@ -251,7 +256,7 @@ check('the tab bar offers all three panes', $('tabbar').querySelectorAll('button
 check('the editor is the pane you land on',
   $('paneEditor').classList.contains('on') && tab('Editor').getAttribute('aria-pressed') === 'true');
 check('the tab bar carries the progress count while its pane is hidden',
-  /^\d+\/38$/.test($('tabCount').textContent), $('tabCount').textContent);
+  new RegExp(`^\\d+/${TOTAL}$`).test($('tabCount').textContent), $('tabCount').textContent);
 
 tab('Data').click();
 check('tapping a tab shows that pane and only that pane',

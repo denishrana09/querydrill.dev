@@ -16,6 +16,7 @@ import { makeMingoDb } from '../engine/mingo-db.js';
 import { runOrThrow } from '../engine/run.js';
 import ecommerce from '../server/datasets/ecommerce.js';
 import { fencesIn, isRunnable, NO_RUN } from '../engine/runnable.js';
+import { whyUseless } from './result-value.mjs';
 
 const green = (s) => `\x1b[32m${s}\x1b[0m`;
 let failed = 0;
@@ -39,22 +40,6 @@ for (const dir of ['content/lessons', 'content/reference']) {
 const runnable = pages.flatMap((p) => p.fences.filter((f) => f.runnable).map((f) => ({ ...f, page: p.id })));
 const withAny = pages.filter((p) => p.fences.some((f) => f.runnable));
 
-/* ---------- would a reader get anything out of it? ---------- */
-
-/** @returns {string} why this result is not worth showing, or '' if it is fine */
-function useless(value) {
-  if (value === undefined) return 'returned undefined - needs an explicit `return`';
-  if (value === null) return 'returned null - the filter matches nothing in the dataset';
-  if (Array.isArray(value)) return value.length ? '' : 'returned [] - the filter matches nothing in the dataset';
-  if (value && typeof value === 'object' && 'acknowledged' in value) {
-    // An upsert that inserted counts, even though it matched nothing.
-    const touched = (value.matchedCount ?? 0) + (value.insertedCount ?? 0) +
-      (value.deletedCount ?? 0) + (value.upsertedCount ?? 0) + (value.insertedId != null ? 1 : 0);
-    return touched ? '' : `the write touched nothing: ${JSON.stringify(value)}`;
-  }
-  return '';
-}
-
 const threw = [];
 const empty = [];
 
@@ -65,7 +50,7 @@ for (const fence of runnable) {
   const db = makeMingoDb(ecommerce.build());
   const first = fence.code.split('\n')[0].slice(0, 58);
   try {
-    const why = useless(await runOrThrow(db, fence.code));
+    const why = whyUseless(await runOrThrow(db, fence.code));
     if (why) empty.push(`${fence.page}: ${why}\n          ${first}`);
   } catch (err) {
     threw.push(`${fence.page}: ${String(err.message).split('\n')[0]}\n          ${first}`);

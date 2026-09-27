@@ -155,6 +155,16 @@ breaks both.
 an example that queries `{ _id: 1 }` against a collection whose ids start at 101
 is not broken code, it is a broken lesson, and it looks completely fine in review.
 
+`test/result-value.mjs` holds one rule both of those share: whether a result is
+worth showing a learner at all. A query that parses, runs, throws nothing and
+returns `[]` is the failure that survives review. On a lesson the reader presses
+Run and sees nothing. On a drill it is worse — the grader compares the learner's
+result against the reference solution's, so an empty expected answer means an
+empty answer *passes*, and so does any wrong answer that also finds nothing.
+Lesson examples were checked for this from the start; drills were not, until
+adding one by following CONTRIBUTING.md produced a drill that passed while
+matching nothing.
+
 `test/curriculum.mjs` is the cheap one worth knowing about: it catches the
 mistakes that produce a dead link or lost progress rather than a stack trace —
 a duplicate slug, a drill in no module, two lessons written from the same lines,

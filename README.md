@@ -17,46 +17,50 @@ lessons, not the notes.
 
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
-Then open <http://127.0.0.1:4000>.
+Then open <http://localhost:4321>. Needs **Node 22 or newer**.
 
-Needs a local `mongod` on `127.0.0.1:27017`. The banner prints the server
-version it connected to, and the page shows a red dot if it cannot reach it.
+No database, no environment variables, no accounts. Queries run in your browser
+through [mingo](https://github.com/kofrasa/mingo), a pure-JavaScript
+implementation of the MongoDB query language, so the built site is static files
+and works offline.
 
 ## First time
 
-1. Hit **+ new** and name a database (e.g. `practice`).
-2. Leave the dataset on **ecommerce** and press **Seed**.
-3. Open an exercise on the right, write your answer in the middle, press
-   **Check**.
+1. Open **Practice**. The dataset is already loaded.
+2. Pick a drill from the list on the right.
+3. Write your answer in the middle and press **Check**.
 
-`Ctrl`+`Enter` runs whatever is in the editor.
+`Ctrl`+`Enter` runs whatever is in the editor. The left pane lists the
+collections and their fields - click a field to insert its dotted path.
 
-## Datasets
+You do not have to start at the practice page. Every lesson has its examples
+runnable in place: press **Run** to execute one, **Edit** to change it and run
+your version.
 
-| dataset | what it is |
-|---|---|
-| `ecommerce` | 30 users, 200 orders, 11 products. Same schemas as the notes, big enough that `$group` and `$lookup` return something interesting. **The exercises grade against this one.** |
-| `notes` | The literal documents quoted in batch2 and batch3. Seed this into a *separate* database when you want to follow a note section line by line and get byte-identical output. |
+## The dataset
 
-Both are generated from a fixed seed, so re-seeding always produces the same
-data. Seeding drops and reinserts only the collections the dataset owns, so
-anything else in that database survives.
+30 users, 200 orders and 11 products - `ecommerce`, generated from a fixed seed,
+so everyone sees the same data and the exercises grade against it. It is
+described field by field, with how often each optional field is present, at
+[/dataset/](src/pages/dataset.astro).
 
-Re-seed from the terminal without the UI:
+Some fields are deliberately missing from some documents (`discount` on 57% of
+orders, `rating` on 50%), because the drills on `$ifNull` need something real to
+guard against.
 
-```bash
-npm run seed -- --db practice --dataset ecommerce
-```
+Writes only affect your own tab, and a bar appears offering to put the data back
+the moment a query changes anything. Nothing is uploaded, and there is nothing
+to reset on a server because there is no server.
 
 ## How grading works
 
-Your answer and a hidden reference solution are run through the same executor,
-against the same live database, and the results are diffed. Nothing is compared
-to hardcoded JSON, so the expected answers cannot drift out of date when the
-seed changes.
+Your answer and a hidden reference solution are run through the same executor
+against the same data, and the results are diffed. Nothing is compared to
+hardcoded JSON, so expected answers cannot drift out of date when the seed data
+changes.
 
 Feedback is field-level:
 
@@ -66,15 +70,9 @@ result.address.country: missing from your result (expected "India")
 Wrong number of results: expected 10, got 20.
 ```
 
-The six **write** drills (marked `write`) mutate data. They re-seed the affected
-collection before and after grading, so you can run them repeatedly and get the
-same result every time.
-
-Check that every exercise still passes its own solution:
-
-```bash
-npm run selfcheck
-```
+Grading always builds a fresh copy of the data first, so it cannot be thrown off
+by anything an earlier query changed - which is why the six **write** drills can
+be run over and over and give the same answer every time.
 
 ## The editor
 
@@ -95,22 +93,44 @@ const n = await db.orders.countDocuments({});
 return { total: n };
 ```
 
-Tick **explain** to re-run the same query with `executionStats` — useful once
-you get to indexing.
+## Running against a real MongoDB
+
+The browser engine covers every exercise on the site - all 38 produce identical
+output on `mingo` and on a real `mongod`, which `npm run conformance` checks
+against a local server.
+
+What it cannot do is `explain()`, indexes, or connecting your own database.
+Those need a real server, which is what `local-mode/` is for - deferred, not
+abandoned; see [ROADMAP.md](ROADMAP.md) section 9.
+
+## Development
+
+```bash
+npm test         # everything that needs no database or build
+npm run verify   # the above, plus a build, link checks and a headless browser
+```
+
+Neither needs MongoDB. `npm run conformance` and `npm run selfcheck` do, and are
+the only two that touch a real server.
+
+[ARCHITECTURE.md](ARCHITECTURE.md) explains how the pieces fit and the traps
+already hit. [ROADMAP.md](ROADMAP.md) is the backlog.
+
+## Contributing
+
+Exercises and lessons are the most useful contribution and need no database -
+see [CONTRIBUTING.md](CONTRIBUTING.md). Adding one drill is a complete
+contribution.
 
 ## Notes on scope
 
 This is not trying to replace **MongoDB Compass**. Install Compass too: its
 stage-by-stage aggregation builder is the better tool for open-ended
-exploration. What this playground adds is the seeded, note-matching data and
-the graded exercise ladder, which Compass has no equivalent for.
+exploration. What this adds is the graded exercise ladder and lessons you can
+run as you read them, which Compass has no equivalent for.
 
-## Security
+## License
 
-The server binds to `127.0.0.1` only, and refuses to touch the `admin`, `local`
-and `config` databases.
+[MIT](LICENSE).
 
-Beyond that: it executes the JavaScript you type. `node:vm` is used for
-convenience, **not** as a security boundary — code that wants to escape it can.
-That is fine for a single-user tool on your own machine running code you wrote
-yourself. Do not expose this server to a network.
+Not affiliated with MongoDB, Inc. MongoDB is a trademark of MongoDB, Inc.
