@@ -24,17 +24,20 @@ A real code editor in the app and on every lesson page, colours taken from the
 existing token set, and none of its 167 KB anywhere near first paint (§2).
 Seven topic hub pages for the tags that cross a module, each with its own prose
 and a runnable example (§4). 69 "what usually goes wrong" notes, one to three per
-drill, shown after a failed attempt and nowhere else (§3). `npm run verify`
-builds and runs ten suites over all of it.
+drill, shown after a failed attempt and nowhere else (§3). The editor completes
+`$` operators, offering only ones the engine can actually run (§2). Graded
+feedback grouped so one mistake is one line, worst case six instead of ten (§3).
+`npm run verify` builds and runs twelve suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Cap the diff when the shape is wrong** (§3) — ten lines of
-   `row 0.createdAt: extra field` is what a learner gets today for submitting the
-   starter, and it buries the one line that would help.
-2. **Autocomplete for field paths** (§2) — the other half of the `$`, now that
+1. **Autocomplete for field paths** (§2) — the other half of the `$`, now that
    operators are done. Needs the shape of the collection being queried, which is
    the reason it was not done at the same time.
+2. **A landing page that says why this exists** (§5) — the whole of §5 and §6 is
+   still at zero, and it is the last thing separating "a good tool" from "a site
+   a stranger stays on". Left until now on purpose: it describes the site, and
+   the site kept changing.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -487,16 +490,41 @@ and then comes back to practice.
         §4 would be the place to surface them properly; a "show them anyway"
         button on a passed card would be the cheap version, and would also undo
         the timing this item exists for.
-- [ ] **Cap the diff when the shape is wrong.** Found while looking at the new
-      mistake notes in a browser: submit the starter on `revenue-per-product` and
-      the feedback is ten lines of `row 0.createdAt: your result has an extra
-      field {"__date":"2025-11-05..."}`. The learner returned raw orders instead
-      of grouped totals, `compare()` hit `MAX_DIFFS`, and the one useful line -
-      "expected 11, got 200" - is buried, along with everything under it.
-      When the row count is wrong and the key sets barely overlap, say so and
-      stop, rather than enumerating ten fields of row 0. Same rule in
-      `engine/compare.js` and `server/grade.js`, so it needs the conformance
-      suite watching it.
+- [x] **Cap the diff when the shape is wrong.** DONE 2026-09-27. Feedback now
+      groups before it prints: one mistake is one line, however many rows or
+      fields it lands on. The rules and their reasons are written up in
+      ARCHITECTURE.md § "What the feedback is allowed to say".
+      - **It was worse than the item said.** Measured rather than assumed: **20
+        of the 38 drills** answered their own starter with ten lines, not one,
+        and the whole of `find-with-projection` was nine repetitions of "this row
+        is not in the answer". The worst case is now six lines; the median is two.
+        `revenue-per-product`, the case this item was written about, went from ten
+        lines to two.
+      - **This item's premise about the two engines was wrong.**
+        `server/grade.js` does not hold a copy of the rule - it re-exports
+        `engine/compare.js`. There was nothing to keep in sync and no need for
+        the conformance suite, which compares *results* between engines, not the
+        text of a diff. Noted here because the same wrong assumption would cost
+        an afternoon next time.
+      - **`compare()` had no tests of its own.** 194 lines deciding whether an
+        answer is right, exercised only through "every solution passes" and "one
+        obviously wrong answer fails". Everything interesting - what a *nearly*
+        right answer is told - was unwatched. `test/compare.mjs` is that suite,
+        written before the change so the old behaviour could be seen failing it,
+        and 13 of its checks were red on the first run.
+      - **The real risk was over-collapsing**, not under-collapsing: a rule that
+        groups aggressively enough to fix this can eat the one precise line that
+        explains a near-miss. Four checks exist only to hold that line, and one
+        of the ten deliberate breaks was aimed at it - which is how it came out
+        that the pair-by-`_id` path never consulted the new rule at all, so the
+        guard was watching a branch the break did not touch.
+      - Two things fixed on the way past, both visible only because the output
+        was read as a learner would read it: `{"__date": ...}` - the internal
+        wrapper that makes a Date comparable - was appearing in feedback as
+        though it were a field of theirs, and "5 more differences not shown" was
+        a bullet in the same monospace as the real differences, reading as one
+        more of them. It is a caption now, and `compare()` returns the count as
+        `hidden` rather than smuggling a sentence into the list.
 - [ ] Cheatsheet page (operator → one-line meaning → link to its lesson).
       Four **reference pages** are already mapped in `content/curriculum.js`,
       built from the appendices the lessons did not absorb: the operator
@@ -657,8 +685,14 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
       - **Everything in them is real.** The ticks were earned by submitting those
         drills' solutions through the Check button, and the graded shot is an
         actual near-miss (unit price summed without its quantity) with the drill's
-        own note underneath. `scripts` for it are not committed; the point is that
-        nothing was staged by hand.
+        own note underneath. Nothing was staged by hand.
+      - **The script is committed now** — `npm run shots`, 2026-09-27. It was a
+        throwaway, which made "we changed the logo, retake the shots" a rewrite
+        every time. It builds, drives a browser, earns the ticks and grades the
+        near-miss, and **fails instead of writing a file** if any of that stops
+        working — so a stale or dishonest screenshot is not something the repo
+        can quietly acquire. First use was the same day: capping the diff changed
+        the graded shot, and regenerating all three was one command.
       - **Found while writing it: six files hardcode how much is on the site** —
         the README three times, the package description, two page titles — and
         nothing checked any of them. §3 is a plan to grow past 38 exercises, so

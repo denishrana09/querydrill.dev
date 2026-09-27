@@ -168,7 +168,7 @@ breaks both.
 
 | command | needs | what it proves |
 |---|---|---|
-| `npm test` | nothing | curriculum, tags, prompts, examples, contrast, browser grading, DOM wiring |
+| `npm test` | nothing | curriculum, tags, prompts, examples, contrast, comparison rules, browser grading, DOM wiring |
 | `npm run test:links` | a `dist/` build | no dead links, unique titles, real descriptions |
 | `npm run test:island` | a `dist/` build | the runnable examples work on the real built markup |
 | `npm run test:editor` | a `dist/` build, Chrome | CodeMirror really mounts, colours from the tokens, brackets, indent, Ctrl+Enter, Format+undo |
@@ -426,3 +426,41 @@ never disturb their playground.
 Solutions ship inside the bundle. Client-side grading makes that unavoidable;
 the repo is open source so they are public anyway. "Show solution" stays behind
 a confirm as a speed bump, not a barrier.
+
+`server/grade.js` re-exports `engine/compare.js` rather than keeping its own
+copy, so the hosted site and local mode cannot drift into disagreeing about
+whether the same answer is correct. One file, both engines.
+
+### What the feedback is allowed to say
+
+Being specific is only half of it. The other half is being short enough to read,
+and those pull against each other: the honest field-by-field diff of a wrong
+answer is enormous. Submitting the starter on a `$group` drill used to answer
+with ten lines of `row 0.createdAt: your result has an extra field`, which pushed
+the only useful line — `expected 11, got 200` — off the top. Twenty of the 38
+drills did that.
+
+So `compare()` groups before it prints, on one principle: **one mistake is one
+line, however many rows or fields it lands on.**
+
+| when | what is said |
+|---|---|
+| every row is missing an expected field | the two field lists, once, and nothing else — the rows are not the same kind of document, so no value below is comparable |
+| every row carries an extra field | the extra names, once; the extras are then set aside and the shared fields still compared, so a wrong projection and a wrong number both come back in one round |
+| more than two rows are present on one side only | a count and one example |
+| every row at its position is a different document | one line saying so, with the first pair |
+| anything else | the precise per-field line, unchanged |
+
+Rows that are missing entirely are reported *before* field values, because a
+missing row is the bigger fact and the display limit would otherwise cut it.
+
+What is shown is capped at six lines and the rest are **counted**, not dropped:
+the count comes back as `hidden` and renders as a caption rather than another
+bullet. Silently cutting at ten left a learner unable to tell "these are your
+mistakes" from "these are some of your mistakes", which need different responses.
+
+The risk the whole arrangement runs is over-collapsing — losing the one precise
+line that would have explained a near-miss. `test/compare.mjs` exists mostly to
+hold that line: a single wrong number in an otherwise correct answer must still
+come back as `row _id="Laptop".revenue: expected 2000, got 50`, and a row that
+differs in one field must name the field rather than the row.

@@ -101,6 +101,11 @@ result.address.country: missing from your result (expected "India")
 Wrong number of results: expected 10, got 20.
 ```
 
+It is also grouped rather than dumped. One mistake is one line however many rows
+it lands on, so returning raw documents where grouped totals were asked for says
+that once instead of naming six fields of row 0 — and when there is more than
+fits, the feedback says how much more rather than cutting silently.
+
 Grading always builds a fresh copy of the data first, so it cannot be thrown off
 by anything an earlier query changed — which is why the six **write** drills can
 be run over and over and give the same answer every time.

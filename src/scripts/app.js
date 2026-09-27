@@ -573,10 +573,13 @@ async function checkAnswer(ex, body, button) {
       : '✓ Correct.';
     state.progress[ex.id] = 'pass';
   } else {
+    // The hidden count is not itself a difference, so it is a caption under the
+    // list rather than another bullet in it.
     feedback.innerHTML =
       '<span class="head">Not quite:</span><ul>' +
       result.diffs.map((d) => `<li>${esc(d)}</li>`).join('') +
-      '</ul>';
+      '</ul>' +
+      (result.hidden ? `<span class="more">and ${result.hidden} more difference${result.hidden === 1 ? '' : 's'}</span>` : '');
     state.progress[ex.id] = 'fail';
     attemptFailed = true;
   }

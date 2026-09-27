@@ -612,6 +612,9 @@ textarea.query-box:focus,
 .ex-feedback ul { margin: 6px 0 0; padding-left: 18px; }
 .ex-feedback li { font-family: var(--mono); font-size: 11.5px; color: var(--text); margin-bottom: 3px; }
 .ex-feedback .head { color: var(--danger); }
+/* Not a difference - a note about the ones that were cut. Deliberately in the
+   body font so it does not read as another line of the diff above it. */
+.ex-feedback .more { display: block; margin-top: 5px; font-size: 11.5px; color: var(--muted); }
 
 /* Shown only after a failed attempt, directly under the diff. `--attn` rather
    than `--danger`: the diff above it is already the red part, and a second red

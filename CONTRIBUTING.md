@@ -221,6 +221,30 @@ This is deliberately **not** `content/topics.js`. That file is the tag
 vocabulary: closed, narrow, about what the course teaches. It has `$gte` and no
 `$gt`, which is right for tagging and would be a lie in an autocomplete.
 
+## The screenshots are generated, not pasted
+
+The three images the README leads with come from `npm run shots`, which builds
+the site, drives a real browser, solves five drills through the Check button to
+earn the ticks, and submits a genuine near-miss to be graded. Nothing in them is
+mocked or touched up, and the script fails rather than writing a screenshot if
+any of that stops working.
+
+Re-run it after anything that changes how the app looks — the theme tokens, the
+layout, the logo, the name. A stale screenshot is a promise the site no longer
+keeps, and the only way that stays cheap to fix is that no one has to set the
+shot up by hand.
+
+## Changing how a wrong answer is explained
+
+`engine/compare.js` decides both whether an answer is right and what the learner
+is told about it, and `server/grade.js` re-exports it so the two engines cannot
+drift. `npm run test:compare` is its suite, and the checks worth knowing about
+are the ones guarding the *opposite* risk from the obvious one: feedback is
+grouped so it stays short, and the tests hold the line that a near-miss still
+gets its one precise line. Before changing the rules, read
+[ARCHITECTURE.md](ARCHITECTURE.md) § "What the feedback is allowed to say" —
+most of them are there because the un-grouped version was unreadable in practice.
+
 ## Pull requests
 
 - Say what and why. A screenshot helps for anything visual.

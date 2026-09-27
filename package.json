@@ -15,7 +15,7 @@
     "seed": "node server/seed.js",
     "selfcheck": "node server/selfcheck.js",
     "conformance": "node test/conformance.mjs",
-    "test": "node test/curriculum.mjs && node test/topics.mjs && node test/operators.mjs && node test/examples.mjs && node test/contrast.mjs && node test/browser-grade.mjs && node test/dom-smoke.mjs",
+    "test": "node test/curriculum.mjs && node test/topics.mjs && node test/operators.mjs && node test/examples.mjs && node test/contrast.mjs && node test/compare.mjs && node test/browser-grade.mjs && node test/dom-smoke.mjs",
     "test:browser": "node test/browser-grade.mjs",
     "test:dom": "node test/dom-smoke.mjs",
     "test:curriculum": "node test/curriculum.mjs",
@@ -27,6 +27,8 @@
     "test:editor": "node test/editor.mjs",
     "test:mobile": "node test/mobile.mjs",
     "test:operators": "node test/operators.mjs",
+    "test:compare": "node test/compare.mjs",
+    "shots": "npm run build && node tools/shots.mjs",
     "test:topics": "node test/topics.mjs"
   },
   "dependencies": {

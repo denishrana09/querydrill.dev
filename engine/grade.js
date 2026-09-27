@@ -44,5 +44,5 @@ export async function gradeExercise(dataset, exercise, userCode) {
   }
 
   const result = compare(actual, expected, opts);
-  return { ok: true, pass: result.pass, diffs: result.diffs, isWrite };
+  return { ok: true, pass: result.pass, diffs: result.diffs, hidden: result.hidden, isWrite };
 }

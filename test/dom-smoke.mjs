@@ -184,6 +184,48 @@ check('it sits after the feedback, not before',
     ?.compareDocumentPosition(mistakes) === dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
 check('the notes render markdown backticks as code',
   mistakes?.querySelector('code') !== null);
+check('a diff short enough to show in full gets no "and N more" note',
+  openCard.querySelector('.ex-feedback .more') === null,
+  openCard.querySelector('.ex-feedback .more')?.textContent);
+
+// --- a diff too long to show says how much it cut ---
+
+// Feedback is capped, and the cap has to admit itself: "these are your six
+// mistakes" and "these are six of your ten" need different responses from the
+// learner. The drill is picked by measuring rather than named, so this keeps
+// working when the drills change.
+const { gradeExercise } = await import('../engine/grade.js');
+const ecommerce = (await import('../server/datasets/ecommerce.js')).default;
+let cut = null;
+for (const ex of EXERCISES) {
+  const res = await gradeExercise(ecommerce, ex, ex.starter);
+  if (res.ok && !res.pass && res.hidden > 0) { cut = { ex, hidden: res.hidden }; break; }
+}
+if (!cut) {
+  check('some drill produces a diff long enough to be cut', false,
+    'no starter produces a hidden count - this check can no longer see anything');
+} else {
+  const card = [...$('exerciseList').querySelectorAll('.ex .ex-name')]
+    .find((n) => n.textContent === cut.ex.title);
+  card.click();
+  await tick();
+  const cutCard = $('exerciseList').querySelector('.ex.open');
+  $('editor').value = cut.ex.starter;
+  cutCard.querySelector('.ex-actions button.primary')
+    .dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  for (let i = 0; i < 40; i++) await tick();
+
+  const more = cutCard.querySelector('.ex-feedback .more');
+  check('a cut diff says how many differences it is not showing',
+    more?.textContent === `and ${cut.hidden} more differences`,
+    `${cut.ex.id}: "${more?.textContent}", expected ${cut.hidden} hidden`);
+  // It is a note about the list, not an entry in it. As a bullet in the same
+  // monospace it read as one more difference, which is the opposite of the point.
+  check('and says it as a caption, not as another difference',
+    more?.parentElement?.tagName === 'DIV' &&
+    ![...cutCard.querySelectorAll('.ex-feedback li')].some((li) => /more difference/.test(li.textContent)),
+    more?.parentElement?.tagName);
+}
 
 // A query that throws is a failed attempt too - a separate branch in the app,
 // and one where the learner has even less to go on than a diff.
