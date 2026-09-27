@@ -264,10 +264,28 @@
    (0,1,1) and would otherwise win the border and the font-size on a plain
    `.rx-body`, putting a second border inside the container - and leaving that to
    rule order would break the first time this block moved. */
-.rx > pre.astro-code {
+.rx > pre.astro-code,
+.rx > pre.rx-static {
   margin: 0;
   border: 0;
   border-radius: 0;
+}
+
+/* The landing page writes its example block by hand instead of through the
+   markdown pipeline, so it arrives with no `.astro-code` and none of the styling
+   `.prose pre` gives the rest. Shiki is not worth importing for one block: the
+   moment anyone presses Edit, CodeMirror highlights it anyway. */
+pre.rx-static {
+  margin: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-soft);
 }
 
 .rx-bar {

@@ -657,10 +657,33 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
 4. **Open source.** Exercises are contributable.
 5. **Real hand-written exercises**, each a distinct concept. No generated padding.
 
-- [ ] Landing page communicating the above, with a working editor on it
-- [ ] A comparison section — factual, not snide, no competitor names needed
-- [ ] "How it works" explaining browser execution and why nothing is uploaded
-- [ ] Visible **"Coming soon"** strip: connect your own MongoDB, `explain()`,
+- [x] **Landing page, with a working editor on it.** DONE 2026-09-27. The hero
+      is a live query - the same Run/Edit island the lesson pages use, so it
+      costs the same 2.6 KB and nothing heavy until someone acts.
+      - **Both claims on the page are produced by the thing they claim about, at
+        build time.** The example is executed by the real engine and the
+        feedback under "wrong answers get a reason" is the real grader's real
+        answer to a real wrong query. If the example stops returning rows, or
+        that answer stops being wrong, or the drill is renamed, **the build
+        fails** rather than shipping a page that lies. All three watched.
+      - It is the one runnable block on the site that is not markdown, so
+        `test/links.mjs` counts it explicitly rather than being given slack, and
+        `test/editor.mjs` presses Run on it in a real browser - the island reads
+        a block with `textContent`, and nothing else tested that against markup
+        written by hand.
+      - **The dataset's size was stated in five places and checked in none.**
+        Found while writing two more of them. `test/curriculum.mjs` now holds
+        "N users / N orders / N products" to the seed, the same way it already
+        held lesson and drill counts - and each count pattern must now match
+        something, because the one that could never fire stayed green for weeks.
+- [x] **A comparison section** - factual, no names. Four rows, each about a
+      practice rather than a product, and each cell true of this site. At phone
+      width the table stacks, so the two columns carry their own labels: without
+      them a stacked row is two unlabelled sentences about the same thing, which
+      is worse than no table.
+- [x] **"How it works"** - browser execution, the fixed seed, and open source,
+      in three cards under the comparison.
+- [x] Visible **"Coming soon"** strip: connect your own MongoDB, `explain()`,
       index tuning — via local mode
 
 ---

@@ -604,6 +604,36 @@ if (lessonUp) {
     await evaluate(`JSON.stringify(document.querySelector('.rx-meta').textContent)`));
 }
 
+/* ---------- 14. the landing page's example is the real thing ---------- */
+
+// The one runnable block on the site that is not markdown: it is written into
+// src/pages/index.astro so the first thing a visitor sees is a query they can
+// run. The island reads a block with `textContent`, which works for Shiki's
+// markup because Shiki keeps the source verbatim - this asks whether it works
+// for a block written by hand, which nothing else does.
+await send('Page.navigate', { url: base + '/' });
+await until(evaluate, `document.querySelector('.rx-btn')`);
+
+const home = await evaluate(`JSON.stringify({
+  blocks: document.querySelectorAll('.rx').length,
+  code: document.querySelector('.rx pre')?.textContent.trim().slice(0, 24) ?? null,
+})`);
+check('the landing page block is enhanced into a runnable one',
+  home.blocks === 1 && home.code?.startsWith('db.orders.aggregate'), JSON.stringify(home));
+
+await evaluate(
+  `JSON.stringify(([...document.querySelectorAll('.rx-btn')].find((b) => b.textContent === 'Run').click(), true))`);
+const homeRan = await until(evaluate,
+  `/\\b3 documents\\b/.test(document.querySelector('.rx-meta')?.textContent ?? '')`);
+check('and Run on it produces the real answer', homeRan,
+  await evaluate(`JSON.stringify(document.querySelector('.rx-meta')?.textContent ?? null)`));
+// The claim in the hero is that this is a real query on real data, so an empty
+// or errored result would make the landing page lie in the loudest place.
+const homeOut = await evaluate(
+  `JSON.stringify(document.querySelector('.rx-body')?.textContent ?? '')`);
+check('with rows in it, not an error',
+  homeOut.includes('revenue') && !/error/i.test(homeOut), homeOut.slice(0, 80));
+
 /* ---------- done ---------- */
 
 if (failures.length) {

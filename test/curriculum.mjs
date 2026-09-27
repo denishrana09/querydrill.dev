@@ -7,6 +7,7 @@ import { MODULES, TRACKS, ALL_LESSONS, REFERENCES, EXERCISE_ORDER, TOPIC_PAGES }
 import { OPERATORS } from '../content/operators.js';
 import { LEGACY_IDS, migrateKeys } from '../content/legacy-ids.js';
 import { EXERCISES } from '../server/exercises/index.js';
+import ecommerce from '../server/datasets/ecommerce.js';
 
 const green = (s) => `\x1b[32m${s}\x1b[0m`;
 let failed = 0;
@@ -203,11 +204,17 @@ const COUNTED = [
   // same way a README does.
   ['src/scripts/editor.js', readFileSync(new URL('../src/scripts/editor.js', import.meta.url), 'utf8')],
   ['test/links.mjs', readFileSync(new URL('../test/links.mjs', import.meta.url), 'utf8')],
-  ...['index', 'learn/index', 'practice/index'].map((p) => [
+  ...['index', 'learn/index', 'practice/index', 'dataset'].map((p) => [
     `src/pages/${p}.astro`,
     readFileSync(new URL(`../src/pages/${p}.astro`, import.meta.url), 'utf8'),
   ]),
 ];
+
+// The dataset's size is stated in five places and was checked in none of them,
+// which is the same rot as a stale lesson count with a worse failure: a page
+// that says "200 orders" over a seed that now builds 150 is wrong about the
+// thing every exercise is graded against.
+const store = ecommerce.build();
 
 const noteCount = EXERCISES.reduce((n, e) => n + (e.mistakes?.length ?? 0), 0);
 const CLAIMS = [
@@ -220,14 +227,19 @@ const CLAIMS = [
   [/(\d+)\s+topic hubs\b/g, TOPIC_PAGES.length, 'topic hubs'],
   [/(\d+)\s+.?what usually goes wrong/g, noteCount, 'mistake notes'],
   [/(\d+)\s+operators\b/g, OPERATORS.length, 'operators the editor offers'],
+  [/(\d+)\s+users\b/g, store.users.length, 'users in the dataset'],
+  [/(\d+)\s+orders\b/g, store.orders.length, 'orders in the dataset'],
+  [/(\d+)\s+products\b/g, store.products.length, 'products in the dataset'],
 ];
 
 const staleCounts = [];
+const hits = new Map(CLAIMS.map(([, , what]) => [what, 0]));
 let claimsFound = 0;
 for (const [file, text] of COUNTED) {
   for (const [pattern, truth, what] of CLAIMS) {
     for (const [whole, n] of text.matchAll(pattern)) {
       claimsFound++;
+      hits.set(what, hits.get(what) + 1);
       if (Number(n) !== truth) staleCounts.push(`${file}: "${whole.trim()}" - there are ${truth} ${what}`);
     }
   }
@@ -237,6 +249,13 @@ check('every count written into prose matches the data', staleCounts.length === 
 // Without this the check passes just as happily if the regexes stop matching
 // anything at all, which is how it would rot in silence.
 check('the prose counts are actually being read', claimsFound >= 10, `${claimsFound} found`);
+// And per pattern, not just in total: a regex that matches nothing is either a
+// claim nobody makes any more - delete it - or a broken pattern, and one of
+// these was once compiled with a literal backspace byte in it and could never
+// have fired. The total above stayed comfortably green throughout.
+const silent = [...hits].filter(([, n]) => n === 0).map(([what]) => what);
+check('and every one of the patterns matches something', silent.length === 0,
+  `never found in any counted file: ${silent.join(', ')}`);
 
 /* ---------- legacy ids ---------- */
 

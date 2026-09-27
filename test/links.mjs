@@ -170,7 +170,16 @@ for (const dir of ['content/lessons', 'content/reference', 'content/topic-pages'
   }
 }
 
-const expectedBlocks = runnableInContent.reduce((sum, p) => sum + p.n, 0);
+// The landing page is the one block on the site that is not markdown: it is
+// written into src/pages/index.astro so that the first thing anyone sees is a
+// query they can run. Counted separately and asserted exactly, so "the rule and
+// the build agree" stays a real equality rather than a number with slack in it.
+const homeHtml = readFileSync(join(DIST, 'index.html'), 'utf8');
+const homeBlocks = homeHtml.match(/data-runnable/g)?.length ?? 0;
+check('the landing page has exactly one runnable block, written by hand',
+  homeBlocks === 1, `found ${homeBlocks}`);
+
+const expectedBlocks = runnableInContent.reduce((sum, p) => sum + p.n, 0) + homeBlocks;
 const builtBlocks = htmlFiles.reduce(
   (sum, f) => sum + (readFileSync(f, 'utf8').match(/data-runnable/g)?.length ?? 0), 0);
 check('the built pages mark exactly the blocks the rule marks',

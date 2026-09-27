@@ -1,11 +1,73 @@
 ---
 import Doc from '../layouts/Doc.astro';
+import RunnableExamples from '../components/RunnableExamples.astro';
+import ecommerce from '../../server/datasets/ecommerce.js';
 import { EXERCISES } from '../../server/exercises/index.js';
 import { MODULES, TRACKS, ALL_LESSONS } from '../../content/curriculum.js';
+import { gradeExercise } from '../../engine/grade.js';
+import { makeMingoDb } from '../../engine/mingo-db.js';
+import { runCode } from '../../engine/run.js';
 
-// Still a placeholder for the real positioning work in section 5 of ROADMAP.md
-// - what it now has is a way through to the course, which it did not before.
-const count = EXERCISES.length;
+/**
+ * Both claims on this page are produced by the thing they are claiming about,
+ * at build time. The example is executed by the same engine the Run button
+ * uses, and the feedback further down is the real grader's real answer to a
+ * real wrong query. Neither can go stale while the build passes, because a
+ * failure here stops the build rather than shipping a page that lies.
+ */
+
+// Top three products by revenue. The `$limit` is part of the question rather
+// than a way to keep the output short - though it does that too, and an example
+// whose result scrolls is an example nobody reads to the end of.
+const HERO_QUERY = `db.orders.aggregate([
+  { $unwind: "$items" },
+  { $group: {
+      _id: "$items.product",
+      revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
+  } },
+  { $sort: { revenue: -1 } },
+  { $limit: 3 }
+])`;
+
+const heroRun = await runCode(makeMingoDb(ecommerce.build(), 'home'), HERO_QUERY, { cap: 20 });
+if (!heroRun.ok || !Array.isArray(heroRun.value) || !heroRun.value.length) {
+  throw new Error(
+    `The example on the landing page does not work: ${heroRun.error ?? 'it returned nothing'}. ` +
+    'A Run button that produces an error is the worst possible first impression, so this ' +
+    'fails the build rather than shipping.',
+  );
+}
+
+// The near-miss the feedback section is built from: a real mistake on a real
+// drill - the unit price summed without its quantity.
+const DEMO_ID = 'revenue-per-product';
+const DEMO_ANSWER = `db.orders.aggregate([
+  { $match: { status: "completed" } },
+  { $unwind: "$items" },
+  { $group: {
+      _id: "$items.product",
+      revenue: { $sum: "$items.price" }
+  } },
+  { $sort: { revenue: -1 } }
+])`;
+
+const demo = EXERCISES.find((e) => e.id === DEMO_ID);
+if (!demo) throw new Error(`The landing page is built around the drill "${DEMO_ID}", which no longer exists.`);
+
+const graded = await gradeExercise(ecommerce, demo, DEMO_ANSWER);
+if (!graded.ok || graded.pass || !graded.diffs.length) {
+  throw new Error(
+    `The landing page shows "${DEMO_ID}" being graded wrong, and it is no longer wrong ` +
+    `(${graded.error ?? (graded.pass ? 'it passes now' : 'no differences')}). ` +
+    'Pick another mistake rather than describing one that does not happen.',
+  );
+}
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ticks = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+
+const shown = graded.diffs.slice(0, 3);
+const rest = graded.diffs.length - shown.length + (graded.hidden || 0);
 ---
 <Doc
   wide
@@ -15,20 +77,108 @@ const count = EXERCISES.length;
   <section class="hero">
     <h1>Learn MongoDB by running queries, not reading about them</h1>
     <p>
-      {ALL_LESSONS.length} lessons across {MODULES.length} modules, and {count} hand-written
-      exercises graded against a live reference solution. Get one wrong and it tells you
-      <em>which field</em> was wrong — not just that you were.
+      {ALL_LESSONS.length} lessons and {EXERCISES.length} hand-written exercises. Get one
+      wrong and it tells you <em>which field</em> was wrong — not just that you were.
     </p>
-    <p class="sub">No signup. No install. No database. Queries run in this tab.</p>
+    <p class="sub">No signup. No install. No database. Every query runs in this tab.</p>
     <div class="cta-row">
       <a class="btn primary" href="/learn/">Start the course →</a>
       <a class="btn" href="/practice/">Jump straight to the exercises</a>
     </div>
   </section>
 
+  <p class="lead-in">
+    Top three products by revenue, across 200 orders. Press <strong>Run</strong> — nothing
+    is sent anywhere, the data is already in your browser. Press <strong>Edit</strong> and
+    it becomes a real editor.
+  </p>
+  <div class="home-example">
+    <pre class="rx-static" data-runnable>{HERO_QUERY}</pre>
+  </div>
+
+  <div class="section-head"><h2>Wrong answers get a reason</h2></div>
+  <p class="lead-in">
+    A common mistake on one of the {EXERCISES.length} drills: summing the unit price and
+    forgetting the quantity. Here is what the site says about it.
+  </p>
+
+  <div class="demo">
+    <pre class="rx-static">{DEMO_ANSWER}</pre>
+    <div class="demo-out">
+      <div class="demo-feedback">
+        <span class="head">Not quite:</span>
+        <ul>{shown.map((d) => <li>{d}</li>)}</ul>
+        {rest > 0 && <span class="more">and {rest} more differences</span>}
+      </div>
+      <div class="demo-note">
+        <span class="head">What usually goes wrong here</span>
+        <ul>{demo.mistakes.map((m) => <li set:html={ticks(m)} />)}</ul>
+      </div>
+    </div>
+  </div>
+  <p class="footnote">
+    That feedback was produced by the grader while this page was being built, not written
+    out by hand. <a href={`/practice/#${demo.id}`}>Try the drill</a>.
+  </p>
+
+  <div class="section-head"><h2>What is different about it</h2></div>
+  <table class="compare">
+    <thead>
+      <tr><th></th><th>The usual way</th><th>Here</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>When you are wrong</th>
+        <td data-label="Usually: ">“Incorrect.”</td>
+        <td data-label="Here: ">The field, what was expected, and what you returned.</td>
+      </tr>
+      <tr>
+        <th>Expected answers</th>
+        <td data-label="Usually: ">Saved output, which drifts when the data changes.</td>
+        <td data-label="Here: ">A reference query, run against the same data as yours, every time.</td>
+      </tr>
+      <tr>
+        <th>Before you start</th>
+        <td data-label="Usually: ">An account, and often a database to connect.</td>
+        <td data-label="Here: ">Nothing. The page is the database.</td>
+      </tr>
+      <tr>
+        <th>Exercise count</th>
+        <td data-label="Usually: ">Padded — the same question with a different product name.</td>
+        <td data-label="Here: ">{EXERCISES.length} drills, each a different concept.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-head"><h2>How it works</h2></div>
+  <div class="grid">
+    <div class="card">
+      <h3>Your browser is the database</h3>
+      <p>
+        Queries run through <a href="https://github.com/kofrasa/mingo">mingo</a>, a
+        JavaScript implementation of the MongoDB query language. There is no server to
+        send a query to, so nothing you type leaves the tab — and the site works offline.
+      </p>
+    </div>
+    <div class="card">
+      <h3>The data is the same for everyone</h3>
+      <p>
+        <a href="/dataset/">30 users, 200 orders and 11 products</a>, built in your tab
+        from a fixed seed. Write queries change it; a bar appears offering to put it back.
+      </p>
+    </div>
+    <div class="card">
+      <h3>It is open source</h3>
+      <p>
+        MIT licensed, and an exercise is a small contribution to make — one object in one
+        file, with tests that say what you missed.
+      </p>
+    </div>
+  </div>
+
   <div class="section-head">
     <h2>The course</h2>
-    <span class="meta">{ALL_LESSONS.length} lessons · {count} drills</span>
+    <span class="meta">{ALL_LESSONS.length} lessons · {EXERCISES.length} drills</span>
   </div>
   <div class="grid">
     {TRACKS.map((t) => (
@@ -42,42 +192,12 @@ const count = EXERCISES.length;
     ))}
   </div>
 
-  <div class="section-head"><h2>Why this one</h2></div>
-  <div class="grid">
-    <div class="card">
-      <h3>It says what was wrong</h3>
-      <p>
-        Not "incorrect". <code>row 0.revenue: expected 53000, got 27000</code> — the
-        field, the expected value and yours.
-      </p>
-    </div>
-    <div class="card">
-      <h3>Graded against a live solution</h3>
-      <p>
-        Answers are not stored JSON that goes stale. The reference query runs against
-        the same data as yours, every time.
-      </p>
-    </div>
-    <div class="card">
-      <h3>Nothing leaves your browser</h3>
-      <p>
-        The <a href="/dataset/">dataset</a> is built in your tab from a fixed seed. There
-        is no server to send a query to.
-      </p>
-    </div>
-    <div class="card">
-      <h3>Hand-written, not generated</h3>
-      <p>
-        {count} exercises, each a distinct concept. No padding the count with the same
-        question and a different product name.
-      </p>
-    </div>
-  </div>
-
   <p class="soon-note">
     Coming soon, through a local <code>npx</code> mode: connect your own MongoDB,
     <code>explain()</code>, and index tuning.
   </p>
+
+  <RunnableExamples />
 </Doc>
 
 <style>
@@ -87,6 +207,74 @@ const count = EXERCISES.length;
   .hero .sub { font-size: .9rem; color: var(--muted); }
   .hero em { color: var(--text); font-style: normal; font-weight: 600; }
 
+  .lead-in { max-width: 44rem; color: var(--text-soft); font-size: .92rem; margin: 22px 0 8px; }
+  .lead-in strong { color: var(--text); }
+  .footnote { color: var(--muted); font-size: 12.5px; margin: 8px 0 0; }
+  .footnote a { color: var(--accent); }
+
+  .home-example { margin-bottom: 4px; }
+
+  /* The graded example: the query beside what the site says about it, and one
+     column under each other once there is no room for two. */
+  .demo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+  }
+  @media (max-width: 720px) {
+    .demo { grid-template-columns: 1fr; }
+  }
+  .demo-out { display: grid; gap: 8px; }
+
+  /* Deliberately the same shapes as the real thing in the app, so what is shown
+     here is what turns up on /practice/. */
+  .demo-feedback, .demo-note {
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+  .demo-feedback .head { color: var(--danger); }
+  .demo-note { border-color: var(--attn); background: var(--attn-soft); }
+  .demo-note .head {
+    color: var(--attn);
+    font-size: 10.5px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .demo-feedback ul, .demo-note ul { margin: 6px 0 0; padding-left: 18px; }
+  .demo-feedback li { font-family: var(--mono); font-size: 11.5px; margin-bottom: 3px; }
+  .demo-note li { color: var(--text-soft); line-height: 1.5; margin-bottom: 5px; }
+  .demo-feedback .more { display: block; margin-top: 5px; color: var(--muted); }
+
+  .compare { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .compare th, .compare td {
+    text-align: left;
+    vertical-align: top;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .compare thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .compare tbody th { color: var(--text); font-weight: 600; width: 9.5rem; }
+  .compare td { color: var(--text-soft); }
+  .compare tbody td:last-child { color: var(--text); }
+  @media (max-width: 620px) {
+    .compare thead { display: none; }
+    .compare tbody th, .compare td { display: block; border: 0; padding: 2px 0; }
+    .compare tbody th { padding-top: 10px; width: auto; }
+    .compare tbody tr { display: block; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+    /* Stacked, the two columns lose their heading and become two unlabelled
+       sentences about the same thing - which is worse than no table at all. */
+    .compare tbody td::before {
+      content: attr(data-label);
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+  }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
@@ -94,13 +282,6 @@ const count = EXERCISES.length;
   }
   .grid .card { margin-bottom: 0; }
   .card-row .meta { font-family: var(--mono); font-size: 10.5px; white-space: nowrap; }
-  .card code {
-    font-family: var(--mono);
-    font-size: 11.5px;
-    background: var(--panel-2);
-    padding: 1px 4px;
-    border-radius: 3px;
-  }
   .card a { color: var(--accent); }
 
   .soon-note {
