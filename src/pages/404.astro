@@ -1,0 +1,91 @@
+---
+import Doc from '../layouts/Doc.astro';
+import { TRACKS, MODULES, ALL_LESSONS, REFERENCES } from '../../content/curriculum.js';
+import { EXERCISES } from '../../server/exercises/index.js';
+
+/**
+ * Built as a normal page so it goes out as `dist/404.html`, which is what both
+ * candidate hosts serve for an unmatched path with no configuration.
+ *
+ * `noindex`, because a soft 404 in the index is worse than no page at all - and
+ * it is deliberately not in `allPaths()`, so it never reaches the sitemap and
+ * the link checker never treats it as a destination.
+ *
+ * The list of ways on is built from the curriculum rather than written out, so
+ * the page cannot start advertising a track that no longer exists.
+ */
+---
+<Doc
+  noindex
+  title="Page not found — MongoDB Practice"
+  description="That page is not on this site. The course, the exercises and the dataset are all one click away."
+>
+  <section class="nf">
+    <p class="code">404</p>
+    <h1>That page is not here</h1>
+    <p>
+      Most likely a lesson has been renamed, or the link was typed by hand. Nothing is
+      lost — every page on the site is reachable from the three below.
+    </p>
+
+    <div class="ways">
+      <a class="card" href="/learn/">
+        <h2>The course</h2>
+        {/* All on one line on purpose: a newline before an expression is
+            collapsed to nothing rather than to a space, so this read
+            "across3 tracks" when it was wrapped. */}
+        <p>{ALL_LESSONS.length} lessons in {MODULES.length} modules, across {TRACKS.length} tracks. Start at the top or jump in anywhere.</p>
+      </a>
+      <a class="card" href="/practice/">
+        <h2>The exercises</h2>
+        <p>
+          {EXERCISES.length} graded drills that say which field of your answer is wrong.
+          Nothing to install.
+        </p>
+      </a>
+      <a class="card" href="/dataset/">
+        <h2>The dataset</h2>
+        <p>
+          30 users, 200 orders and 11 products, field by field — what every query on the
+          site runs against.
+        </p>
+      </a>
+    </div>
+
+    <p class="also">
+      <span>Also here: {REFERENCES.length} reference pages — </span>
+      {REFERENCES.map((r, i) => (
+        <>
+          {i > 0 && ', '}
+          <a href={`/reference/${r.slug}/`}>{r.title.toLowerCase()}</a>
+        </>
+      ))}.
+    </p>
+  </section>
+</Doc>
+
+<style>
+  .nf { max-width: 44rem; margin: 6vh 0 0; }
+  .nf .code {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .12em;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+  .nf h1 { font-size: clamp(1.5rem, 4vw, 2.1rem); margin: 0 0 12px; }
+  .nf > p { color: var(--text-soft); line-height: 1.6; }
+
+  .ways {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 8px;
+    margin: 22px 0 0;
+  }
+  .ways .card { margin-bottom: 0; }
+  .ways h2 { font-size: .98rem; margin: 0 0 6px; }
+  .ways p { margin: 0; font-size: 12.5px; color: var(--text-soft); line-height: 1.5; }
+
+  .also { margin-top: 20px; font-size: 12.5px; color: var(--muted); }
+  .also a { color: var(--accent); }
+</style>

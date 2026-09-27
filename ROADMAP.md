@@ -34,11 +34,10 @@ with the dataset explained in the pane that used to be empty (§6).
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **The launch blockers in §8** — `site:` is still `https://example.com`, which
-   poisons every canonical URL, every OG tag and the whole sitemap; there is no
-   `404.astro`; `og-default.png` is referenced and does not exist. None of it
-   needs the domain to be bought, and all of it has to be right before anything
-   is deployed. This is the next thing worth doing.
+1. **Two launch blockers are left, and both need you** (§8): the domain, which
+   `site:` needs before a single page has a correct canonical URL, and a
+   1200×630 share image, which is a visual identity decision. Everything else
+   in that list is done.
 2. **`.gitattributes` with `* text=auto`** (§7) — the repo has mixed line
    endings, which makes one-line edits produce whole-file diffs.
 3. Then the remaining §2/§3 polish: the caret in a starter's empty slot, a
@@ -815,16 +814,42 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
       domain we do not own as authoritative. Changing the one line fixes all of
       them at once — but nothing can be deployed before it is changed, and a
       deploy that happens to go out first is worse than not deploying.
-- [ ] **`/og-default.png` is referenced by `Base.astro` and does not exist.**
-      Every share on LinkedIn, Twitter or Slack renders a broken image — which
-      is most of the launch plan in §8. Needs a real 1200×630 image.
-- [ ] **No `404.astro`.** A mistyped URL falls through to whatever the host
-      shows, which is a dead end off-site rather than a way back into the course.
-- [ ] **Sitemap has no `<lastmod>`.** It has `<priority>`, which Google ignores,
-      and lacks the one field Google actually reads. Backwards. Wire it to the
-      lesson files' mtime or the git commit date.
-- [ ] Add a check to `test/links.mjs` that every referenced local asset exists —
-      `og-default.png` was referenced for weeks and nothing noticed.
+- [ ] **A real 1200×630 share image.** Still to make, and deliberately left:
+      it is a visual identity decision, and the name and logo are not settled.
+      **The bug it caused is fixed** (2026-09-27): `Base.astro` no longer names
+      `/og-default.png`, because a card pointing at a missing image is worse
+      than a card with none — the platform fetches it, gets a 404, and shows a
+      broken preview instead of falling back to the title and description.
+      `twitter:card` drops to `summary` for the same reason. Turning both back
+      on is one constant in `Base.astro` once the image exists.
+- [x] **A 404 page.** DONE 2026-09-27. `src/pages/404.astro` builds to
+      `dist/404.html`, which both candidate hosts serve for an unmatched path
+      with no configuration. `noindex`, kept out of `allPaths()` so it never
+      reaches the sitemap, and its only job is to be a way back in: the course,
+      the app, the dataset and the reference pages, all listed from the
+      curriculum rather than written out.
+- [x] **Sitemap `<lastmod>`.** DONE 2026-09-27, read out of git — one
+      `git log --name-only` pass mapped to each page's own content file.
+      - **Not the mtime and not the build clock.** A fresh clone sets every
+        mtime to now, so a CI build would publish 81 pages all claiming to have
+        changed today, every day. That is worse than saying nothing: the field
+        is only worth reading if it is sometimes old. The check that matters is
+        therefore not "is there a lastmod" but **"are they all the same day"**,
+        which is what a build-clock wiring looks like and what it now fails on.
+      - It points at the *content* file, not the template. Restyling a layout
+        does not mean 54 lessons changed.
+      - No git, a tarball, a shallow clone: the date is omitted rather than
+        guessed, which is the honest answer to "when did this change" when the
+        answer is not known.
+- [x] **Every referenced local asset must exist** — `test/links.mjs`,
+      2026-09-27. The reason nothing noticed `og-default.png` for weeks is now
+      the best part of the story: the link scan **skipped it by name**. The
+      exclusion `/^(https?:|mailto:|#|\/favicon|\/og-)/` was added while the
+      file was missing, which is exactly the wrong way round. It is gone, and
+      the new check covers `src`, stylesheet and icon `href`s, and the
+      `og:image`/`twitter:image` paths — with a companion check that the scan
+      finds anything at all, since a scan that matches nothing reports no
+      missing assets just as cheerfully as a clean build does.
 - [ ] Decide whether `example.com` should instead fail the build. A placeholder
       that silently produces valid-looking wrong output is the trap here.
 

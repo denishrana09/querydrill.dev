@@ -53,7 +53,7 @@ for (const file of htmlFiles) {
   const from = '/' + relative(DIST, file).replace(/\\/g, '/');
   for (const m of html.matchAll(/href="([^"]+)"/g)) {
     const href = m[1];
-    if (/^(https?:|mailto:|#|\/favicon|\/og-)/.test(href)) continue;
+    if (/^(https?:|mailto:|#)/.test(href)) continue;
     if (href.includes('#')) hashLinks.push({ from, href });
     if (!resolves(href)) broken.push(`${from} -> ${href}`);
   }
@@ -93,8 +93,81 @@ if (existsSync(sitemap)) {
   const xml = readFileSync(sitemap, 'utf8');
   check('sitemap lists every page', allPaths().every((p) => xml.includes(p)),
     allPaths().filter((p) => !xml.includes(p)).join(', '));
+
+  // <lastmod> is the one field Google actually reads, and it is only worth
+  // reading if it is sometimes old. Dates that are all identical mean it has
+  // been wired to the build clock instead of to when anything changed, which is
+  // the failure worth catching: it looks perfect and says nothing.
+  const stamps = [...xml.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map((m) => m[1]);
+  check('every page in the sitemap says when it last changed',
+    stamps.length === allPaths().length, `${stamps.length} of ${allPaths().length}`);
+  check('...and those dates are not all the same day',
+    new Set(stamps).size > 1, `all ${stamps.length} say ${stamps[0]}`);
+  check('...and none of them is in the future',
+    stamps.every((d) => d <= new Date().toISOString().slice(0, 10)),
+    stamps.filter((d) => d > new Date().toISOString().slice(0, 10)).join(', '));
+}
+
+// Served by both candidate hosts for an unmatched path, with no configuration -
+// but only if it is actually built, and it is easy to write a page that never
+// reaches `dist/` because of where it sits.
+const notFound = join(DIST, '404.html');
+check('a 404 page was built', existsSync(notFound));
+if (existsSync(notFound)) {
+  const html = readFileSync(notFound, 'utf8');
+  // A soft 404 in the search index is worse than no page at all.
+  check('...and it is noindex', /<meta name="robots" content="noindex">/.test(html));
+  check('...and it is not in the sitemap', !readFileSync(sitemap, 'utf8').includes('/404'));
+  // Its only job is to be a way back in.
+  check('...and it links to the course, the app and the dataset',
+    ['/learn/', '/practice/', '/dataset/'].every((p) => html.includes(`href="${p}"`)));
 }
 check('robots.txt was written', existsSync(join(DIST, 'robots.txt')));
+
+/* ---------- local assets ---------- */
+
+// `/og-default.png` was named by the social card on all 81 pages for weeks and
+// has never existed. Nothing noticed, because the link scan above used to skip
+// it by name - an exclusion added while it was missing, which is exactly the
+// wrong way round. A reference is a promise; this is what keeps them.
+const assetRefs = new Map();     // asset path -> the pages that reference it
+const noteAsset = (raw, from) => {
+  const path = String(raw).split('#')[0].split('?')[0];
+  if (!path.startsWith('/')) return;     // off-site, or a relative path we do not emit
+  if (!assetRefs.has(path)) assetRefs.set(path, new Set());
+  assetRefs.get(path).add(from);
+};
+
+for (const file of htmlFiles) {
+  const html = readFileSync(file, 'utf8');
+  const from = '/' + relative(DIST, file).replace(/\\/g, '/');
+
+  for (const m of html.matchAll(/\ssrc="([^"]+)"/g)) noteAsset(m[1], from);
+
+  // Stylesheets and icons, but not canonical/alternate links, which are pages.
+  for (const m of html.matchAll(/<link\b[^>]*\bhref="([^"]+)"/g)) {
+    if (/\.\w{2,5}$/.test(m[1].split('?')[0])) noteAsset(m[1], from);
+  }
+
+  // og:image and twitter:image are absolute URLs built from `site`, so compare
+  // the path and let the origin be whatever the config happens to say.
+  for (const m of html.matchAll(/<meta\b[^>]*"(?:og:image|twitter:image)"[^>]*content="([^"]+)"/g)) {
+    let ref = m[1];
+    try { ref = new URL(ref).pathname; } catch { /* already a path */ }
+    noteAsset(ref, from);
+  }
+}
+
+const missingAssets = [...assetRefs].filter(([path]) => !existsSync(join(DIST, path)));
+check('every local asset a page references was actually built',
+  missingAssets.length === 0,
+  missingAssets
+    .map(([path, pages]) => `${path} - referenced by ${pages.size} page(s), e.g. ${[...pages][0]}`)
+    .join('\n        '));
+// Its companion, and the reason to believe the first: a scan that matches
+// nothing reports no missing assets just as cheerfully as a clean build does.
+check('...and the asset scan is finding things to check',
+  assetRefs.size >= 2, `${assetRefs.size} distinct assets referenced`);
 
 /* ---------- head tags ---------- */
 

@@ -362,6 +362,19 @@ it is worse than what it is guarding.
 
 ## Traps already hit — don't re-introduce these
 
+**A newline before `{expression}` in an `.astro` file is not a space.** It is
+collapsed to nothing, so
+
+```jsx
+<p>… in {MODULES.length} modules, across
+   {TRACKS.length} tracks.</p>
+```
+
+renders "across3 tracks". The same thing happens before an element, which turned
+"press **Check**." followed by a link into "press Check.What is in the data".
+Both shipped and both were caught by looking at the page, not by a test. Keep the
+text and the expression on one line, or put the space inside a `<span>`.
+
 **A test must not import the threshold it is checking.** `test/topics.mjs`
 asserted that every filter chip had `MIN_FILTER_DRILLS` drills behind it — and
 imported `MIN_FILTER_DRILLS` from the module it was checking. Lowering the

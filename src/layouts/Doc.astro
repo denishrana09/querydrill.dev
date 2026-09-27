@@ -8,9 +8,9 @@ import '../styles/doc.css';
  * Anything that is a document rather than the app goes through here, so the
  * header, footer and prose measure are decided once.
  */
-const { title, description, jsonLd = null, nav = null, wide = false } = Astro.props;
+const { title, description, jsonLd = null, nav = null, wide = false, noindex = false } = Astro.props;
 ---
-<Base title={title} description={description} jsonLd={jsonLd} bodyClass="doc">
+<Base title={title} description={description} jsonLd={jsonLd} noindex={noindex} bodyClass="doc">
   <SiteHeader current={nav} />
   <main class={wide ? 'doc-main wide' : 'doc-main'}>
     <slot />

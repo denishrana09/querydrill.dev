@@ -16,7 +16,19 @@ const {
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
-const ogImage = new URL('/og-default.png', Astro.site).href;
+
+/**
+ * There is no share image yet, and until there is, every page pointed at
+ * `/og-default.png` - a file that has never existed. A social card that names a
+ * missing image is worse than one that names none: the platform fetches it,
+ * gets a 404, and shows a broken preview instead of falling back to the title
+ * and description. `summary_large_image` has the same problem, since the large
+ * card is a frame around the picture.
+ *
+ * So both are conditional, and turning them on is one constant away once the
+ * image exists - see ROADMAP.md section 8.
+ */
+const ogImage = null;
 ---
 <!doctype html>
 <html lang="en">
@@ -33,8 +45,8 @@ const ogImage = new URL('/og-default.png', Astro.site).href;
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
   <meta property="og:url" content={canonical} />
-  <meta property="og:image" content={ogImage} />
-  <meta name="twitter:card" content="summary_large_image" />
+  {ogImage && <meta property="og:image" content={ogImage} />}
+  <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
 
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 

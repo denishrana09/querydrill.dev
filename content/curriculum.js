@@ -293,6 +293,36 @@ export function moduleNeighbours(slug) {
 
 export const modulesInTrack = (slug) => MODULES.filter((m) => m.track === slug);
 
+/**
+ * The file a URL's content actually comes from, for `<lastmod>`.
+ *
+ * Deliberately the content file and not the template: restyling a layout does
+ * not mean 54 lessons changed, and a sitemap that says it did is the reason
+ * search engines learn to ignore the field. A module hub has no file of its
+ * own - it is assembled from this one - so that is what it points at.
+ *
+ * @returns {string|null} repo-relative path, or null when nothing sensible maps
+ */
+export function sourceFor(path) {
+  const lesson = /^\/learn\/([^/]+)\/$/.exec(path);
+  if (lesson) return `content/lessons/${lesson[1]}.md`;
+
+  const reference = /^\/reference\/([^/]+)\/$/.exec(path);
+  if (reference) return `content/reference/${reference[1]}.md`;
+
+  const topic = /^\/topics\/([^/]+)\/$/.exec(path);
+  if (topic) return `content/topic-pages/${topic[1]}.md`;
+
+  if (/^\/modules\/[^/]+\/$/.test(path)) return 'content/curriculum.js';
+
+  return {
+    '/': 'src/pages/index.astro',
+    '/learn/': 'src/pages/learn/index.astro',
+    '/practice/': 'src/pages/practice/index.astro',
+    '/dataset/': 'src/pages/dataset.astro',
+  }[path] ?? null;
+}
+
 /** Every URL the site publishes, for the sitemap and for link checking. */
 export function allPaths() {
   return [
