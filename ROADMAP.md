@@ -29,11 +29,12 @@ builds and runs ten suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Autocomplete for `$` operators** (§2) — the next thing the editor itself
-   wants, and most of its cost is already paid.
-2. **Cap the diff when the shape is wrong** (§3) — ten lines of
+1. **Cap the diff when the shape is wrong** (§3) — ten lines of
    `row 0.createdAt: extra field` is what a learner gets today for submitting the
    starter, and it buries the one line that would help.
+2. **Autocomplete for field paths** (§2) — the other half of the `$`, now that
+   operators are done. Needs the shape of the collection being queried, which is
+   the reason it was not done at the same time.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -134,10 +135,38 @@ one commit per file, and never any AI attribution trailer.
       - Deliberately not included: line numbers and an active-line highlight. The
         queries are five lines and the editor pane is 368px wide in the
         three-column layout; a gutter would spend a tenth of it counting to five.
-- [ ] Autocomplete for collection names and `$` operators (big perceived-quality
-      win, and now much cheaper: `@codemirror/autocomplete` is already in the
-      bundle for the bracket closing, and `content/topics.js` is already the
-      closed list of operators to offer)
+- [x] **Autocomplete for `$` operators.** DONE 2026-09-27. Typing `$` offers the
+      operator, what kind of operator it is, and a one-line meaning.
+      - **`content/topics.js` was the wrong list**, despite this entry having
+        said it was the right one. It is the *tag* vocabulary: closed, narrow,
+        and about what the course teaches. It has `$gte` and no `$gt`, because no
+        lesson is about `$gt`. Completing from it would have told a learner that
+        `$gt`, `$ne`, `$exists` and `$regex` do not exist.
+      - So `content/operators.js` is a curated list of 90, and `test/operators.mjs`
+        holds it to two rules: every entry is one **mingo actually implements**,
+        read out of the engine's own registries rather than listed again; and
+        every operator the course teaches is in it. The first stops the editor
+        ever suggesting something that errors on Run.
+      - Suppressed inside strings, because `"$items.price"` is a field path and
+        not an operator. That is the one place a wrong suggestion would appear on
+        every single query.
+      - **It broke Escape, and the keyboard-trap check caught it.** CodeMirror
+        reports a completion as "active" long after the popup has gone, and its
+        own Escape binding consumes the key on exactly that condition — so once
+        anyone had typed a `$`, leaving the editor took two presses, with nothing
+        on screen to explain why. The binding now asks `currentCompletions`,
+        which is about the popup rather than the source.
+      - **And a bundle check that could not fail.** Adding an `operators.` prefix
+        to the lazy-chunk guard looked right and proved nothing: a static import
+        is *inlined* into the entry chunk, so the name disappears and the check
+        keeps passing while 3 KB lands on every visitor. It searches the bytes
+        for a sentence now, and has a companion check that the search works.
+        Second time this shape of mistake has been made here — see the editor
+        entry below.
+      - **The help panel shipped invisible for an hour.** `overflow: hidden` on
+        the popup, for the rounded corners; the panel is a *child* of the popup
+        that sits outside it. Present in the DOM, right size, never painted. No
+        assertion noticed — a screenshot did. There is now a hit test.
 - [ ] Put the caret in a starter's **empty slot** rather than at the end of it.
       Neither end of a blank `aggregate([ … ])` is where you want to type, and
       that was true of the textarea too — so it is one fix for both hosts, not a

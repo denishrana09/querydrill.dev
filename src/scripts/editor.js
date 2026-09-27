@@ -35,9 +35,15 @@ function load() {
     import('@codemirror/autocomplete'),
     import('@codemirror/lang-javascript'),
     import('@lezer/highlight'),
+    // Imported here rather than at the top of this file on purpose. This module
+    // is loaded on first paint - it is what decides whether the textarea gets
+    // upgraded at all - so a static import would put 90 operators and their
+    // descriptions in the bundle every visitor downloads, to be used only by
+    // the editor that arrives later.
+    import('../../content/operators.js'),
   ])
-    .then(([state, view, language, commands, autocomplete, js, highlight]) =>
-      ({ state, view, language, commands, autocomplete, js, highlight }))
+    .then(([state, view, language, commands, autocomplete, js, highlight, operators]) =>
+      ({ state, view, language, commands, autocomplete, js, highlight, operators }))
     .catch((err) => {
       chunk = null;
       throw err;
@@ -137,6 +143,71 @@ function highlightStyle({ language, highlight }) {
   ]);
 }
 
+/* ---------- completing $ operators ---------- */
+
+/**
+ * A `$` means two unrelated things in a MongoDB query, and which one is decided
+ * entirely by whether you are inside a string.
+ *
+ *   { $group: { _id: "$items.product" } }
+ *     ^ an operator            ^ a field path
+ *
+ * So the completions are suppressed inside strings and comments. Offering
+ * `$group` while someone types `"$items` would be wrong every single time, and
+ * an autocomplete that is confidently wrong is worse than none - people stop
+ * reading it and it is still in the way.
+ *
+ * Field paths are the obvious other half of this and are deliberately not here:
+ * they need the shape of the collection being queried, which this module has no
+ * business knowing. See the roadmap.
+ */
+const NOT_AN_OPERATOR = new Set(['String', 'TemplateString', 'LineComment', 'BlockComment', 'Comment']);
+
+/**
+ * The help panel beside the list. A node rather than a string, so the backticks
+ * these sentences are written with become `code` the way they do everywhere else
+ * on the site - as a plain string CodeMirror prints the backticks.
+ */
+function infoNode(text) {
+  const el = document.createElement('div');
+  for (const part of text.split(/(`[^`]+`)/)) {
+    if (!part) continue;
+    if (part.startsWith('`') && part.endsWith('`')) {
+      const code = document.createElement('code');
+      code.textContent = part.slice(1, -1);
+      el.appendChild(code);
+    } else {
+      el.appendChild(document.createTextNode(part));
+    }
+  }
+  return el;
+}
+
+function operatorSource({ language, operators }) {
+  // Built once, not per keystroke: the list never changes, and CodeMirror
+  // filters and sorts it against what has been typed on its own.
+  const options = operators.OPERATORS.map((o) => ({
+    label: o.slug,
+    type: 'keyword',
+    detail: o.roles.join(' · '),
+    info: () => infoNode(o.info),
+  }));
+
+  return (context) => {
+    const word = context.matchBefore(/\$[a-zA-Z]*/);
+    if (!word) return null;
+
+    for (let node = language.syntaxTree(context.state).resolveInner(word.from, -1); node; node = node.parent) {
+      if (NOT_AN_OPERATOR.has(node.name)) return null;
+    }
+
+    // `validFor` is what keeps it from re-running the source on every letter:
+    // as long as what has been typed still looks like an operator, CodeMirror
+    // narrows the list it already has.
+    return { from: word.from, options, validFor: /^\$[a-zA-Z]*$/ };
+  };
+}
+
 /* ---------- the upgrade ---------- */
 
 async function upgrade(textarea, keys) {
@@ -145,7 +216,8 @@ async function upgrade(textarea, keys) {
   const { EditorView, keymap, placeholder } = mod.view;
   const { indentOnInput, indentUnit, bracketMatching, syntaxHighlighting } = mod.language;
   const { history, historyKeymap, defaultKeymap, indentWithTab, isolateHistory } = mod.commands;
-  const { closeBrackets, closeBracketsKeymap } = mod.autocomplete;
+  const { closeBrackets, closeBracketsKeymap, completionKeymap, autocompletion, currentCompletions } =
+    mod.autocomplete;
 
   // Taken before the textarea goes away: someone can have started typing in the
   // half second this chunk took to arrive, and throwing that away would be the
@@ -168,9 +240,34 @@ async function upgrade(textarea, keys) {
         // Tab indents, as it did in the textarea. That makes the editor a focus
         // trap, which is the documented cost of indentWithTab - so Escape is the
         // way out for anyone not using a mouse.
-        { key: 'Escape', run: (v) => { v.contentDOM.blur(); return true; } },
+        //
+        // Unless the completion popup is open, in which case Escape means "close
+        // that". Returning false hands the key to the completion keymap below,
+        // so one Escape closes the popup and the next one leaves the editor.
+        //
+        // `currentCompletions`, not `completionStatus`. Status is "active" while
+        // a source merely holds a result, which outlives the popup - and
+        // CodeMirror's own Escape binding consumes the key on exactly that
+        // condition. So once anyone had typed a `$`, Escape stopped leaving the
+        // editor until it was pressed twice, with nothing on screen to explain
+        // why. Found by the keyboard-trap check that has been here since the
+        // editor landed, which is the only reason it was not shipped.
+        {
+          key: 'Escape',
+          run: (v) => {
+            if (currentCompletions(v.state).length) return false;
+            v.contentDOM.blur();
+            return true;
+          },
+        },
         indentWithTab,
         ...closeBracketsKeymap,
+        // Before defaultKeymap, and that placement is the whole reason Enter
+        // accepts a completion: this keymap is declared first, so it outranks
+        // the one autocompletion() installs, and defaultKeymap's Enter would
+        // otherwise insert a newline while the popup sat there. Every binding
+        // in here is a no-op when no completion is open.
+        ...completionKeymap,
         ...defaultKeymap,
         ...historyKeymap,
       ]),
@@ -178,6 +275,20 @@ async function upgrade(textarea, keys) {
       syntaxHighlighting(highlightStyle(mod)),
       bracketMatching(),
       closeBrackets(),
+      // `override` rather than adding a source: the JavaScript language pack
+      // offers completions from the surrounding scope, which in a five-line
+      // query means the words you just typed. This editor completes operators
+      // and nothing else, which is the version people can trust.
+      autocompletion({
+        override: [operatorSource(mod)],
+        icons: false,
+        maxRenderedOptions: 12,
+        // Its own keymap is installed at the highest precedence, above anything
+        // declared here - including the Escape above. Declined, and
+        // completionKeymap is in the list above instead, where its order
+        // relative to Escape and Enter is ours to decide.
+        defaultKeymap: false,
+      }),
       indentOnInput(),
       indentUnit.of('  '),
       // A pipeline stage runs past 360px long before it runs out of interest, and

@@ -192,6 +192,35 @@ change the query and run it again. Nothing to opt into. Two consequences:
 Each lesson should have at least one complete runnable example; a test enforces
 that too.
 
+## Add an operator to the editor's autocomplete
+
+Typing `$` in the editor completes from [content/operators.js](content/operators.js).
+One entry per operator: its slug, what kinds of thing it is, and one line saying
+what it does.
+
+```js
+op('$unwind', 'stage', 'One document per array element. The document count changes, which is the whole point and the usual surprise.'),
+```
+
+Roles are `filter`, `stage`, `accumulator`, `expression`, `update` and
+`projection`, space-separated — several of them is normal and worth saying, since
+`$set` is a stage and an update operator both.
+
+`npm run test:operators` enforces the two rules that make the list worth trusting:
+
+| message | fix |
+|---|---|
+| `every operator offered is one the engine can run` | mingo does not implement it, so the editor would be suggesting a query that errors on Run |
+| `every operator the course teaches is offered` | a lesson teaches it and the editor does not know it — add it here |
+| `no two operators share a description` | say what *this* one does |
+
+That first rule is read out of mingo's own operator registries rather than a list
+kept here, so it cannot go stale.
+
+This is deliberately **not** `content/topics.js`. That file is the tag
+vocabulary: closed, narrow, about what the course teaches. It has `$gte` and no
+`$gt`, which is right for tagging and would be a lie in an autocomplete.
+
 ## Pull requests
 
 - Say what and why. A screenshot helps for anything visual.

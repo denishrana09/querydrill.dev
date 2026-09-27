@@ -47,8 +47,6 @@
 
   --shadow: rgba(0, 0, 0, .3);
   --glass-line: rgba(255, 255, 255, .13);
-
-  --mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
 }
 
 :root[data-theme='light'] {
@@ -91,6 +89,15 @@
   --glass-line: rgba(0, 0, 0, .1);
 }
 
+/* The two font stacks. Outside both palette blocks on purpose: they do not
+   change with the theme, and keeping them out is what lets test/contrast.mjs
+   demand that the two palettes define exactly the same tokens instead of
+   carrying a list of exceptions. */
+:root {
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
 * { box-sizing: border-box; }
 
 /* Any author rule that sets `display` beats the browser's `[hidden]`, because
@@ -105,7 +112,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 14px/1.5 var(--sans);
 }
 
 /* The practice app is a fixed three-pane shell that must not scroll as a page.
@@ -319,6 +326,81 @@ textarea.query-box:focus,
 }
 .cm-host .cm-nonmatchingBracket { color: var(--danger); }
 .cm-host .cm-placeholder { color: var(--muted); }
+
+/* The $ operator popup. Not scoped to .cm-host: CodeMirror can hoist a tooltip
+   out to the body, so scoping it there makes the whole thing silently unstyled
+   on whichever browser decides to. It only exists while an editor is mounted.
+
+   Doubled class for specificity - CodeMirror injects its own base theme into a
+   <style> element whose position in <head> is not ours to rely on. */
+.cm-tooltip.cm-tooltip-autocomplete {
+  background: var(--panel-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px var(--shadow);
+  /* Deliberately NOT overflow:hidden. The help panel is a CHILD of this element
+     and sits to the right of it, so clipping here removes it entirely - present
+     in the DOM, correct size, never painted. Found by looking at a screenshot;
+     no assertion about the popup noticed, which is why there is now one about
+     the panel being on screen. The rounding is on the list instead. */
+  overflow: visible;
+}
+.cm-tooltip-autocomplete > ul {
+  font-family: var(--mono);
+  font-size: 12px;
+  max-height: 15em;
+  border-radius: 5px;
+}
+.cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 9px;
+  color: var(--text);
+}
+/* Matching CodeMirror's own selector exactly, not a shorter one. Its rule paints
+   the selected row in the system Highlight colour - browser blue, in neither
+   palette - and it is one class more specific than the obvious version of this. */
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--accent-dim);
+  color: var(--on-accent-dim);
+}
+/* Which of stage / accumulator / expression it is. Prose, not code. */
+.cm-tooltip-autocomplete .cm-completionDetail {
+  margin-left: auto;
+  font-family: inherit;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--muted);
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] .cm-completionDetail { color: var(--on-accent-dim); }
+/* The letters you have typed so far, inside the name. */
+.cm-tooltip-autocomplete .cm-completionMatchedText {
+  text-decoration: none;
+  font-weight: 700;
+  color: var(--accent);
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] .cm-completionMatchedText { color: var(--on-accent-dim); }
+/* The one-line meaning, in a panel beside the list. */
+.cm-tooltip.cm-completionInfo {
+  padding: 8px 10px;
+  font-family: var(--sans);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-soft);
+  background: var(--panel-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px var(--shadow);
+}
+.cm-tooltip.cm-completionInfo code {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  background: var(--panel);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
 
 .results { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
 .result-meta { font-size: 12px; font-family: var(--mono); flex: 0 0 auto; }

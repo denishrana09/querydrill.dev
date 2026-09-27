@@ -262,19 +262,151 @@ check('a deep link loads the drill starter into CodeMirror',
 check('and the editor says which drill it is holding',
   deep.label.includes('Count by group'), deep.label);
 
-/* ---------- 10. Escape is the way out ---------- */
+/* ---------- 10. completing $ operators ---------- */
+
+// The whole feature is about *when* it offers something, so most of these are
+// about it staying quiet. jsdom cannot host any of it: without layout there is
+// no CodeMirror, and without real key events there is no completion at all.
+
+const popup = () => evaluate(`JSON.stringify((() => {
+  const box = document.querySelector('.cm-tooltip-autocomplete');
+  // getBoundingClientRect, not offsetParent: CodeMirror gives this tooltip
+  // position fixed, and a fixed element has no offsetParent even on screen.
+  if (!box || box.getBoundingClientRect().height === 0) return null;
+  const rows = [...box.querySelectorAll('li')];
+  return {
+    labels: rows.map((li) => li.textContent.replace(/\\s+/g, ' ').trim()),
+    selected: rows.find((li) => li.hasAttribute('aria-selected'))?.textContent.trim() ?? null,
+    detail: rows[0]?.querySelector('.cm-completionDetail')?.textContent.trim() ?? null,
+    bg: getComputedStyle(box).backgroundColor,
+  };
+})())`);
+
+await clearAndType('db.orders.aggregate([{ ');
+await type('$');
+const onDollar = await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`);
+check('typing $ offers the operators', onDollar);
+
+await type('unw');
+const narrowed = await until(evaluate,
+  `document.querySelector('.cm-tooltip-autocomplete li')?.textContent.includes('$unwind')`);
+const shown = await popup();
+check('typing more narrows it to what matches', narrowed,
+  JSON.stringify(shown?.labels?.slice(0, 4)));
+check('each one says what kind of operator it is', shown?.detail === 'stage',
+  JSON.stringify(shown?.detail));
+// Styled from the token set, not left in CodeMirror's own white box. Compared
+// against the live token rather than a hex literal, so this passes in whichever
+// theme the machine running it happens to be in - and still fails if the rules
+// stop applying.
+const panel2 = await evaluate(`JSON.stringify((() => {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'background: var(--panel-2)';
+  document.body.appendChild(probe);
+  const c = getComputedStyle(probe).backgroundColor;
+  probe.remove();
+  return c;
+})())`);
+check('the popup is themed', shown?.bg === panel2, `popup ${shown?.bg}, --panel-2 ${panel2}`);
+
+// The help panel beside the list, which is where the one-line meaning lives.
+// Hit-tested rather than merely found in the DOM: it is a CHILD of the popup and
+// sits outside it, so an `overflow: hidden` on the popup leaves it present,
+// correctly sized and never painted. That is exactly what shipped for an hour,
+// and only a screenshot noticed.
+await until(evaluate, `document.querySelector('.cm-completionInfo')`);
+const helpPanel = await evaluate(`JSON.stringify((() => {
+  const el = document.querySelector('.cm-completionInfo');
+  if (!el) return { painted: false, why: 'not in the DOM' };
+  const r = el.getBoundingClientRect();
+  if (!r.width || !r.height) return { painted: false, why: 'zero size' };
+  const hit = document.elementFromPoint(Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
+  return {
+    painted: Boolean(hit) && (el === hit || el.contains(hit)),
+    hit: hit?.className ?? null,
+    code: el.querySelectorAll('code').length,
+    text: el.textContent.slice(0, 60),
+  };
+})())`);
+check('the one-line meaning is painted, not just present', helpPanel.painted === true,
+  JSON.stringify(helpPanel));
+
+// CodeMirror ignores Enter for `interactionDelay` (75ms by default) after the
+// popup last changed, so a keystroke already in flight cannot accept something
+// the user has not seen. A person clears that without trying; this has to wait
+// for it on purpose.
+await new Promise((r) => setTimeout(r, 150));
+await press('Enter');
+const accepted = await doc();
+check('Enter accepts the completion', accepted.includes('$unwind'), JSON.stringify(accepted));
+
+// $map's description mentions `$unwind` in backticks, which is what makes this
+// worth asserting: $unwind's own description has none, so checking it there
+// passed for the wrong reason.
+await clearAndType('db.orders.aggregate([{ ');
+await type('$ma');
+await until(evaluate, `document.querySelector('.cm-completionInfo code')`, { tries: 40 });
+const rendered = await evaluate(`JSON.stringify((() => {
+  const el = document.querySelector('.cm-completionInfo');
+  return {
+    selected: document.querySelector('.cm-tooltip-autocomplete li[aria-selected]')?.textContent ?? null,
+    code: [...el.querySelectorAll('code')].map((c) => c.textContent),
+    hasBacktick: el.textContent.includes(String.fromCharCode(96)),
+  };
+})())`);
+check('backticks in a description become code, not backticks',
+  rendered.code.includes('$unwind') && !rendered.hasBacktick, JSON.stringify(rendered));
+
+// A $ inside a string is a field path - "$items.price" - not an operator, and
+// this is the one place a wrong suggestion would appear on every single query.
+await clearAndType('db.orders.aggregate([{ $unwind: "');
+await type('$');
+const inString = await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`,
+  { tries: 8, gap: 40 });
+check('but not inside a string, where $ means a field path', !inString);
+
+// Escape has to close the popup without also blurring, or the editor's own
+// keyboard escape hatch eats the dismissal.
+await clearAndType('db.orders.aggregate([{ ');
+await type('$gr');
+await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`);
+await press('Escape');
+const afterEscape = await evaluate(`JSON.stringify({
+  popup: Boolean(document.querySelector('.cm-tooltip-autocomplete')),
+  focused: document.activeElement === document.querySelector('.cm-content'),
+})`);
+check('Escape closes the popup and stays in the editor',
+  !afterEscape.popup && afterEscape.focused, JSON.stringify(afterEscape));
+
+// And Ctrl+Enter must still run, rather than being swallowed by the popup.
+await clearAndType('db.products.find({ ');
+await type('$');
+await until(evaluate, `document.querySelector('.cm-tooltip-autocomplete')`);
+await press('Backspace');
+await type('category: "Audio" })');
+await press('Enter', CTRL);
+const ranWithPopup = await until(evaluate,
+  `/\\b2 rows\\b/.test(document.getElementById('resultMeta').textContent)`);
+check('Ctrl+Enter still runs the query', ranWithPopup,
+  await evaluate(`JSON.stringify(document.getElementById('resultMeta').textContent)`));
+
+/* ---------- 11. Escape is the way out ---------- */
 
 // Tab indents inside the editor, which makes it a focus trap - the documented
 // cost of that binding. Escape is what pays it off, and nothing else in the app
 // would notice if it stopped working.
 await focusEditor();
+// One Escape, deliberately. A completion source that has run leaves CodeMirror
+// reporting "active" long after the popup has gone, and its own Escape binding
+// consumes the key on that - so this check failed the moment autocomplete
+// landed, needing two presses. See the Escape binding in src/scripts/editor.js.
 await press('Escape');
 const blurred = await evaluate(
   `JSON.stringify(!document.querySelector('.cm-content').contains(document.activeElement)
     && document.activeElement !== document.querySelector('.cm-content'))`);
 check('Escape leaves the editor, so Tab-to-indent is not a keyboard trap', blurred);
 
-/* ---------- 11. the lesson pages get it too ---------- */
+/* ---------- 12. the lesson pages get it too ---------- */
 
 await send('Page.navigate', { url: base + '/learn/find-and-findone/' });
 await until(evaluate, `document.querySelector('.rx-btn')`);

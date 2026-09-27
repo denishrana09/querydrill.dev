@@ -125,8 +125,10 @@ return { total: n };
 ```
 
 It is a real code editor — syntax highlighting, bracket matching, auto-indent,
-`Shift`+`Alt`+`F` to format — and if that never loads, the plain textarea
-underneath still works.
+`Shift`+`Alt`+`F` to format. Typing `$` completes from 90 operators, each with
+what kind of operator it is and a one-line meaning, and it stays quiet inside a
+string because `"$items.price"` is a field path rather than an operator. If none
+of that ever loads, the plain textarea underneath still works.
 
 ## Running against a real MongoDB
 

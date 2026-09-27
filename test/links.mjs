@@ -290,6 +290,30 @@ check('no page ships the script without a runnable block', noBlocks.length === 0
     .filter((c) => lazyOnly.some((prefix) => c.startsWith('_astro/' + prefix)));
   check('neither CodeMirror nor Prettier is loaded before it is needed',
     eager.length === 0, eager.join(', '));
+
+  // The editor's completion list - 90 operators and a sentence about each - is
+  // held out of the first load by one line in src/scripts/editor.js: it is
+  // imported inside the dynamic import rather than at the top of the file.
+  //
+  // Checked by looking for the text, not for a chunk called `operators.*`.
+  // Adding that prefix to the list above was the obvious guard and it is a
+  // useless one: a static import gets INLINED into the entry chunk, so the name
+  // disappears and the check goes on passing while 3 KB lands on every visitor.
+  // Watched to fail before being believed, which is the only reason that is
+  // known. A string literal survives minification; a module name does not.
+  const SENTINEL = 'adds one unit price per line';        // from a mistake note
+  const OPERATOR_SENTINEL = 'Folds an array to one value'; // from $reduce's help
+  const carrying = (needle) => [...new Set(weighed.flatMap((p) => p.chunks))]
+    .filter((c) => existsSync(join(DIST, c)) && readFileSync(join(DIST, c), 'utf8').includes(needle));
+
+  check('the operator help is not in what a page loads up front',
+    carrying(OPERATOR_SENTINEL).length === 0, carrying(OPERATOR_SENTINEL).join(', '));
+  // The other half of the pair, and the reason to trust the first: the mistake
+  // notes ARE statically imported with the exercises, so this must find them.
+  // If it does not, the search is broken rather than the bundle being clean.
+  check('...and the search would have found it if it were',
+    carrying(SENTINEL).length > 0,
+    'the sentinel scan found nothing anywhere, so it proves nothing');
 }
 
 console.log(failed ? `\n  \x1b[31m${failed} link check(s) failed\x1b[0m\n` : `\n  ${green('links OK')}\n`);

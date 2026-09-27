@@ -96,7 +96,10 @@ for (const [name, selector] of [
 // inherited from the other one and the bug only appears in a single component.
 const dark = palette(":root,\n:root[data-theme='dark']");
 const light = palette(":root[data-theme='light']");
-const onlyDark = Object.keys(dark).filter((k) => k !== 'mono' && !(k in light));
+// No exceptions: the font tokens used to need one and now live in their own
+// :root rule, because they are not palette values and saying so in the
+// stylesheet is better than saying it again here.
+const onlyDark = Object.keys(dark).filter((k) => !(k in light));
 check('the light palette defines every token the dark one does', onlyDark.length === 0,
   onlyDark.map((k) => `--${k}`).join(', '));
 

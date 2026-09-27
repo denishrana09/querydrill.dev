@@ -4,6 +4,7 @@
 
 import { readFileSync } from 'node:fs';
 import { MODULES, TRACKS, ALL_LESSONS, REFERENCES, EXERCISE_ORDER, TOPIC_PAGES } from '../content/curriculum.js';
+import { OPERATORS } from '../content/operators.js';
 import { LEGACY_IDS, migrateKeys } from '../content/legacy-ids.js';
 import { EXERCISES } from '../server/exercises/index.js';
 
@@ -198,6 +199,10 @@ const COUNTED = [
   ['README.md', readFileSync(new URL('../README.md', import.meta.url), 'utf8')],
   ['package.json', readFileSync(new URL('../package.json', import.meta.url), 'utf8')],
   ['CONTRIBUTING.md', readFileSync(new URL('../CONTRIBUTING.md', import.meta.url), 'utf8')],
+  // Two source comments state the size of the operator list, and they rot the
+  // same way a README does.
+  ['src/scripts/editor.js', readFileSync(new URL('../src/scripts/editor.js', import.meta.url), 'utf8')],
+  ['test/links.mjs', readFileSync(new URL('../test/links.mjs', import.meta.url), 'utf8')],
   ...['index', 'learn/index', 'practice/index'].map((p) => [
     `src/pages/${p}.astro`,
     readFileSync(new URL(`../src/pages/${p}.astro`, import.meta.url), 'utf8'),
@@ -214,6 +219,7 @@ const CLAIMS = [
   [/(\d+)\s+reference pages\b/g, REFERENCES.length, 'reference pages'],
   [/(\d+)\s+topic hubs\b/g, TOPIC_PAGES.length, 'topic hubs'],
   [/(\d+)\s+.?what usually goes wrong/g, noteCount, 'mistake notes'],
+  [/(\d+)\s+operators\b/g, OPERATORS.length, 'operators the editor offers'],
 ];
 
 const staleCounts = [];
