@@ -267,21 +267,58 @@ kbd {
 .check { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12px; cursor: pointer; }
 .editor-label { font-size: 12px; color: var(--muted); font-family: var(--mono); }
 
-#editor {
+/* The editor box, whichever editor is currently in it. src/scripts/editor.js
+   copies this class onto CodeMirror's root when it takes over, so the pane's
+   geometry is stated once and neither host has to know about the other. Colours
+   come from the same tokens either way - including the syntax colours, which are
+   the `--syn-*` set the results pane uses. */
+.query-box {
   flex: 0 0 34%;
   min-height: 150px;
-  resize: vertical;
   background: var(--panel);
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: 8px;
+  overflow: hidden;
+}
+textarea.query-box {
+  resize: vertical;
   padding: 12px;
   font-family: var(--mono);
   font-size: 13px;
   line-height: 1.55;
   tab-size: 2;
 }
-#editor:focus { outline: none; border-color: var(--accent-dim); }
+textarea.query-box:focus,
+.query-box.cm-focused { outline: none; border-color: var(--accent-dim); }
+
+/* The font has to be restated on the scroller rather than inherited, because
+   CodeMirror's base theme puts a plain `monospace` there - and the swap from
+   textarea to CodeMirror has to be invisible, so these three values are the
+   textarea's above. */
+.query-box .cm-scroller {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  /* The base theme only sets overflow-x. Without this the editor grows past its
+     flex basis instead of scrolling, and pushes the results pane off-screen. */
+  overflow: auto;
+}
+.query-box .cm-content { padding: 12px; }
+
+/* The parts only CodeMirror has, coloured once for every host that mounts it -
+   see src/scripts/editor.js, which adds this class alongside the host's own.
+   Geometry stays with the host; these are token choices and belong together. */
+.cm-host .cm-line { padding: 0; }
+.cm-host .cm-content { caret-color: var(--accent); }
+/* A bracket and its partner, which is the whole point of matching them. */
+.cm-host .cm-matchingBracket {
+  background: var(--panel-2);
+  outline: 1px solid var(--line-strong);
+  color: inherit;
+}
+.cm-host .cm-nonmatchingBracket { color: var(--danger); }
+.cm-host .cm-placeholder { color: var(--muted); }
 
 .results { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
 .result-meta { font-size: 12px; font-family: var(--mono); flex: 0 0 auto; }
@@ -630,7 +667,7 @@ kbd {
    so it is allowed to wrap and the editor keeps a workable share of the height. */
 @media (max-width: 560px) {
   .editor-pane { --editor-h: 40%; }
-  #editor { font-size: 12.5px; }
+  textarea.query-box, .query-box .cm-scroller { font-size: 12.5px; }
   /* Same reason as the example buttons on lesson pages: these are thumb targets
      here, not mouse targets. */
   .toolbar button { padding: 8px 13px; }
@@ -696,13 +733,13 @@ kbd {
 
 /* ---------- editor / results splitter ---------- */
 
-/* #editor previously had `flex: 0 0 34%` alongside `resize: vertical`, so the
-   browser's resize handle set a height that flex-basis immediately overrode -
+/* The editor box previously had `flex: 0 0 34%` alongside `resize: vertical`, so
+   the browser's resize handle set a height that flex-basis immediately overrode -
    the handle appeared but did nothing. The pane height is now a variable the
    splitter drives. */
 .editor-pane { --editor-h: 34%; }
 
-#editor {
+.query-box {
   flex: 0 0 var(--editor-h);
   resize: none;
 }

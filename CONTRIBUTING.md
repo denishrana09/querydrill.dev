@@ -25,6 +25,12 @@ npm run verify       # the above, plus a real build, links and a headless browse
 Run `npm test` before opening a pull request. Run `npm run verify` if you touched
 anything under `src/` or changed how a page is built.
 
+Two of the suites drive a real Chrome or Edge, and they **skip** rather than fail
+if neither is installed (`CHROME=/path/to/chrome` if yours is somewhere unusual).
+Worth knowing if you touch the editor: jsdom cannot measure anything, so
+CodeMirror does not mount there and `npm test` alone is driving the textarea
+fallback. `npm run test:editor` is the one that sees the real thing.
+
 ## The one rule
 
 **Nothing is graded against hardcoded JSON.** Your answer and the exercise's own

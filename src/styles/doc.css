@@ -303,24 +303,43 @@
 .rx-note { margin-left: auto; font-size: 11px; color: var(--muted-2); }
 .rx-note a { color: var(--muted); }
 
+/* Edit mode, whichever editor is in it: src/scripts/editor.js copies this class
+   onto CodeMirror's root when it replaces the textarea, so the box is described
+   once and the two cannot drift apart visually. */
 .rx-editor {
-  display: block;
   width: 100%;
   box-sizing: border-box;
-  resize: vertical;
   border: 0;
+  background: var(--panel);
+  color: var(--text);
+}
+textarea.rx-editor {
+  display: block;
+  resize: vertical;
   /* Matched to `.prose pre` so switching into edit mode does not make the code
      jump a pixel or change size. */
   padding: 12px 14px;
-  background: var(--panel);
-  color: var(--text);
   font-family: var(--mono);
   font-size: 12.5px;
   line-height: 1.55;
   tab-size: 2;
-  overflow: hidden;   /* autosized in script, so it never needs its own scrollbar */
+  overflow: hidden;   /* sized to its content in script, so it needs no scrollbar */
 }
-.rx-editor:focus { outline: 1px solid var(--accent-dim); outline-offset: -1px; }
+textarea.rx-editor:focus,
+.rx-editor.cm-focused { outline: 1px solid var(--accent-dim); outline-offset: -1px; }
+
+/* The same three values as the textarea above, for the same reason: switching
+   into edit mode must not move the code. */
+.rx-editor .cm-scroller {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  /* Capped like `.rx-body` below it. An example inside a lesson is an
+     illustration, and a long one should not push the prose out of reach. */
+  max-height: 22rem;
+  overflow: auto;
+}
+.rx-editor .cm-content { padding: 12px 14px; }
 
 .rx-out { border-top: 1px solid var(--line); }
 .rx-meta {

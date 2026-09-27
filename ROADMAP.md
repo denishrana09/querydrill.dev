@@ -20,21 +20,22 @@ list, 43 tags down to 7 that earn a clickable chip (§2). The drill list filters
 topic (§2). Prompts audited and made safe for someone who has never seen the
 source notes (§3). MIT licensed, with a CONTRIBUTING guide whose every instruction was
 tested by following it (§7).
-`npm run verify` builds and runs nine suites over all of it.
+A real code editor in the app and on every lesson page, colours taken from the
+existing token set, and none of its 167 KB anywhere near first paint (§2).
+`npm run verify` builds and runs ten suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **CodeMirror 6** (§2), replacing the `<textarea>` in the app and the one the
-   lesson examples swap in. The editor is where all the time is spent and it is
-   the least finished thing on the site.
-2. **Topic pages** for the 7 filter tags (§4) — the long-tail keywords, built on
+1. **Topic pages** for the 7 filter tags (§4) — the long-tail keywords, built on
    the filtering that already landed.
-3. **A real README for strangers** (§7) — the false parts are fixed, but it still
-   opens with prose instead of a screenshot, and there is no screenshot worth
-   using until the landing page exists (§5).
-4. **"Common mistakes" after a failed attempt** (§3). The content for several of
+2. **"Common mistakes" after a failed attempt** (§3). The content for several of
    these already exists — it came out of the prompts during the rewrite and is
    sitting in hints, which is not quite the right moment to show it.
+3. **A real README for strangers** (§7) — the false parts are fixed, but it still
+   opens with prose instead of a screenshot, and there is now an editor worth
+   screenshotting, though the landing page (§5) would make a better one.
+4. **Autocomplete for `$` operators** (§2) — the next thing the editor itself
+   wants, and most of its cost is already paid.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -75,14 +76,74 @@ one commit per file, and never any AI attribution trailer.
 - [x] `engine/compare.js` — grading rules shared byte-for-byte by both engines
 - [x] `test/browser-grade.mjs` + `test/dom-smoke.mjs` — `npm test`, no services needed
 - [ ] GitHub Actions: conformance test against a real `mongo:7` service container
-- [x] Bundle-size check — full app is **45.7 KB gzipped** (budget ~250KB)
+- [x] Bundle-size check, and it is now **enforced** rather than measured once.
+      `test/links.mjs` walks each built page's static import graph and gzips it:
+      **57 KB on `/practice/`** and **2.5 KB on a lesson page**, against written-out
+      budgets of 70 KB and 3.5 KB. Everything heavy is behind a dynamic import and
+      therefore outside those numbers — mingo 36 KB on the first Run, CodeMirror
+      167 KB on the editor upgrade, Prettier 168 KB on the first Format — and the
+      check fails if any of them ever becomes eager. The budgets are written in the
+      test rather than derived from the build, because a check that measures the
+      bundle and compares it to the bundle passes at any size.
 
 ---
 
 ## 2. UI / UX
 
-- [ ] **CodeMirror 6** replacing the `<textarea>` — JS syntax highlighting, bracket matching, auto-indent
-- [ ] Autocomplete for collection names and `$` operators (big perceived-quality win)
+- [x] **CodeMirror 6** replacing the `<textarea>`. DONE 2026-09-27. Syntax
+      highlighting, matched brackets, auto-close, auto-indent, real undo, and the
+      same editor on the lesson pages' Edit button.
+      - **The textarea is still in the markup, and is still the editor** until the
+        CodeMirror chunk lands. Not politeness about old browsers: it keeps the
+        one thing this editor already did well, which is that it is simply there,
+        and a failed chunk load now leaves a working editor instead of a dead box.
+        `src/scripts/editor.js` is the whole seam - `value`, `insert`, `focus`,
+        `refresh`, `el` - and neither caller can tell which host it has.
+      - **The syntax colours are the `--syn-*` tokens the results pane already
+        uses**, so both themes worked with no new code and `test/contrast.mjs` had
+        been checking those five values for weeks. Zero new colour decisions. A
+        string you type is the same orange as the string that comes back, and
+        `$group` the key sits a colour apart from `"$items.product"` the string -
+        which is the confusion people actually have.
+      - **Cost, measured rather than guessed.** CodeMirror is 167 KB gzipped, four
+        times the rest of the app, so none of it is allowed near first paint: the
+        practice page loads 57 KB on arrival and upgrades after, and a lesson page
+        loads 2.5 KB and downloads nothing until Edit is pressed. Importing the
+        facade at the top of the island instead of inside its click handler
+        measured 2.5 KB -> 4.2 KB on all 58 reading pages, for a click most visits
+        never make; it is a dynamic import for that reason.
+      - `test/links.mjs` now holds a **gzipped budget over each page's static
+        import graph**, because that is the only thing standing between one
+        misplaced top-level `import` and 167 KB on every lesson page. An earlier
+        version of the same guard counted script *requests* and passed when Vite
+        inlined the chunk - counting requests does not measure bytes.
+      - **`test/editor.mjs` is a real browser, and had to be.** jsdom measures
+        everything as zero, so the editor declines to mount CodeMirror there and
+        `test/dom-smoke.mjs` drives the fallback - which means "the editor
+        silently never upgrades" would have passed every existing suite. 27 checks,
+        all asked through the keyboard because auto-close and auto-indent only
+        exist in response to real input events. Ten deliberate breaks, each caught
+        by the check meant to catch it.
+      - Two bugs the tests found rather than confirmed: **one Ctrl+Z after Format
+        threw away the query too**, because CodeMirror had merged the rewrite into
+        the typing before it (fixed with `isolateHistory`); and a check of mine
+        claimed to prove auto-closing brackets while only proving nothing doubled.
+        Removing `closeBrackets` left it passing, so the comment was corrected to
+        say which check is load-bearing.
+      - Tab still indents, as the textarea did - which makes the editor a focus
+        trap, the documented cost of that binding. **Escape now leaves the
+        editor**, and a test holds it.
+      - Deliberately not included: line numbers and an active-line highlight. The
+        queries are five lines and the editor pane is 368px wide in the
+        three-column layout; a gutter would spend a tenth of it counting to five.
+- [ ] Autocomplete for collection names and `$` operators (big perceived-quality
+      win, and now much cheaper: `@codemirror/autocomplete` is already in the
+      bundle for the bracket closing, and `content/topics.js` is already the
+      closed list of operators to offer)
+- [ ] Put the caret in a starter's **empty slot** rather than at the end of it.
+      Neither end of a blank `aggregate([ … ])` is where you want to type, and
+      that was true of the textarea too — so it is one fix for both hosts, not a
+      CodeMirror detail.
 - [x] **Responsive layout.** DONE 2026-09-26. Verified in a real browser, not by
       narrowing a window: all 74 pages fit 360px with no sideways scroll, and
       `npm run test:mobile` keeps it that way by driving headless Chrome over CDP
@@ -427,10 +488,12 @@ The brand name will bring almost nothing. Lesson pages bring the traffic.
 - [x] Internal linking: lesson → its module → its drills → back to the lesson,
       prev/next through the whole course, and `test/links.mjs` proves every
       exercise is reachable from at least one page
-- [x] Core Web Vitals — reading pages ship **1.7 KB** of JavaScript gzipped
-      (was zero before the runnable examples). The engine is 36 KB gzipped and
-      loads on the first Run, not on page load; the 18 pages with no runnable
-      example still ship nothing at all.
+- [x] Core Web Vitals — reading pages ship **2.5 KB** of JavaScript gzipped: the
+      island at 1.8 KB plus Vite's 0.7 KB preload helper, which the older "1.7 KB"
+      figure here quietly left out. Was zero before the runnable examples. The
+      engine is 36 KB and loads on the first Run; the editor is 169 KB and loads
+      on the first Edit; the 18 pages with no runnable example still ship nothing
+      at all. `test/links.mjs` now enforces a budget so this stays true.
 - [ ] Plausible or Umami analytics (privacy-friendly, no cookie banner needed)
 - [ ] Submit to Google Search Console + Bing Webmaster Tools
 
@@ -506,6 +569,14 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
       so it was the one page of 74 without it, and the page people spend longest
       on and are likeliest to screenshot. `test/links.mjs` now fails if any built
       page lacks the line. (Still don't use their leaf logo or green.)
+- [ ] **`.gitattributes` with `* text=auto`.** The repo has mixed line endings —
+      `src/scripts/app.js` and `package-lock.json` are CRLF, everything around
+      them is LF — so a tool that rewrites a file flips its endings and the diff
+      becomes every line. `npm install` did exactly that to the lockfile and
+      buried 155 real lines in a 10,000-line change. Harmless today because one
+      person on one machine notices and puts it back; the first Linux contributor
+      makes it everyone's problem. Worth doing as its own commit, since
+      normalising will touch both files on its own.
 - [ ] Issue templates: bug, new exercise, wrong grading
 - [ ] `good first issue` labels — exercise contributions are ideal for this
 - [ ] CI badge + conformance badge

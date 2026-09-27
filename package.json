@@ -20,14 +20,22 @@
     "test:dom": "node test/dom-smoke.mjs",
     "test:curriculum": "node test/curriculum.mjs",
     "test:links": "node test/links.mjs",
-    "verify": "npm run build && node test/links.mjs && node test/dom-runnable.mjs && node test/mobile.mjs && npm test",
+    "verify": "npm run build && node test/links.mjs && node test/dom-runnable.mjs && node test/editor.mjs && node test/mobile.mjs && npm test",
     "test:contrast": "node test/contrast.mjs",
     "test:examples": "node test/examples.mjs",
     "test:island": "node test/dom-runnable.mjs",
+    "test:editor": "node test/editor.mjs",
     "test:mobile": "node test/mobile.mjs",
     "test:topics": "node test/topics.mjs"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.13",
+    "@lezer/highlight": "^1.2.4",
     "mingo": "^7.2.4",
     "prettier": "^3.9.6"
   },

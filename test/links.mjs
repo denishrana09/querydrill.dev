@@ -5,6 +5,7 @@
 // Runs against `dist/`, so it also proves the pages actually built.
 
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { allPaths } from '../content/curriculum.js';
@@ -185,6 +186,84 @@ check('every page with a runnable block ships the script', noScript.length === 0
   noScript.map((f) => relative(DIST, f)).join(', '));
 check('no page ships the script without a runnable block', noBlocks.length === 0,
   noBlocks.map((f) => relative(DIST, f)).join(', '));
+
+/* ---------- what each page weighs before anyone clicks anything ---------- */
+
+// The reading pages are the SEO strategy, and their whole advantage is that they
+// are documents rather than applications. That is a property of the import graph,
+// which is invisible in every other check here: one `import` at the top of
+// src/scripts/runnable.js instead of inside its Edit handler puts CodeMirror's
+// facade on all 58 of them, and a careless one puts CodeMirror itself there -
+// 167 KB gzipped, on a page whose reader may never touch an editor.
+//
+// The budgets below are written out here rather than derived from the build, on
+// purpose. A check that measures the bundle and compares it to the bundle passes
+// no matter how large the bundle gets.
+{
+  const BUDGET_READING = 3_500;    // measured 2,589 B: the island + the preload helper
+  const BUDGET_APP = 70_000;       // measured 57,116 B: mostly mingo and the dataset
+
+  const gz = (file) => gzipSync(readFileSync(file)).length;
+
+  /** Every chunk a page pulls before any user action - the static import graph. */
+  const staticGraph = (html) => {
+    const seen = new Set();
+    const queue = [...html.matchAll(/<script[^>]*src="(\/_astro\/[^"]+)"/g)].map((m) => m[1].slice(1));
+    while (queue.length) {
+      const path = queue.shift();
+      if (seen.has(path)) continue;
+      seen.add(path);
+      const full = join(DIST, path);
+      if (!existsSync(full)) continue;
+      // A dynamic import compiles to `import("./x.js")`; only a bare `from"./x"`
+      // is loaded up front, which is exactly the distinction being measured.
+      for (const m of readFileSync(full, 'utf8').matchAll(/from\s*"\.\/([^"]+)"/g)) {
+        queue.push('_astro/' + m[1]);
+      }
+    }
+    return [...seen];
+  };
+
+  const weighed = htmlFiles.map((file) => {
+    const chunks = staticGraph(readFileSync(file, 'utf8'));
+    return {
+      path: '/' + relative(DIST, file).replace(/\\/g, '/'),
+      bytes: chunks.reduce((sum, c) => sum + gz(join(DIST, c)), 0),
+      chunks,
+    };
+  });
+
+  const app = weighed.find((p) => p.path === '/practice/index.html');
+  const reading = weighed.filter((p) => p !== app);
+  const withScripts = reading.filter((p) => p.chunks.length > 0);
+
+  // Without this the budget check below is satisfied by finding nothing at all,
+  // which is what a regex that stops matching Astro's output would produce.
+  check('the runnable pages were found to weigh anything', withScripts.length > 20,
+    `only ${withScripts.length} of ${reading.length} reading pages load any script`);
+
+  const heaviest = withScripts.sort((a, b) => b.bytes - a.bytes)[0];
+  check(`no reading page loads more than ${BUDGET_READING} B of JavaScript up front`,
+    !heaviest || heaviest.bytes <= BUDGET_READING,
+    heaviest && `${heaviest.path} loads ${heaviest.bytes} B: ${heaviest.chunks.join(', ')}`);
+  if (heaviest) {
+    console.log(`        ${heaviest.bytes} B gzipped on a lesson page, ${app?.bytes ?? '?'} B on /practice/`);
+  }
+
+  check('the practice app was found to weigh anything', Boolean(app?.bytes), 'no scripts on /practice/');
+  check(`the app loads no more than ${BUDGET_APP} B up front`,
+    Boolean(app) && app.bytes <= BUDGET_APP,
+    app && `${app.bytes} B: ${app.chunks.join(', ')}`);
+
+  // CodeMirror and Prettier are both larger than everything else put together,
+  // and both are only any use once someone acts. Naming them keeps the budget
+  // above honest about *why* it is the number it is.
+  const lazyOnly = ['dist.', 'babel.', 'estree.', 'standalone.'];
+  const eager = [...new Set(weighed.flatMap((p) => p.chunks))]
+    .filter((c) => lazyOnly.some((prefix) => c.startsWith('_astro/' + prefix)));
+  check('neither CodeMirror nor Prettier is loaded before it is needed',
+    eager.length === 0, eager.join(', '));
+}
 
 console.log(failed ? `\n  \x1b[31m${failed} link check(s) failed\x1b[0m\n` : `\n  ${green('links OK')}\n`);
 process.exit(failed ? 1 : 0);

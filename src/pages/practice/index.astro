@@ -48,7 +48,14 @@ import ThemeToggle from '../../components/ThemeToggle.astro';
         <button id="resetBtn" class="ghost" title="Restore the starter code">reset</button>
       </div>
 
-      <textarea id="editor" spellcheck="false" autocomplete="off"
+      <!--
+        A real editor, not a placeholder for one. src/scripts/editor.js replaces
+        it with CodeMirror once that chunk arrives, carrying the value, the
+        selection and the class across - so this is what you type in for the
+        first moment of a visit, and what you keep if the chunk never lands.
+      -->
+      <textarea id="editor" class="query-box" spellcheck="false" autocomplete="off"
+        aria-label="Query editor"
         placeholder="db.orders.find({ status: &quot;completed&quot; }).limit(5)"></textarea>
 
       <div id="splitter" class="splitter" role="separator" aria-orientation="horizontal"

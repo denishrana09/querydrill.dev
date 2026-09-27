@@ -8,12 +8,28 @@ import { gradeExercise } from '../../engine/grade.js';
 import { esc, highlight } from '../../engine/format.js';
 import ecommerce from '../../server/datasets/ecommerce.js';
 import { inferSchema } from './schema.js';
+import { attachEditor } from './editor.js';
 import { EXERCISES } from '../../server/exercises/index.js';
 import { MODULES, TRACKS, ALL_LESSONS } from '../../content/curriculum.js';
 import { labelOf, filtersFor } from '../../content/topics.js';
 import { migrateKeys } from '../../content/legacy-ids.js';
 
 const $ = (id) => document.getElementById(id);
+
+/**
+ * The textarea in the markup, upgraded to CodeMirror as soon as its chunk
+ * arrives. Everything below talks to this and never to the element, because for
+ * the first moment of every visit - and for good, if that chunk fails - the two
+ * are not the same thing. See src/scripts/editor.js.
+ *
+ * Attached here, before anything can set a value: a deep link opens a drill and
+ * fills the editor during this module's own startup.
+ */
+const editor = attachEditor($('editor'), {
+  onRun: () => run(),
+  onFormat: () => formatQuery(),
+});
+
 const LESSON_BY_SLUG = new Map(ALL_LESSONS.map((l) => [l.slug, l]));
 const LS_PROGRESS = 'mp.progress';
 const LS_DRAFTS = 'mp.drafts';
@@ -159,32 +175,24 @@ function renderSidebarDetail() {
       `<span class="ty">${esc(f.type)}${optional}</span>`;
     row.title = `${f.path}${f.sample ? '  e.g. ' + f.sample : ''}`;
     // Inserting the dotted path is how dot notation stops being abstract.
-    row.onclick = () => insertAtCursor(f.path);
+    row.onclick = () => { editor.insert(f.path); editor.focus(); };
     schema.appendChild(row);
   }
-}
-
-function insertAtCursor(text) {
-  const el = $('editor');
-  const { selectionStart: a, selectionEnd: b } = el;
-  el.value = el.value.slice(0, a) + text + el.value.slice(b);
-  el.selectionStart = el.selectionEnd = a + text.length;
-  el.focus();
 }
 
 /* ---------- editor ---------- */
 
 function setEditor(text) {
-  $('editor').value = text;
-  $('editor').focus();
+  editor.value = text;
+  editor.focus();
 }
 
 async function run() {
-  const code = $('editor').value.trim();
+  const code = editor.value.trim();
   if (!code) return;
 
   if (state.current) {
-    state.drafts[state.current.id] = $('editor').value;
+    state.drafts[state.current.id] = editor.value;
     save(LS_DRAFTS, state.drafts);
   }
 
@@ -219,8 +227,7 @@ function loadPrettier() {
 }
 
 async function formatQuery() {
-  const el = $('editor');
-  const source = el.value.trim();
+  const source = editor.value.trim();
   if (!source) return;
 
   const btn = $('formatBtn');
@@ -234,8 +241,10 @@ async function formatQuery() {
       semi: false,
       trailingComma: 'none',   // a trailing comma before ) is not shell style
     });
-    el.value = out.trim();
-    el.focus();
+    // Through the editor rather than at the element, so in CodeMirror this lands
+    // in the undo history: Ctrl+Z after a Format gives back what you wrote.
+    editor.value = out.trim();
+    editor.focus();
   } catch (err) {
     // Two very different failures. A load failure is about the network and is
     // worth retrying; a syntax error is about the query and never is.
@@ -487,6 +496,10 @@ function showPane(id) {
   for (const tab of $('tabbar').querySelectorAll('button')) {
     tab.setAttribute('aria-pressed', String(tab.dataset.pane === id));
   }
+  // The editor was just inside a display:none pane, so every height and caret
+  // position CodeMirror had cached is zero. Harmless above the breakpoint, where
+  // the pane was never hidden in the first place.
+  if (id === 'paneEditor') editor.refresh();
 }
 
 $('tabbar').addEventListener('click', (e) => {
@@ -516,7 +529,7 @@ async function checkAnswer(ex, body, button) {
   const feedback = document.createElement('div');
   feedback.className = 'ex-feedback';
 
-  const result = await gradeExercise(ecommerce, ex, $('editor').value);
+  const result = await gradeExercise(ecommerce, ex, editor.value);
 
   if (!result.ok) {
     const head = result.internal ? 'This exercise is broken — please report it:' : 'Your query errored:';
@@ -537,7 +550,7 @@ async function checkAnswer(ex, body, button) {
   }
 
   body.appendChild(feedback);
-  state.drafts[ex.id] = $('editor').value;
+  state.drafts[ex.id] = editor.value;
   save(LS_PROGRESS, state.progress);
   save(LS_DRAFTS, state.drafts);
   renderProgress();
@@ -581,7 +594,7 @@ function revealSolution(ex, body) {
 
 $('runBtn').onclick = run;
 $('formatBtn').onclick = formatQuery;
-$('copyQueryBtn').onclick = (e) => copyText($('editor').value, e.currentTarget);
+$('copyQueryBtn').onclick = (e) => copyText(editor.value, e.currentTarget);
 // textContent, not the value: this copies exactly what is rendered, minus markup.
 $('copyResultBtn').onclick = (e) => copyText($('resultBody').textContent, e.currentTarget);
 
@@ -628,7 +641,10 @@ $('rawToggle').onclick = () => {
 
     const onMove = (ev) => {
       const paneBox = pane.getBoundingClientRect();
-      const top = $('editor').getBoundingClientRect().top;
+      // editor.el, not the textarea: once CodeMirror has taken over, the
+      // textarea is gone and a dead reference measures as 0, which drags the
+      // splitter to the top of the screen on the first pointer move.
+      const top = editor.el.getBoundingClientRect().top;
       apply(clamp(((ev.clientY - top) / paneBox.height) * 100));
     };
     const onUp = () => {
@@ -653,25 +669,9 @@ $('rawToggle').onclick = () => {
   });
 })();
 
-$('editor').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-    e.preventDefault();
-    run();
-    return;
-  }
-  if ((e.key === 'F' || e.key === 'f') && e.altKey && e.shiftKey) {
-    e.preventDefault();
-    formatQuery();
-    return;
-  }
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    const el = e.target;
-    const { selectionStart: a, selectionEnd: b } = el;
-    el.value = el.value.slice(0, a) + '  ' + el.value.slice(b);
-    el.selectionStart = el.selectionEnd = a + 2;
-  }
-});
+/* Ctrl+Enter, Shift+Alt+F and Tab are bound inside src/scripts/editor.js, which
+   is the only place that knows which editor is currently on screen - a listener
+   on the textarea would stop working the moment CodeMirror replaced it. */
 
 renderCollections();
 renderSidebarDetail();

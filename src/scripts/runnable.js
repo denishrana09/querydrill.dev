@@ -9,7 +9,11 @@
 // Weight matters more here than in the practice app: a lesson is a reading page
 // that happens to be runnable, not an app. So this file stays a stub, and mingo,
 // the dataset and the query engine sit behind a dynamic import that does not
-// fire until someone actually presses Run.
+// fire until someone actually presses Run. The editor is behind the same kind of
+// door, on the Edit click: src/scripts/editor.js is 2.4 KB gzipped and
+// CodeMirror behind it is 167 KB, and neither is any use to a reader who is
+// reading. Importing the facade up here instead measured at 1.7 KB -> 4.1 KB on
+// every reading page, for a click most visits never make.
 
 const BLOCKS = document.querySelectorAll('pre[data-runnable]');
 
@@ -113,43 +117,65 @@ function enhance(pre, index) {
 
   box.append(bar, pre, out);
 
-  const code = () => (editor && !editor.hidden ? editor.value : original);
+  const editing = () => Boolean(editor) && !editor.el.hidden;
+  const code = () => (editing() ? editor.value : original);
 
   /* -- edit mode -- */
 
-  function autosize() {
-    editor.style.height = 'auto';
-    editor.style.height = editor.scrollHeight + 'px';
+  /**
+   * A textarea has to be told how tall its own content is. CodeMirror grows on
+   * its own, so once the swap has happened this has nothing left to do - and
+   * the inline height leaves with the element it was written on.
+   */
+  function fit() {
+    const node = editor?.el;
+    if (!node || node.tagName !== 'TEXTAREA') return;
+    node.style.height = 'auto';
+    node.style.height = node.scrollHeight + 'px';
   }
 
-  function edit() {
-    // Read the code before the textarea exists. A fresh textarea is not hidden,
+  /** Kept as the promise, so two fast clicks on Edit cannot build two editors. */
+  let building = null;
+
+  function ensureEditor() {
+    building ??= import('./editor.js').then(({ attachEditor }) => {
+      const area = el('textarea', 'rx-editor');
+      area.spellcheck = false;
+      area.setAttribute('aria-label', 'Query');
+      area.addEventListener('input', fit);
+      pre.after(area);
+      // Ctrl+Enter is bound in there rather than here, because the element it
+      // has to be bound to is about to be replaced by CodeMirror.
+      editor = attachEditor(area, { onRun: run });
+      // Only matters if CodeMirror never arrives: the textarea is then still the
+      // editor, and still the thing that has to be told how tall it is.
+      editor.ready.then(fit);
+      return editor;
+    });
+    return building;
+  }
+
+  async function edit() {
+    // Read the code before the editor exists. A fresh textarea is not hidden,
     // so asking code() after creating it returns the empty new element instead of
     // the block - which emptied the editor on the very first Edit click.
     const from = code();
 
-    if (!editor) {
-      editor = el('textarea', 'rx-editor');
-      editor.spellcheck = false;
-      editor.setAttribute('aria-label', 'Query');
-      editor.addEventListener('input', autosize);
-      editor.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
-      });
-      pre.after(editor);
-    }
-    editor.value = from;
-    editor.hidden = false;
+    const ed = await ensureEditor();
+    ed.value = from;
+    ed.el.hidden = false;
     pre.hidden = true;
-    // Only measurable once the element is laid out, so this has to follow the unhide.
-    autosize();
-    editor.focus();
+    // Only measurable once the element is laid out, so this has to follow the
+    // unhide - and CodeMirror has the same problem with a different answer.
+    fit();
+    ed.refresh();
+    ed.focus();
     editBtn.textContent = 'Reset';
     editBtn.title = 'Put the original query back';
   }
 
   function reset() {
-    if (editor) editor.hidden = true;
+    if (editor) editor.el.hidden = true;
     pre.hidden = false;
     editBtn.textContent = 'Edit';
     editBtn.title = 'Change the query and run it again';
@@ -231,7 +257,7 @@ function enhance(pre, index) {
     setTimeout(() => { copyBtn.textContent = was; }, 1400);
   });
 
-  editBtn.addEventListener('click', () => (editor && !editor.hidden ? reset() : edit()));
+  editBtn.addEventListener('click', () => (editing() ? reset() : edit()));
 }
 
 BLOCKS.forEach(enhance);

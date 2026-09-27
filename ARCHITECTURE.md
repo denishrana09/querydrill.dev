@@ -150,6 +150,7 @@ breaks both.
 | `npm test` | nothing | curriculum, tags, prompts, examples, contrast, browser grading, DOM wiring |
 | `npm run test:links` | a `dist/` build | no dead links, unique titles, real descriptions |
 | `npm run test:island` | a `dist/` build | the runnable examples work on the real built markup |
+| `npm run test:editor` | a `dist/` build, Chrome | CodeMirror really mounts, colours from the tokens, brackets, indent, Ctrl+Enter, Format+undo |
 | `npm run test:mobile` | a `dist/` build, Chrome | no page scrolls sideways at 360px; the pane switcher and topic filters are visible and thumb-sized |
 | `npm run verify` | nothing | build, then all of the above |
 | `npm run conformance` | a local `mongod` | mingo agrees with real MongoDB |
@@ -172,6 +173,20 @@ empty answer *passes*, and so does any wrong answer that also finds nothing.
 Lesson examples were checked for this from the start; drills were not, until
 adding one by following CONTRIBUTING.md produced a drill that passed while
 matching nothing.
+
+`test/editor.mjs` is the one that cannot be replaced by a cheaper test. jsdom
+answers every measurement with zero, so `src/scripts/editor.js` declines to mount
+CodeMirror there and `test/dom-smoke.mjs` drives the textarea fallback instead.
+That fallback is real — it is what a failed chunk load leaves behind — but it is
+not what almost anybody gets, so without a real browser "the editor silently never
+upgrades" is a bug that passes every other suite. Everything it asks is asked
+through the keyboard, because auto-closing brackets and auto-indent only exist in
+response to real input events; assigning a value would prove none of it.
+
+`test/chrome.mjs` is the shared plumbing underneath it and `test/mobile.mjs`:
+Astro's own preview server, a Chrome or Edge already on the machine, and the
+WebSocket client Node has had since 22. No new dependency, and no browser found
+means *skipped*, never a pass.
 
 `test/curriculum.mjs` is the cheap one worth knowing about: it catches the
 mistakes that produce a dead link or lost progress rather than a stack trace —
@@ -201,9 +216,12 @@ A lesson is a static page that happens to be runnable. The pieces, in order:
 
 Two decisions worth not undoing:
 
-**The engine is behind a dynamic import.** The eager stub is 1.7 KB gzipped; mingo
-plus the dataset is 36 KB and loads on the first Run. Making that static would put
-36 KB on 56 reading pages to serve the minority who press the button.
+**The engine is behind a dynamic import.** The eager stub is 1.8 KB gzipped, 2.5 KB
+with Vite's preload helper; mingo plus the dataset is 36 KB and loads on the first
+Run, and the editor another 169 KB on the first Edit. Making any of that static
+would put it on 56 reading pages to serve the minority who press the button.
+`test/links.mjs` holds a gzipped budget over each page's static import graph, so
+one misplaced top-level `import` cannot quietly undo this.
 
 **One dataset per page, shared by every block.** A lesson on `$set` writes, and
 the `find` below it should show the write — that is the truth about a database.
@@ -227,6 +245,41 @@ shows. State the problem in the prompt; put the method in the hint.
 drills pointed at "the notes" and "the end of Batch 3" - the private markdown in
 `batch*.md` that the lessons were extracted from. Invisible to anyone who had read
 them. `test/curriculum.mjs` fails on any prompt, hint or title that does it again.
+
+## The editor
+
+`src/scripts/editor.js` is the only thing on the site that knows what the editor
+is. The practice app and the lesson-page Edit button both hold a handle from
+`attachEditor()` — `value`, `insert`, `focus`, `refresh`, `el` — and neither of
+them can tell which editor is behind it.
+
+**The `<textarea>` in the markup is the editor, not a placeholder for one.**
+CodeMirror replaces it when its chunk arrives, carrying the value, the selection
+and the classes across. That is not politeness about old browsers: it keeps the
+one thing the editor already did well, which is that it is simply *there*, and it
+means a failed chunk load leaves a working editor rather than a dead box. The
+practice page attaches on load; a lesson page attaches on the Edit click, so a
+reader who reads downloads none of it.
+
+**The colours are the `--syn-*` tokens the results pane already uses**, not values
+baked into a CodeMirror theme object. Both themes then work with no extra code,
+`test/contrast.mjs` was already checking those five values, and a string you type
+is the same orange as the string that comes back. The only decision in the JS is
+which token each kind of token gets; every box, font and padding is in the
+stylesheets, next to the rules it has to match. The distinction that earns its
+keep is `$group` the key against `"$items.product"` the string — a colour apart,
+and a mistake people actually make.
+
+**The two hosts share one class.** `query-box` on the practice page, `rx-editor`
+on a lesson page; `attachEditor` copies whatever is on the textarea onto
+CodeMirror's root, plus `cm-host` for the parts only CodeMirror has. So the pane
+geometry is written once and the swap cannot change the size of anything.
+
+Deliberately left out: line numbers and an active-line highlight. These queries
+are five lines, and in the three-column layout the editor pane is 368px wide — a
+gutter would spend a tenth of that on counting to five. Also no `drawSelection`:
+the browser's own caret and selection are correct, themeable from CSS, and one
+less thing to keep contrast-tested.
 
 ## Traps already hit — don't re-introduce these
 
@@ -309,9 +362,28 @@ fails for a reason that has nothing to do with the code being wrong. Related:
 jsdom has no `scrollIntoView`, so that call is optional (`?.()`) — it is
 cosmetic and must never be why a link fails to open.
 
-**The shipped site depends only on `mingo`.** `mongodb` and `jsdom` are dev-only.
-If the runtime dependency list grows, something has leaked from `server/` into
-`engine/` or `src/`.
+**The shipped site's runtime dependencies are `mingo`, `prettier` and CodeMirror.**
+`mongodb` and `jsdom` are dev-only, and all three runtime ones are behind dynamic
+imports. If anything new appears in `dependencies`, check it is lazy before it is
+merged — the budget in `test/links.mjs` is what makes that answerable.
+
+**A check that counts requests does not measure bytes.** The first version of the
+"a lesson page has not downloaded an editor" check counted script resources. Vite
+folds a small module into the chunk that imports it, so making the import eager
+delivered the bytes with no new request and the check passed. It was replaced by
+a gzipped budget over the static import graph in `test/links.mjs`.
+
+**CodeMirror merges an un-isolated rewrite into the typing before it.** `Format`
+replaces the whole document in one transaction, and by default the history lumped
+that together with the keystrokes that preceded it — so the first Ctrl+Z after a
+Format threw away the query as well as the formatting. The fix is
+`isolateHistory.of('full')` on that transaction. Found because a comment claimed
+"Format is undoable" and a test asked for exactly that.
+
+**Anything CodeMirror measured while hidden is zero.** The mobile tab bar puts the
+editor pane in `display: none`, and the caret lands in the wrong place when it
+comes back. Hence `refresh()` on the handle, called from `showPane` and when a
+lesson editor is unhidden.
 
 ## Grading
 

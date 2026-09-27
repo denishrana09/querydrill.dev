@@ -85,11 +85,29 @@ check('the result is rendered through the shared formatter',
 
 /* ---------- editing ---------- */
 
-btn(first, 'Edit').click();
-const editor = first.querySelector('.rx-editor');
-check('Edit swaps the highlighted block for a textarea',
+// Edit builds its editor behind a dynamic import - the facade, and CodeMirror
+// behind that, are the reason a reading page ships 2.6 KB of JavaScript and not
+// 170 - so the element arrives a beat after the click rather than during it.
+const openEditor = async (box) => {
+  btn(box, 'Edit').click();
+  for (let i = 0; i < 40; i++) {
+    await new Promise((r) => setTimeout(r, 10));
+    const node = box.querySelector('.rx-editor');
+    if (node && !node.hidden) return node;
+  }
+  return null;
+};
+
+const editor = await openEditor(first);
+check('Edit swaps the highlighted block for an editor',
   editor && !editor.hidden && first.querySelector('pre[data-runnable]').hidden);
-check('the textarea starts from the original query', editor.value === 'db.users.find()', editor.value);
+// jsdom lays nothing out, so CodeMirror declines to mount and the textarea stays
+// the editor. That is a real shipped path - it is what a failed chunk load leaves
+// behind - but it is not the one most people get, which is why test/editor.mjs
+// drives a real browser.
+check('and it is the textarea fallback in a DOM that cannot measure itself',
+  editor?.tagName === 'TEXTAREA', editor?.tagName);
+check('the editor starts from the original query', editor.value === 'db.users.find()', editor.value);
 
 editor.value = 'db.products.find({ category: "Audio" })';
 btn(first, 'Run').click();
@@ -109,8 +127,7 @@ check('the original query runs again after a reset',
 
 /* ---------- errors ---------- */
 
-btn(first, 'Edit').click();
-first.querySelector('.rx-editor').value = 'db.users.find({ $bogus: 1 })';
+(await openEditor(first)).value = 'db.users.find({ $bogus: 1 })';
 btn(first, 'Run').click();
 await settle();
 check('a broken query reports an error instead of throwing',
@@ -122,8 +139,7 @@ check('a broken query reports an error instead of throwing',
 // The db is shared across the page on purpose, so a write in one block has to be
 // visible - and admitted to - in another.
 const second = boxes[1];
-btn(second, 'Edit').click();
-second.querySelector('.rx-editor').value = 'db.users.updateMany({}, { $set: { seen: true } })';
+(await openEditor(second)).value = 'db.users.updateMany({}, { $set: { seen: true } })';
 btn(second, 'Run').click();
 for (let i = 0; i < 40; i++) {
   await new Promise((r) => setTimeout(r, 10));

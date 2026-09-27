@@ -44,11 +44,23 @@ export default defineConfig({
       // discover it while scanning. The first Format click would then trigger a
       // dependency re-optimisation, and the in-flight import fails with
       // "error importing dynamic module" - once, before a reload fixes it.
-      // Naming them here gets them pre-bundled up front instead.
+      // Naming them here gets them pre-bundled up front instead. CodeMirror is
+      // on the list for the same reason: it is only ever reached through the
+      // dynamic import in src/scripts/editor.js, so in dev the first page load
+      // would re-optimise and the in-flight import would fail - once, silently
+      // falling back to the textarea, which is the hardest version of this bug
+      // to notice.
       include: [
         'prettier/standalone',
         'prettier/plugins/babel',
         'prettier/plugins/estree',
+        '@codemirror/state',
+        '@codemirror/view',
+        '@codemirror/language',
+        '@codemirror/commands',
+        '@codemirror/autocomplete',
+        '@codemirror/lang-javascript',
+        '@lezer/highlight',
       ],
     },
   },
