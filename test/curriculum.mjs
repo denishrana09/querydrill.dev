@@ -3,7 +3,7 @@
 // index already runs its own cross-checks; this covers the rest.
 
 import { readFileSync } from 'node:fs';
-import { MODULES, TRACKS, ALL_LESSONS, REFERENCES, EXERCISE_ORDER } from '../content/curriculum.js';
+import { MODULES, TRACKS, ALL_LESSONS, REFERENCES, EXERCISE_ORDER, TOPIC_PAGES } from '../content/curriculum.js';
 import { LEGACY_IDS, migrateKeys } from '../content/legacy-ids.js';
 import { EXERCISES } from '../server/exercises/index.js';
 
@@ -183,6 +183,54 @@ check('no mistake note is shared between drills', shared.length === 0,
 const withNotes = EXERCISES.filter((e) => e.mistakes?.length);
 console.log(`        ${withNotes.length}/${EXERCISES.length} drills say what usually goes wrong ` +
   `(${withNotes.reduce((n, e) => n + e.mistakes.length, 0)} notes)`);
+
+/* ---------- counts written into prose ---------- */
+
+// Six files state how much is on the site - the README twice, the package
+// description, three page titles - and nothing checked any of them. §3 of the
+// roadmap is a plan to grow past 38 exercises, so every one of those numbers is
+// scheduled to become a lie, in the copy Google shows and the page a stranger
+// reads first. The same hardcoded 38 already broke the DOM suite once.
+//
+// ROADMAP.md is deliberately not in this list: it is a log, and "the 38 that
+// existed at the rename" is meant to stay 38.
+const COUNTED = [
+  ['README.md', readFileSync(new URL('../README.md', import.meta.url), 'utf8')],
+  ['package.json', readFileSync(new URL('../package.json', import.meta.url), 'utf8')],
+  ['CONTRIBUTING.md', readFileSync(new URL('../CONTRIBUTING.md', import.meta.url), 'utf8')],
+  ...['index', 'learn/index', 'practice/index'].map((p) => [
+    `src/pages/${p}.astro`,
+    readFileSync(new URL(`../src/pages/${p}.astro`, import.meta.url), 'utf8'),
+  ]),
+];
+
+const noteCount = EXERCISES.reduce((n, e) => n + (e.mistakes?.length ?? 0), 0);
+const CLAIMS = [
+  [/(\d+)\s+lessons\b/g, ALL_LESSONS.length, 'lessons'],
+  [/(\d+)\s+(?:auto-graded\s+)?exercises\b/g, EXERCISES.length, 'exercises'],
+  [/(\d+)\s+drills\b/g, EXERCISES.length, 'drills'],
+  [/(\d+)\s+modules\b/g, MODULES.length, 'modules'],
+  [/(\d+)\s+tracks\b/g, TRACKS.length, 'tracks'],
+  [/(\d+)\s+reference pages\b/g, REFERENCES.length, 'reference pages'],
+  [/(\d+)\s+topic hubs\b/g, TOPIC_PAGES.length, 'topic hubs'],
+  [/(\d+)\s+.?what usually goes wrong/g, noteCount, 'mistake notes'],
+];
+
+const staleCounts = [];
+let claimsFound = 0;
+for (const [file, text] of COUNTED) {
+  for (const [pattern, truth, what] of CLAIMS) {
+    for (const [whole, n] of text.matchAll(pattern)) {
+      claimsFound++;
+      if (Number(n) !== truth) staleCounts.push(`${file}: "${whole.trim()}" - there are ${truth} ${what}`);
+    }
+  }
+}
+check('every count written into prose matches the data', staleCounts.length === 0,
+  staleCounts.join('\n        '));
+// Without this the check passes just as happily if the regexes stop matching
+// anything at all, which is how it would rot in silence.
+check('the prose counts are actually being read', claimsFound >= 10, `${claimsFound} found`);
 
 /* ---------- legacy ids ---------- */
 

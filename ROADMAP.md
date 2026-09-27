@@ -29,11 +29,11 @@ builds and runs ten suites over all of it.
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **A real README for strangers** (§7) — the false parts are fixed, but it still
-   opens with prose instead of a screenshot, and there is now an editor worth
-   screenshotting, though the landing page (§5) would make a better one.
-2. **Autocomplete for `$` operators** (§2) — the next thing the editor itself
+1. **Autocomplete for `$` operators** (§2) — the next thing the editor itself
    wants, and most of its cost is already paid.
+2. **Cap the diff when the shape is wrong** (§3) — ten lines of
+   `row 0.createdAt: extra field` is what a learner gets today for submitting the
+   starter, and it buries the one line that would help.
 
 **Before any deploy**, read §8's blocker list first — `site:` is still
 `https://example.com`, which poisons every canonical URL on every page.
@@ -617,12 +617,25 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
         `orders.total` field that does not exist, tagged `$gte` while using `$gt`,
         and `$gt` was not in the vocabulary. A guide written without running it
         would have shipped all three.
-- [~] Rewrite `README.md` for a public audience. The **false** half is fixed
-      2026-09-27: it documented `npm start`, which does not exist, and a local
-      `mongod` requirement the site dropped when queries moved to the browser —
-      so the first thing a contributor tried would fail. Still to do is the
-      *public* half: screenshot or GIF first, then what it is, then local dev.
-      That needs a screenshot worth showing, which needs the landing page (§5).
+- [x] **Rewrite `README.md` for a public audience.** DONE 2026-09-27. The
+      **false** half went first: it documented `npm start`, which does not exist,
+      and a local `mongod` requirement the site dropped when queries moved to the
+      browser — so the first thing a contributor tried would fail.
+      - The *public* half was waiting on "a screenshot worth showing, which needs
+        the landing page (§5)". That turned out to be wrong: the app itself was
+        the shot, once it had a real editor. Three now, in `docs/` — the app, a
+        graded near-miss, and a lesson example being run in place.
+      - **Everything in them is real.** The ticks were earned by submitting those
+        drills' solutions through the Check button, and the graded shot is an
+        actual near-miss (unit price summed without its quantity) with the drill's
+        own note underneath. `scripts` for it are not committed; the point is that
+        nothing was staged by hand.
+      - **Found while writing it: six files hardcode how much is on the site** —
+        the README three times, the package description, two page titles — and
+        nothing checked any of them. §3 is a plan to grow past 38 exercises, so
+        all of it was scheduled to become a lie in the copy Google shows.
+        `test/curriculum.mjs` now names the file and the phrase for every stale
+        number, which is exactly what someone adding a drill needs to be told.
 - [x] **"Not affiliated with MongoDB, Inc."** disclaimer. It was already in the
       reading-page footer — and `/practice/` is a fixed app shell with no footer,
       so it was the one page of 74 without it, and the page people spend longest
