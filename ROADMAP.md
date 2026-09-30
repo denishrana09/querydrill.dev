@@ -823,8 +823,9 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
       `twitter:card` drops to `summary` for the same reason. Turning both back
       on is one constant in `Base.astro` once the image exists.
 - [x] **A 404 page.** DONE 2026-09-27. `src/pages/404.astro` builds to
-      `dist/404.html`, which both candidate hosts serve for an unmatched path
-      with no configuration. `noindex`, kept out of `allPaths()` so it never
+      `dist/404.html`. Cloudflare Pages served it with no configuration; a
+      Worker does not — it needs `not_found_handling = "404-page"` in
+      `wrangler.toml`, and served a blank 404 until that went in (2026-10-01). `noindex`, kept out of `allPaths()` so it never
       reaches the sitemap, and its only job is to be a way back in: the course,
       the app, the dataset and the reference pages, all listed from the
       curriculum rather than written out.
@@ -841,6 +842,15 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
       - No git, a tarball, a shallow clone: the date is omitted rather than
         guessed, which is the honest answer to "when did this change" when the
         answer is not known.
+      - **The shallow case was wrong until 2026-10-01, and the first deploy
+        shipped it**: git does not fail in a shallow clone, it reports every
+        file as added by the one commit it has, so all 81 pages said "today".
+        Cloudflare's build clones shallow, so this is the deploy's normal
+        case. Now detected and omitted. Getting real dates back in production
+        needs the build to fetch full history first.
+      - Dates are UTC. Sliced from the committer's local time, a commit at
+        01:00 IST was dated a day ahead and failed the "not in the future"
+        check.
 - [x] **Every referenced local asset must exist** — `test/links.mjs`,
       2026-09-27. The reason nothing noticed `og-default.png` for weeks is now
       the best part of the story: the link scan **skipped it by name**. The

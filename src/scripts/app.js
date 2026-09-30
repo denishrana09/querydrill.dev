@@ -851,3 +851,13 @@ if (!openFromHash()) {
 
 // Someone editing the hash, or following a second link from an open tab.
 window.addEventListener('hashchange', () => openFromHash());
+
+// Drafts are otherwise only saved on Run, so leaving via the logo or Back would
+// drop whatever was typed since. An untouched starter is not saved: a draft
+// marks a returning visitor, and a first visit that only looked is not one.
+window.addEventListener('pagehide', () => {
+  const ex = state.current;
+  if (!ex || editor.value === (state.drafts[ex.id] ?? ex.starter)) return;
+  state.drafts[ex.id] = editor.value;
+  save(LS_DRAFTS, state.drafts);
+});

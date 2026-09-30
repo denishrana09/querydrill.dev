@@ -19,17 +19,21 @@ import { allPaths, sourceFor } from '../../content/curriculum.js';
  */
 function lastCommitDates() {
   const dates = new Map();
+  const git = (args) => execFileSync('git', args, {
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
   let log = '';
   try {
-    log = execFileSync('git', ['log', '--name-only', '--format=%cI', '--no-merges'], {
-      encoding: 'utf8',
-      maxBuffer: 64 * 1024 * 1024,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
+    // A shallow clone does not make git fail: its oldest commit appears to add
+    // every file, so all pages would get the newest date. CI hosts clone
+    // shallow by default, so this is the normal case in a deploy, not an edge.
+    if (git(['rev-parse', '--is-shallow-repository']).trim() === 'true') return dates;
+    log = git(['log', '--name-only', '--format=%cI', '--no-merges']);
   } catch {
-    // No git, a tarball, a shallow clone with no history. Every page then goes
-    // out without a <lastmod>, which is the honest answer to "when did this
-    // change" when the answer is not known.
+    // No git, or a tarball. Every page then goes out without a <lastmod>, which
+    // is the honest answer to "when did this change" when it is not known.
     return dates;
   }
 
@@ -56,7 +60,9 @@ export function GET({ site }) {
       const priority = path === '/' ? '1.0' : path.startsWith('/learn/') ? '0.8' : '0.6';
       const source = sourceFor(path);
       const changed = source && dates.get(source);
-      const lastmod = changed ? `<lastmod>${changed.slice(0, 10)}</lastmod>` : '';
+      // In UTC: sliced as written, a commit at 01:00 in India is dated a day
+      // ahead of the rest of the world.
+      const lastmod = changed ? `<lastmod>${new Date(changed).toISOString().slice(0, 10)}</lastmod>` : '';
       return `  <url><loc>${loc}</loc>${lastmod}<priority>${priority}</priority></url>`;
     })
     .join('\n');
