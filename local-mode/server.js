@@ -86,7 +86,7 @@ app.post('/api/solution', wrap(async (req, res) => {
 }));
 
 app.listen(PORT, HOST, async () => {
-  console.log(`\n  MongoDB practice playground`);
+  console.log(`\n  QueryDrill local mode`);
   console.log(`  http://${HOST}:${PORT}\n`);
   try {
     const info = await serverInfo();

@@ -1,6 +1,6 @@
-# MongoDB Practice
+# QueryDrill
 
-Learn MongoDB by running queries. 54 lessons whose examples you can run and edit
+**[querydrill.dev](https://querydrill.dev)** — learn MongoDB by running queries. 54 lessons whose examples you can run and edit
 on the page they are explained on, and 38 auto-graded exercises that tell you
 **why** an answer is wrong, not just that it is.
 

@@ -34,17 +34,14 @@ with the dataset explained in the pane that used to be empty (§6).
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **Two launch blockers are left, and both need you** (§8): the domain, which
-   `site:` needs before a single page has a correct canonical URL, and a
-   1200×630 share image, which is a visual identity decision. Everything else
-   in that list is done.
+1. **One launch blocker is left, and it needs you** (§8): a 1200×630 share
+   image, which is a visual identity decision. The name is settled —
+   **QueryDrill, at querydrill.dev** — so it is no longer blocked on that.
+   Hosting is Cloudflare Workers static assets (`wrangler.toml`).
 2. **`.gitattributes` with `* text=auto`** (§7) — the repo has mixed line
    endings, which makes one-line edits produce whole-file diffs.
 3. Then the remaining §2/§3 polish: the caret in a starter's empty slot, a
    results table view, the cheatsheet page.
-
-**Before any deploy**, read §8's blocker list first — `site:` is still
-`https://example.com`, which poisons every canonical URL on every page.
 
 **Working agreement:** go step by step and pause after each step for review,
 rather than finishing everything and then reporting. Opinions and pushback are
@@ -62,7 +59,8 @@ one commit per file, and never any AI attribution trailer.
 | **Astro** | Content-heavy + one interactive island; prerendered per-lesson pages are the SEO strategy |
 | Real MongoDB deferred to `npx` **local mode** | That's where a connection URI is safe and `localhost` means *their* localhost |
 | Progress in **localStorage**, no accounts | Nothing to store, nothing to breach, no signup friction |
-| Repo stays `mongodb-practice` for now | Rename on GitHub later — redirects preserve stars/links/history |
+| Name is **QueryDrill**, domain **querydrill.dev**, repo `querydrill.dev` | "Drill" is what the product already does; MongoDB-only on purpose — another database would be a new project, not a generalisation of this one |
+| Hosted on **Cloudflare** (Workers static assets) | Free, no bandwidth cap, so a traffic spike can neither throttle nor bill |
 
 **Verified**: 38/38 exercises produce identical output on real MongoDB and mingo
 (`npm run conformance`). Browser mode covers the entire current exercise set.
@@ -796,7 +794,8 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
 - [ ] Issue templates: bug, new exercise, wrong grading
 - [ ] `good first issue` labels — exercise contributions are ideal for this
 - [ ] CI badge + conformance badge
-- [ ] Rename repo on GitHub once the name is chosen; then flip public
+- [x] Rename repo on GitHub once the name is chosen — now `querydrill.dev`
+- [ ] Flip the repo public
 
 ---
 
@@ -807,7 +806,8 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
 Audited 2026-09-26. These are not polish. Each one is currently shipped-broken
 in `dist/`, and the first is the kind of mistake that costs the whole SEO effort.
 
-- [ ] **`site: 'https://example.com'` in `astro.config.mjs` poisons every page.**
+- [x] **`site: 'https://example.com'` in `astro.config.mjs` poisons every page.**
+      DONE 2026-10-01: now `https://querydrill.dev`.
       All 74 pages emit `<link rel="canonical" href="https://example.com/...">`,
       and the sitemap and every OG URL do the same. A canonical tells Google
       "this is the real address of this page", so right now all 74 declare a
@@ -850,13 +850,14 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
       `og:image`/`twitter:image` paths — with a companion check that the scan
       finds anything at all, since a scan that matches nothing reports no
       missing assets just as cheerfully as a clean build does.
-- [ ] Decide whether `example.com` should instead fail the build. A placeholder
-      that silently produces valid-looking wrong output is the trap here.
+- [>] Decide whether `example.com` should instead fail the build. Moot now
+      that the real domain is in; it only mattered while a placeholder could ship.
 
 ### The rest
 
-- [ ] Buy the domain, point at the host
-- [ ] Deploy (Cloudflare Pages or Vercel — both free, static)
+- [x] Buy the domain — `querydrill.dev` at Porkbun, 2026-10-01
+- [ ] Point the domain at Cloudflare (nameservers) and attach it to the Worker
+- [ ] Deploy — Cloudflare Workers static assets, `wrangler.toml` serves `dist/`
 - [ ] Verify the whole thing works with JS-only, no backend, no env vars
 - [ ] Lighthouse pass ≥ 95 on all four scores
 - [ ] Test on a real phone — `npm run test:mobile` proves nothing overflows at
@@ -885,6 +886,6 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
 
 ## Open questions
 
-- [ ] Final name + domain (deferred by choice; repo rename handles it)
-- [ ] Cloudflare Pages vs Vercel
+- [x] Final name + domain — QueryDrill, querydrill.dev (§0)
+- [x] Host — Cloudflare (§0)
 - [ ] Whether to keep the `notes` dataset at all, or fold its examples into lessons
