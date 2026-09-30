@@ -856,8 +856,11 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
 ### The rest
 
 - [x] Buy the domain — `querydrill.dev` at Porkbun, 2026-10-01
-- [ ] Point the domain at Cloudflare (nameservers) and attach it to the Worker
-- [ ] Deploy — Cloudflare Workers static assets, `wrangler.toml` serves `dist/`
+- [x] Point the domain at Cloudflare (nameservers) and attach it to the Worker
+- [x] Deploy — Cloudflare Workers static assets, `wrangler.toml` serves `dist/`.
+      Live at https://querydrill.dev since 2026-10-01
+- [ ] `www.querydrill.dev` and `*.querydrill.dev` still point at Porkbun's
+      parking page (records imported with the zone) — redirect `www` to the apex
 - [ ] Verify the whole thing works with JS-only, no backend, no env vars
 - [ ] Lighthouse pass ≥ 95 on all four scores
 - [ ] Test on a real phone — `npm run test:mobile` proves nothing overflows at
