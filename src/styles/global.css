@@ -508,6 +508,9 @@ textarea.query-box:focus,
   line-height: 1.5;
   text-align: center;
 }
+.app-fine + .app-fine { margin-top: 6px; }
+.app-fine a { color: inherit; }
+.app-fine a:hover { color: var(--text); }
 
 .track-head {
   margin: 18px 0 8px;

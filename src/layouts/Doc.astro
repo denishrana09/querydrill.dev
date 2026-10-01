@@ -1,6 +1,7 @@
 ---
 import Base from './Base.astro';
 import SiteHeader from '../components/SiteHeader.astro';
+import Credit from '../components/Credit.astro';
 import '../styles/doc.css';
 
 /**
@@ -19,6 +20,7 @@ const { title, description, jsonLd = null, nav = null, wide = false, noindex = f
     <p>
       Queries run in your browser. Nothing is uploaded, and there is no account to make.
     </p>
+    <p><Credit /></p>
     <p class="fine">
       Not affiliated with MongoDB, Inc. MongoDB is a trademark of MongoDB, Inc.
     </p>

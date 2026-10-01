@@ -1,6 +1,7 @@
 ---
 import Doc from '../layouts/Doc.astro';
 import RunnableExamples from '../components/RunnableExamples.astro';
+import { REPO } from '../components/Credit.astro';
 import ecommerce from '../../server/datasets/ecommerce.js';
 import { EXERCISES } from '../../server/exercises/index.js';
 import { MODULES, TRACKS, ALL_LESSONS } from '../../content/curriculum.js';
@@ -80,6 +81,12 @@ const rest = graded.diffs.length - shown.length + (graded.hidden || 0);
     name: 'QueryDrill',
     alternateName: ['Query Drill', 'querydrill.dev'],
     url: Astro.site.href,
+    author: {
+      '@type': 'Person',
+      name: 'Denish Rana',
+      url: 'https://denishrana.com',
+      sameAs: ['https://github.com/denishrana09', 'https://www.linkedin.com/in/denish-rana/'],
+    },
   }}
 >
   <section class="hero">
@@ -178,8 +185,9 @@ const rest = graded.diffs.length - shown.length + (graded.hidden || 0);
     <div class="card">
       <h3>It is open source</h3>
       <p>
-        MIT licensed, and an exercise is a small contribution to make — one object in one
-        file, with tests that say what you missed.
+        <a href={REPO}>MIT licensed on GitHub</a>, and an exercise is a small contribution
+        to make — one object in one file, with tests that say what you missed.
+        <a href={`${REPO}/blob/main/CONTRIBUTING.md`}>How to add one</a>.
       </p>
     </div>
   </div>

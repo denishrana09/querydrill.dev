@@ -47,6 +47,8 @@
 }
 .site-foot p { margin: 4px 0; }
 .site-foot .fine { color: var(--muted-2); font-size: 11px; }
+.site-foot a { color: inherit; }
+.site-foot a:hover { color: var(--text); }
 
 /* ---------- breadcrumbs and paging ---------- */
 
