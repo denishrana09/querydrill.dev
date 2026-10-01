@@ -795,7 +795,7 @@ Landing page must answer this in one screen. The honest differentiators, ranked:
 - [ ] `good first issue` labels — exercise contributions are ideal for this
 - [ ] CI badge + conformance badge
 - [x] Rename repo on GitHub once the name is chosen — now `querydrill.dev`
-- [ ] Flip the repo public
+- [x] Flip the repo public — 2026-10-01
 
 ---
 
@@ -872,14 +872,16 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
 - [x] Point the domain at Cloudflare (nameservers) and attach it to the Worker
 - [x] Deploy — Cloudflare Workers static assets, `wrangler.toml` serves `dist/`.
       Live at https://querydrill.dev since 2026-10-01
-- [ ] `www.querydrill.dev` and `*.querydrill.dev` still point at Porkbun's
-      parking page (records imported with the zone) — redirect `www` to the apex
-- [ ] Google Search Console + Bing Webmaster Tools: verify the domain, submit
-      `sitemap.xml`
-- [ ] Real `<lastmod>` dates in production: the build needs full git history
-      (`git fetch --unshallow` before `npm run build` in the Cloudflare build
-      command); until then the sitemap ships without dates
-- [ ] Verify the whole thing works with JS-only, no backend, no env vars
+- [x] `www.querydrill.dev` 301s to the apex (a Cloudflare redirect rule), the
+      Porkbun parking records are gone, and Always Use HTTPS is on — 2026-10-01
+- [x] Google Search Console + Bing Webmaster Tools: domain verified,
+      `sitemap.xml` submitted — 2026-10-01. Share card checked in LinkedIn's
+      Post Inspector.
+- [ ] Real `<lastmod>` dates in production: the Cloudflare build command now
+      runs `git fetch --unshallow` first (2026-10-01) — confirm on the next
+      deploy that the live sitemap has dates, and that they are not all one day
+- [x] Verify the whole thing works with JS-only, no backend, no env vars —
+      it is what is deployed
 - [ ] Lighthouse pass ≥ 95 on all four scores
 - [ ] Test on a real phone — `npm run test:mobile` proves nothing overflows at
       360px, which is not the same as proving it feels right to use
