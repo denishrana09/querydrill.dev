@@ -877,9 +877,9 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
 - [x] Google Search Console + Bing Webmaster Tools: domain verified,
       `sitemap.xml` submitted — 2026-10-01. Share card checked in LinkedIn's
       Post Inspector.
-- [ ] Real `<lastmod>` dates in production: the Cloudflare build command now
-      runs `git fetch --unshallow` first (2026-10-01) — confirm on the next
-      deploy that the live sitemap has dates, and that they are not all one day
+- [x] Real `<lastmod>` dates in production: the Cloudflare build command runs
+      `git fetch --unshallow` before `npm run build`. Confirmed on the live
+      sitemap 2026-10-01 — 81 dated pages across four different days
 - [x] Verify the whole thing works with JS-only, no backend, no env vars —
       it is what is deployed
 - [ ] Lighthouse pass ≥ 95 on all four scores
