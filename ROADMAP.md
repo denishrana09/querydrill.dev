@@ -34,10 +34,10 @@ with the dataset explained in the pane that used to be empty (§6).
 
 **Next, in the order I would do it — nothing here is blocked, pick up at the top:**
 
-1. **One launch blocker is left, and it needs you** (§8): a 1200×630 share
-   image, which is a visual identity decision. The name is settled —
-   **QueryDrill, at querydrill.dev** — so it is no longer blocked on that.
-   Hosting is Cloudflare Workers static assets (`wrangler.toml`).
+1. **No launch blockers are left.** The site is live as **QueryDrill at
+   querydrill.dev**, on Cloudflare Workers static assets (`wrangler.toml`),
+   with its own favicon and share image (`design/`). What remains in §8 is
+   dashboard work — Search Console, the `www` redirect — and posting it.
 2. **`.gitattributes` with `* text=auto`** (§7) — the repo has mixed line
    endings, which makes one-line edits produce whole-file diffs.
 3. Then the remaining §2/§3 polish: the caret in a starter's empty slot, a
@@ -814,9 +814,12 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
       domain we do not own as authoritative. Changing the one line fixes all of
       them at once — but nothing can be deployed before it is changed, and a
       deploy that happens to go out first is worse than not deploying.
-- [ ] **A real 1200×630 share image.** Still to make, and deliberately left:
-      it is a visual identity decision, and the name and logo are not settled.
-      **The bug it caused is fixed** (2026-09-27): `Base.astro` no longer names
+- [x] **A real 1200×630 share image.** DONE 2026-10-01: `public/og.png`,
+      rendered from `design/og.html` by `design/render.mjs`, which also makes
+      `favicon.ico` and `apple-touch-icon.png` from `favicon.svg`. The favicon
+      itself was redrawn — the old one was MongoDB's leaf, which is their
+      trademark and reads as an endorsement on a site with its own name.
+      **The bug the missing image caused was fixed earlier** (2026-09-27): `Base.astro` no longer names
       `/og-default.png`, because a card pointing at a missing image is worse
       than a card with none — the platform fetches it, gets a 404, and shows a
       broken preview instead of falling back to the title and description.
@@ -871,6 +874,11 @@ in `dist/`, and the first is the kind of mistake that costs the whole SEO effort
       Live at https://querydrill.dev since 2026-10-01
 - [ ] `www.querydrill.dev` and `*.querydrill.dev` still point at Porkbun's
       parking page (records imported with the zone) — redirect `www` to the apex
+- [ ] Google Search Console + Bing Webmaster Tools: verify the domain, submit
+      `sitemap.xml`
+- [ ] Real `<lastmod>` dates in production: the build needs full git history
+      (`git fetch --unshallow` before `npm run build` in the Cloudflare build
+      command); until then the sitemap ships without dates
 - [ ] Verify the whole thing works with JS-only, no backend, no env vars
 - [ ] Lighthouse pass ≥ 95 on all four scores
 - [ ] Test on a real phone — `npm run test:mobile` proves nothing overflows at

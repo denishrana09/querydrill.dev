@@ -143,6 +143,17 @@ body.app {
   flex: 0 0 auto;
 }
 
+/* On the page for screen readers and crawlers, which the app shell otherwise
+   gives no heading to; not for sighted layout. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .brand { font-weight: 600; letter-spacing: .3px; color: var(--text); text-decoration: none; }
 .brand span { color: var(--accent); }
 

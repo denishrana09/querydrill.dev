@@ -17,18 +17,10 @@ const {
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 
-/**
- * There is no share image yet, and until there is, every page pointed at
- * `/og-default.png` - a file that has never existed. A social card that names a
- * missing image is worse than one that names none: the platform fetches it,
- * gets a 404, and shows a broken preview instead of falling back to the title
- * and description. `summary_large_image` has the same problem, since the large
- * card is a frame around the picture.
- *
- * So both are conditional, and turning them on is one constant away once the
- * image exists - see ROADMAP.md section 8.
- */
-const ogImage = null;
+// Rendered from design/og.html by design/render.mjs. test/links.mjs fails the
+// build if the file is missing, which is what went unnoticed for weeks before.
+const ogImage = new URL('/og.png', Astro.site).href;
+const ogImageAlt = 'QueryDrill: learn MongoDB by running queries. A query with graded feedback explaining why its result is wrong.';
 ---
 <!doctype html>
 <html lang="en">
@@ -46,10 +38,17 @@ const ogImage = null;
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
   <meta property="og:url" content={canonical} />
-  {ogImage && <meta property="og:image" content={ogImage} />}
-  <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content={ogImageAlt} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content={ogImage} />
+  <meta name="twitter:image:alt" content={ogImageAlt} />
 
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
   <script is:inline>
     // Blocking, and deliberately before the stylesheet does anything: a theme

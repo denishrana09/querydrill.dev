@@ -1,0 +1,77 @@
+<!doctype html>
+<!-- Source of public/og.png. Render with: node design/render.mjs -->
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background: #16181d;
+    color: #dfe3ea;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    display: grid;
+    grid-template-columns: 1fr 470px;
+    gap: 56px;
+    padding: 64px 68px;
+    position: relative;
+  }
+  body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(700px 420px at 88% 8%, rgba(77, 176, 122, .16), transparent 70%);
+  }
+  .left { display: flex; flex-direction: column; position: relative; }
+  .brand { display: flex; align-items: center; gap: 16px; font-size: 38px; font-weight: 600; letter-spacing: .4px; }
+  .brand svg { width: 54px; height: 54px; }
+  .brand b { color: #4db07a; font-weight: 600; }
+  h1 { font-size: 64px; line-height: 1.08; font-weight: 650; letter-spacing: -1.2px; margin-top: 44px; }
+  h1 em { font-style: normal; color: #4db07a; }
+  p { font-size: 28px; line-height: 1.38; color: #a8b6c9; margin-top: 22px; }
+  .foot { margin-top: auto; font-size: 25px; color: #8a93a3; white-space: nowrap; }
+  .foot span { color: #4db07a; font-family: "Cascadia Mono", Consolas, monospace; margin-right: 14px; }
+
+  .card {
+    position: relative;
+    align-self: center;
+    background: #1c1f26;
+    border: 1.5px solid #2f3440;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+    font-family: "Cascadia Mono", Consolas, monospace;
+  }
+  .bar { display: flex; gap: 9px; padding: 16px 20px; border-bottom: 1.5px solid #2f3440; }
+  .bar i { width: 13px; height: 13px; border-radius: 50%; background: #3d4657; }
+  pre { font: inherit; font-size: 23px; line-height: 1.5; padding: 22px 24px 24px; color: #dfe3ea; }
+  .k { color: #7fb3e8; } .s { color: #cf9f6a; } .o { color: #b48ce0; } .m { color: #8a93a3; }
+  .fb { border-top: 1.5px solid #2f3440; background: #22262f; padding: 20px 24px 22px; font-size: 21px; line-height: 1.5; }
+  .fb .bad { color: #f4b9b3; }
+  .fb .bad b { color: #e06b62; font-weight: 600; }
+  .fb .why { color: #cf9f6a; font-family: "Segoe UI", system-ui, sans-serif; font-size: 22px; margin-top: 10px; }
+</style>
+
+<div class="left">
+  <div class="brand">
+    <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#22262f"/><circle cx="14.5" cy="14.5" r="7.2" fill="none" stroke="#4db07a" stroke-width="3.8"/><path d="M19.6 19.6l5.4 5.4" stroke="#dfe3ea" stroke-width="3.8" stroke-linecap="round"/></svg>
+    <div>query<b>drill</b></div>
+  </div>
+  <h1>Learn MongoDB by <em>running queries</em></h1>
+  <p>Lessons you can run. Exercises that tell you why your answer is wrong.</p>
+  <div class="foot"><span>querydrill.dev</span> free · no signup</div>
+</div>
+
+<div class="card">
+  <div class="bar"><i></i><i></i><i></i></div>
+<pre>db.orders.<span class="k">aggregate</span>([
+  { <span class="o">$unwind</span>: <span class="s">"$items"</span> },
+  { <span class="o">$group</span>: {
+      <span class="k">_id</span>: <span class="s">"$userId"</span>,
+      <span class="k">total</span>: { <span class="o">$sum</span>:
+        <span class="s">"$items.price"</span> }
+  } }
+])</pre>
+  <div class="fb">
+    <div class="bad"><b>✗ total</b> expected 53000, got 27000</div>
+    <div class="why">Summing the unit price ignores quantity.</div>
+  </div>
+</div>

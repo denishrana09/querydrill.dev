@@ -73,6 +73,14 @@ const rest = graded.diffs.length - shown.length + (graded.hidden || 0);
   wide
   title="QueryDrill — learn and run MongoDB queries in your browser"
   description="A MongoDB course with 54 lessons and 38 auto-graded exercises that tell you exactly which field of your result is wrong. No signup, no install, no database."
+  jsonLd={{
+    // What Google reads to show a site name beside results instead of the bare domain.
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'QueryDrill',
+    alternateName: ['Query Drill', 'querydrill.dev'],
+    url: Astro.site.href,
+  }}
 >
   <section class="hero">
     <h1>Learn MongoDB by running queries, not reading about them</h1>
